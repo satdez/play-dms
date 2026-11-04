@@ -141,7 +141,7 @@ function Plan({ c }) {
                   <Tip key={t} label={`${l} · ${fmt.inrFull(pg.cost[t])}`}>
                     <span className={'qty' + (pg.qty[t] ? ' has' : '')}>
                       <button onClick={() => bump(cat.id, pg.id, t, -1)} aria-label={'Less ' + l}><Minus size={12} /></button>
-                      <span className="qty-v"><span className="qty-l">{l[0]}</span><Ticker value={pg.qty[t]} /></span>
+                      <span className="qty-v"><span className="qty-l">{l[0]}</span><span className="qty-w">{l === 'Story' ? 'Stories' : l + 's'}</span><Ticker value={pg.qty[t]} /></span>
                       <button onClick={() => bump(cat.id, pg.id, t, 1)} aria-label={'More ' + l}><Plus size={12} /></button>
                     </span>
                   </Tip>

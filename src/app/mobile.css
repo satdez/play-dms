@@ -3,7 +3,7 @@
    ≤960: sidebar becomes a drawer behind the menu button.
    ≤760: content reflows for a phone (tables scroll, rows drop secondary columns, splits stack). */
 
-.m-menu, .m-scrim { display: none; }
+.m-menu, .m-scrim, .st-pick-w, .qty-w { display: none; }
 
 @media (max-width: 960px) {
   .d { height: 100dvh; }
@@ -121,6 +121,35 @@
   .sheet { top: 8px; left: 8px; right: 8px; bottom: 8px; width: auto !important; max-width: none; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); }
   .bar { left: 8px; right: 8px; translate: none; bottom: calc(12px + env(safe-area-inset-bottom)); overflow-x: auto; scrollbar-width: none; }
   .cmdk-content { top: 8px; }
+
+  /* Spreadsheet table: a narrow frozen record column, the rest scrolls beside it */
+  .gt .gt-ck { display: none; }
+  .gt .gt-first { left: 0; min-width: 0; width: 46vw; max-width: 46vw; }
+  .gt-rec .mute, .gt-open { display: none; }
+  .gt-rec { gap: 8px; }
+  .gt-rec .ell { min-width: 0; }
+  html[data-exp='attio'] .gt-wrap { max-height: none; }
+
+  /* Settings: one section picker instead of a scrolling strip */
+  .st-nav { display: none; }
+  .st-pick-w { display: block; }
+  .st-pick-w > span { display: flex !important; }
+  .st-pick { display: flex; align-items: center; gap: 10px; text-align: left; width: 100%; height: 44px; padding: 0 14px; border-radius: 12px; font-weight: 600; color: var(--fg); background: var(--sunken); }
+  .st-pick-pop { max-height: 70dvh; }
+
+  /* Plan quantities: words instead of initials, thumb-sized steppers */
+  .qty-l { display: none; }
+  .qty-w { display: inline; font-size: 11.5px; color: var(--muted); margin-right: 2px; }
+  .plan-li > .tipw:nth-child(n+3) { flex: 1 1 0; min-width: 0; }
+  .plan-li > .tipw:nth-child(3) { margin-left: 42px; }
+  .plan-li .qty { display: flex; width: 100%; height: 36px; justify-content: space-between; }
+  .plan-li .qty button { width: 32px; height: 36px; }
+
+  /* New campaign: a bottom drawer, full width, drag the handle down to close */
+  .tray { left: 0; right: 0; bottom: 0; width: auto; margin-left: 0; border-radius: 24px 24px 0 0; padding: 0 8px calc(12px + env(safe-area-inset-bottom)); box-shadow: 0 0 0 1px var(--border), 0 -20px 60px -20px rgba(0,0,0,.45); max-height: 92dvh; overflow-y: auto; }
+  .tray-grab { display: grid; place-items: center; height: 22px; cursor: grab; touch-action: none; }
+  .tray-grab i { width: 38px; height: 5px; border-radius: 9px; background: var(--border-2, var(--border)); }
+  .tray-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* Touch screens: controls that appear on hover are always visible */

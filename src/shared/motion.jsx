@@ -5,7 +5,7 @@
 // - Keyboard-triggered actions are instant.
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useDragControls } from 'motion/react'
 import { ArrowLeft, X, Check, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { clients, campaignTypes, fmt } from '../data'
@@ -20,13 +20,14 @@ export function Tip({ label, kbd, side = 'bottom', children, delay = 450 }) {
   const ref = useRef(null)
   const timer = useRef()
   const [state, setState] = useState(null) // { x, y, instant }
-  const place = (instant) => {
+  const place = (instant, touch) => {
     const r = ref.current?.getBoundingClientRect()
     if (!r) return
-    const pos = side === 'right' ? { x: r.right + 8, y: r.top + r.height / 2 }
+    const pos = touch ? { x: Math.min(Math.max(r.left + r.width / 2, 72), window.innerWidth - 72), y: r.top - 10 } // above the finger, kept on screen
+      : side === 'right' ? { x: r.right + 8, y: r.top + r.height / 2 }
       : side === 'top' ? { x: r.left + r.width / 2, y: r.top - 8 }
       : { x: r.left + r.width / 2, y: r.bottom + 8 }
-    setState({ ...pos, instant })
+    setState({ ...pos, instant, touch })
   }
   const show = () => {
     clearTimeout(timer.current)
@@ -37,12 +38,20 @@ export function Tip({ label, kbd, side = 'bottom', children, delay = 450 }) {
     clearTimeout(timer.current)
     setState((s) => { if (s) warmUntil = Date.now() + 500; return null })
   }
+  // Touch has no hover: press and hold shows the label, it clears itself.
+  const press = (e) => {
+    if (e.pointerType !== 'touch') return hide()
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => { place(true, true); timer.current = setTimeout(hide, 1600) }, 420)
+  }
+  const release = (e) => { if (e.pointerType === 'touch' && !state) clearTimeout(timer.current) }
+  const mouse = (fn) => (e) => { if (e.pointerType !== 'touch') fn() }
   useEffect(() => () => clearTimeout(timer.current), [])
   return (
-    <span ref={ref} className="tipw" onPointerEnter={show} onPointerLeave={hide} onPointerDown={hide}>
+    <span ref={ref} className="tipw" onPointerEnter={mouse(show)} onPointerLeave={mouse(hide)} onPointerDown={press} onPointerUp={release} onPointerCancel={release}>
       {children}
       {state && createPortal(
-        <span className={`tip tip-${side}${state.instant ? ' instant' : ''}`} style={{ left: state.x, top: state.y }}>
+        <span className={`tip tip-${state.touch ? 'top' : side}${state.instant ? ' instant' : ''}`} style={{ left: state.x, top: state.y }}>
           {label}{kbd && <span className="tip-k">{kbd}</span>}
         </span>, document.body)}
     </span>
@@ -195,6 +204,8 @@ export function NewCampaignTray() {
     return () => window.removeEventListener('dms:new-campaign', on)
   }, [])
   const close = useCallback(() => setOpen(false), [])
+  const drag = useDragControls()
+  const phone = open && window.matchMedia('(max-width: 760px)').matches
   useEffect(() => {
     if (!open) return
     const on = (e) => { if (e.key === 'Escape') { e.stopPropagation(); step > 0 && !done ? setStep((s) => s - 1) : close() } }
@@ -213,7 +224,10 @@ export function NewCampaignTray() {
         <>
           <motion.div className="tray-scrim" onClick={close} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} />
           <motion.div className="tray" role="dialog" aria-label="New campaign"
-            initial={{ y: '110%' }} animate={{ y: 0 }} exit={{ y: '110%' }} transition={{ duration: 0.38, ease: DRAWER }}>
+            initial={{ y: '110%' }} animate={{ y: 0 }} exit={{ y: '110%' }} transition={{ duration: 0.38, ease: DRAWER }}
+            {...(phone ? { drag: 'y', dragConstraints: { top: 0, bottom: 0 }, dragElastic: { top: 0, bottom: 0.6 }, dragListener: false, dragControls: drag,
+              onDragEnd: (_, i) => { if (i.offset.y > 90 || i.velocity.y > 500) close() } } : {})}>
+            {phone && <div className="tray-grab" onPointerDown={(e) => drag.start(e)} aria-hidden><i /></div>}
             <div className="tray-h">
               <button className="tray-ib press" onClick={() => (step === 0 ? close() : setStep(step - 1))} aria-label={step === 0 ? 'Close' : 'Back'}>
                 <AnimatePresence mode="popLayout" initial={false}>

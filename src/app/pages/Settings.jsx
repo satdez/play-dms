@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import {
   UserRound, SlidersHorizontal, Bell, Keyboard, ShieldCheck, Users, Boxes, KeyRound, CheckCheck, Receipt, Plug, History,
   Search, Plus, MoreHorizontal, Laptop, Smartphone, Check, Lock, LogOut, ArrowRight, Crown, PackageCheck, Archive, UserCog,
-  Upload, Info, ChevronRight, Monitor, Sun, Moon, ChevronDown,
+  Upload, Info, ChevronRight, Monitor, Sun, Moon, ChevronDown, ChevronsUpDown,
 } from 'lucide-react'
 import { Tip, ALT, MOD, EASE, ConfirmButton } from '../../shared/motion'
 import { BrandLogo } from '../../shared/brands'
@@ -158,8 +158,25 @@ export default function Settings({ section, look }) {
     integrations: <Integrations />,
     audit: <Audit />,
   }[cur]
+  const curItem = SETTINGS_FLAT.find((x) => x.id === cur) || SETTINGS_FLAT[0]
   return (
     <div className="st">
+      <div className="st-pick-w">
+      <Popover align="left" width={Math.min(320, window.innerWidth - 32)} className="st-pick-pop" trigger={({ toggle }) => (
+        <button className="st-pick press" onClick={toggle}><curItem.icon size={16} /><span className="grow">{curItem.label}</span><ChevronsUpDown size={14} className="mute" /></button>
+      )}>
+        {(close) => SETTINGS_SECTIONS.map((g) => (
+          <div key={g.group}>
+            <div className="pop-h">{g.group}</div>
+            {g.items.map((s) => (
+              <button key={s.id} onClick={() => { close(); location.hash = '#/settings/' + s.id }}>
+                <s.icon size={15} />{s.label}{cur === s.id && <Check size={14} style={{ marginLeft: 'auto' }} />}
+              </button>
+            ))}
+          </div>
+        ))}
+      </Popover>
+      </div>
       <nav className="st-nav" aria-label="Settings">
         {SETTINGS_SECTIONS.map((g) => (
           <div key={g.group} className="st-nav-g">
