@@ -4,3 +4,6 @@ dist/
 .DS_Store
 Thumbs.db
 .claude/settings.local.json
+
+# stray screenshots from local checks
+/*.png

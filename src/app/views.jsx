@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Rows3, Columns3, Table2, GanttChart, LayoutGrid, SlidersHorizontal, ChevronDown, ChevronRight, Check, ListFilter, ArrowUpDown, ArrowDown,
-  Plus, Search, Megaphone, GitCommitHorizontal, Hash, Layers, Users, Coins, Percent, Eye, CalendarDays, Clock, CircleDot, Tag, User, ArrowUpRight, Pin, X, Maximize2, ChevronsLeftRight, ZoomIn, ChevronLeft,
+  Plus, Search, Megaphone, GitCommitHorizontal, Hash, Layers, Users, Coins, Percent, Eye, CalendarDays, Clock, CircleDot, Tag, User, ArrowUpRight, Pin, X, Maximize2, ChevronsLeftRight, ZoomIn, ArrowUp,
 } from 'lucide-react'
 import { useStore } from './store'
 import { STAGES, STAGE_FULL, PODS, fmt, TODAY, team } from './data'
@@ -539,87 +539,97 @@ function TimelineSwitch(props) {
   return usePhone() ? <TimelineStack {...props} /> : <TimelineView {...props} />
 }
 
-/* ───────── Timeline on phones: two-line rows, one shared full-width scale ─────────
-   Line 1 = who + when, line 2 = where it sits in time. No frozen column, no sideways scroll. */
-function TimelineStack({ groups, d, onOpen }) {
-  const span = { week: 70, month: 168, quarter: 280 }[d.zoom] || 168
-  // Pan: swipe sideways (live) or step with the arrows. `off` is committed days, `drag` the live finger offset in px.
-  const [off, setOff] = useState(0)
-  const [drag, setDrag] = useState(0)
-  const box = useRef(null), g = useRef(null), moved = useRef(false)
-  useEffect(() => { setOff(0) }, [d.zoom])
-  const pxToDays = (px) => (px / Math.max(1, (box.current?.clientWidth || 360) - 32)) * span
-  const down = (e) => { moved.current = false; g.current = { x: e.clientX, y: e.clientY, h: null } }
-  const move = (e) => {
-    const s = g.current; if (!s) return
-    const dx = e.clientX - s.x, dy = e.clientY - s.y
-    if (s.h === null && Math.hypot(dx, dy) > 8) s.h = Math.abs(dx) > Math.abs(dy)
-    if (s.h) { moved.current = true; setDrag(dx) }
+/* ───────── Timeline on phones: a vertical agenda ─────────
+   Time runs down the screen like the scroll. Campaigns sit under the week they start,
+   a Today marker splits past from future, and each row says where it stands ("ends in 12d"). */
+const weekOf = (dt) => { const m = new Date(dt); m.setHours(0, 0, 0, 0); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return m }
+const weekLabel = (wk) => {
+  const diff = Math.round((wk - weekOf(TODAY)) / (7 * DAY))
+  if (diff === 0) return 'This week'
+  if (diff === 1) return 'Next week'
+  if (diff === -1) return 'Last week'
+  return 'Week of ' + wk.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', ...(wk.getFullYear() !== TODAY.getFullYear() ? { year: 'numeric' } : {}) })
+}
+const daysTo = (dt) => Math.round((weekless(dt) - weekless(TODAY)) / DAY)
+const weekless = (dt) => { const x = new Date(dt); x.setHours(0, 0, 0, 0); return x }
+const inDays = (n) => (n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n}d`)
+function agendaState(c) {
+  const end = c.end || new Date(c.start.getTime() + 30 * DAY)
+  if (c.start > TODAY) { const n = daysTo(c.start); return { k: 'next', end, note: 'starts ' + inDays(n), soon: n <= 3 } }
+  if (end >= weekless(TODAY)) {
+    const n = daysTo(end)
+    return { k: 'live', end, note: n === 0 ? 'ends today' : 'ends ' + inDays(n), soon: n <= 7, prog: Math.min(1, (TODAY - c.start) / Math.max(DAY, end - c.start)) }
   }
-  const up = () => {
-    const s = g.current; g.current = null
-    if (s?.h) { setOff((o) => o - Math.round(pxToDays(drag))); setDrag(0) }
+  const n = -daysTo(end)
+  return { k: 'done', end, note: `ended ${n}d ago` }
+}
+
+function TimelineStack({ groups, onOpen }) {
+  const items = groups.flatMap((g) => g.items).sort((a, b) => a.start - b.start)
+  const rows = []
+  let wk = null, todayDone = false
+  const markToday = () => { rows.push({ t: 'today' }); todayDone = true }
+  for (const c of items) {
+    const w = weekOf(c.start)
+    if (!todayDone && c.start > TODAY) { if (!wk || +w !== +wk) markToday() }
+    if (!wk || +w !== +wk) { wk = w; rows.push({ t: 'week', wk: w, n: items.filter((x) => +weekOf(x.start) === +w).length }) }
+    if (!todayDone && c.start > TODAY) markToday()
+    rows.push({ t: 'item', c, s: agendaState(c) })
   }
-  const step = Math.round(span / 3)
-  const from = new Date(TODAY.getTime() + (off - Math.round(span * 0.3)) * DAY - pxToDays(drag) * DAY)
-  from.setHours(0, 0, 0, 0)
-  const to = new Date(from.getTime() + span * DAY)
-  const rangeLabel = from.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' – ' + to.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-  const pct = (dt) => Math.min(100, Math.max(0, ((dt - from) / (to - from)) * 100))
-  const ticks = []
-  for (let dt = new Date(from.getFullYear(), from.getMonth() + 1, 1); dt < to; dt = new Date(dt.getFullYear(), dt.getMonth() + 1, 1)) {
-    ticks.push({ at: pct(dt), label: dt.toLocaleDateString('en-GB', { month: 'short' }) })
+  if (!todayDone) markToday()
+
+  // Open at Today; offer a way back once it scrolls out of view.
+  const todayRef = useRef(null)
+  const [away, setAway] = useState(0) // -1 above, 1 below, 0 visible
+  const jump = (smooth) => {
+    const el = todayRef.current, sc = el?.closest('.d-scroll')
+    if (!el || !sc) return
+    const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 96
+    sc.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' })
   }
-  if (d.zoom === 'week') { // weeks are the useful unit at this zoom
-    ticks.length = 0
-    const mon = new Date(from); mon.setDate(mon.getDate() + ((8 - mon.getDay()) % 7))
-    for (let dt = mon; dt < to; dt = new Date(dt.getTime() + 14 * DAY)) ticks.push({ at: pct(dt), label: fmt.date(dt) })
-  }
-  const today = pct(TODAY)
+  useLayoutEffect(() => { jump(false) }, []) // eslint-disable-line
+  useEffect(() => {
+    const el = todayRef.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setAway(e.isIntersecting ? 0 : e.boundingClientRect.top < 0 ? -1 : 1))
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   return (
-    <div className={'tlm' + (drag ? ' dragging' : '')} ref={box} style={{ '--today': today + '%', '--tv': today > 0 && today < 100 ? 1 : 0 }}
-      onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
-      onClickCapture={(e) => { if (moved.current) { e.stopPropagation(); e.preventDefault(); moved.current = false } }}>
-      <div className="tlm-scale">
-        <div className="tlm-nav">
-          <button className="tlm-step" onClick={() => setOff((o) => o - step)} aria-label="Earlier"><ChevronLeft size={16} /></button>
-          <span className="tlm-range num">{rangeLabel}</span>
-          {off !== 0 && <button className="tlm-today" onClick={() => setOff(0)}>Today</button>}
-          <button className="tlm-step" onClick={() => setOff((o) => o + step)} aria-label="Later"><ChevronRight size={16} /></button>
-        </div>
-        <div className="tlm-axis">
-          {ticks.filter((t) => t.at > 4 && t.at < 92 && Math.abs(t.at - today) > 10).map((t) => <span key={t.at} style={{ left: t.at + '%' }}>{t.label}</span>)}
-          {today > 0 && today < 100 && <em style={{ left: today + '%' }}>Today</em>}
-        </div>
-      </div>
-      {groups.map((g) => (
-        <div key={g.key}>
-          {g.label && <div className="tlm-g">{g.icon}{g.label}<span className="mute num">{g.items.length}</span></div>}
-          {g.items.map((c) => {
-            const end = c.end || new Date(c.start.getTime() + 30 * DAY)
-            const l = pct(c.start), r = pct(end)
-            const prog = c.stage === 6 ? 1 : c.stage / 6
-            const outL = c.start < from, outR = end > to
-            return (
-              <button key={c.id} className="tlm-row" onClick={() => onOpen(c)}>
-                <span className="tlm-top">
-                  <ClientLogo name={c.client} industry={c.industry} />
-                  <span className="ell grow"><span className="li-t">{c.client}</span> <span className="mute">× {c.activity}</span></span>
-                  <span className="tlm-d num">{fmt.date(c.start)} – {fmt.date(end)}</span>
-                </span>
-                <span className="tlm-track">
-                  {r > l && (
-                    <i className={'tlm-bar s' + Math.min(c.stage, 6) + (outL ? ' cl' : '') + (outR ? ' cr' : '')} style={{ left: l + '%', width: Math.max(r - l, 1.5) + '%' }}>
-                      <b style={{ width: prog * 100 + '%' }} />
-                    </i>
-                  )}
-                  {r <= l && <span className={'tlm-off ' + (end < from ? 'l' : 'r')}>{end < from ? '← earlier' : 'later →'}</span>}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      ))}
+    <div className="agd">
+      {rows.map((r, i) => {
+        if (r.t === 'week') return <div key={'w' + +r.wk} className="agd-wk">{weekLabel(r.wk)}<span className="mute num">{r.n}</span></div>
+        if (r.t === 'today') return (
+          <div key="today" ref={todayRef} className="agd-today"><i />Today<span className="num">{fmt.date(TODAY)}</span></div>
+        )
+        const { c, s } = r
+        return (
+          <button key={c.id} className={'agd-row ' + s.k} onClick={() => onOpen(c)}>
+            <span className="agd-node" />
+            <span className="agd-body">
+              <span className="agd-top">
+                <ClientLogo name={c.client} industry={c.industry} />
+                <span className="ell grow"><span className="li-t">{c.client}</span> <span className="mute">× {c.activity}</span></span>
+                <StageIcon stage={c.stage} />
+              </span>
+              <span className="agd-meta">
+                <span className="num">{fmt.date(c.start)} – {fmt.date(s.end)}</span>
+                <span className={'agd-note' + (s.soon ? ' soon' : '')}>{s.note}</span>
+              </span>
+              {s.k === 'live' && <span className="agd-prog"><i style={{ width: s.prog * 100 + '%' }} /></span>}
+            </span>
+          </button>
+        )
+      })}
+      <AnimatePresence>
+        {away !== 0 && (
+          <motion.button className="agd-jump" onClick={() => jump(true)}
+            initial={{ opacity: 0, y: 8, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.96 }} transition={{ duration: 0.18, ease: EASE }}>
+            {away < 0 ? <ArrowUp size={14} /> : <ArrowDown size={14} />}Today
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
