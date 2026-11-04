@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Rows3, Columns3, Table2, GanttChart, LayoutGrid, SlidersHorizontal, ChevronDown, ChevronRight, Check, ListFilter, ArrowUpDown, ArrowDown,
-  Plus, Search, Megaphone, GitCommitHorizontal, Hash, Layers, Users, Coins, Percent, Eye, CalendarDays, Clock, CircleDot, Tag, User, ArrowUpRight, Pin, X, Maximize2, ChevronsLeftRight, ZoomIn,
+  Plus, Search, Megaphone, GitCommitHorizontal, Hash, Layers, Users, Coins, Percent, Eye, CalendarDays, Clock, CircleDot, Tag, User, ArrowUpRight, Pin, X, Maximize2, ChevronsLeftRight, ZoomIn, ChevronLeft,
 } from 'lucide-react'
 import { useStore } from './store'
 import { STAGES, STAGE_FULL, PODS, fmt, TODAY, team } from './data'
@@ -543,9 +543,28 @@ function TimelineSwitch(props) {
    Line 1 = who + when, line 2 = where it sits in time. No frozen column, no sideways scroll. */
 function TimelineStack({ groups, d, onOpen }) {
   const span = { week: 70, month: 168, quarter: 280 }[d.zoom] || 168
-  const from = new Date(TODAY.getTime() - Math.round(span * 0.3) * DAY)
+  // Pan: swipe sideways (live) or step with the arrows. `off` is committed days, `drag` the live finger offset in px.
+  const [off, setOff] = useState(0)
+  const [drag, setDrag] = useState(0)
+  const box = useRef(null), g = useRef(null), moved = useRef(false)
+  useEffect(() => { setOff(0) }, [d.zoom])
+  const pxToDays = (px) => (px / Math.max(1, (box.current?.clientWidth || 360) - 32)) * span
+  const down = (e) => { moved.current = false; g.current = { x: e.clientX, y: e.clientY, h: null } }
+  const move = (e) => {
+    const s = g.current; if (!s) return
+    const dx = e.clientX - s.x, dy = e.clientY - s.y
+    if (s.h === null && Math.hypot(dx, dy) > 8) s.h = Math.abs(dx) > Math.abs(dy)
+    if (s.h) { moved.current = true; setDrag(dx) }
+  }
+  const up = () => {
+    const s = g.current; g.current = null
+    if (s?.h) { setOff((o) => o - Math.round(pxToDays(drag))); setDrag(0) }
+  }
+  const step = Math.round(span / 3)
+  const from = new Date(TODAY.getTime() + (off - Math.round(span * 0.3)) * DAY - pxToDays(drag) * DAY)
   from.setHours(0, 0, 0, 0)
   const to = new Date(from.getTime() + span * DAY)
+  const rangeLabel = from.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + ' – ' + to.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
   const pct = (dt) => Math.min(100, Math.max(0, ((dt - from) / (to - from)) * 100))
   const ticks = []
   for (let dt = new Date(from.getFullYear(), from.getMonth() + 1, 1); dt < to; dt = new Date(dt.getFullYear(), dt.getMonth() + 1, 1)) {
@@ -558,11 +577,19 @@ function TimelineStack({ groups, d, onOpen }) {
   }
   const today = pct(TODAY)
   return (
-    <div className="tlm" style={{ '--today': today + '%' }}>
+    <div className={'tlm' + (drag ? ' dragging' : '')} ref={box} style={{ '--today': today + '%', '--tv': today > 0 && today < 100 ? 1 : 0 }}
+      onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
+      onClickCapture={(e) => { if (moved.current) { e.stopPropagation(); e.preventDefault(); moved.current = false } }}>
       <div className="tlm-scale">
+        <div className="tlm-nav">
+          <button className="tlm-step" onClick={() => setOff((o) => o - step)} aria-label="Earlier"><ChevronLeft size={16} /></button>
+          <span className="tlm-range num">{rangeLabel}</span>
+          {off !== 0 && <button className="tlm-today" onClick={() => setOff(0)}>Today</button>}
+          <button className="tlm-step" onClick={() => setOff((o) => o + step)} aria-label="Later"><ChevronRight size={16} /></button>
+        </div>
         <div className="tlm-axis">
           {ticks.filter((t) => t.at > 4 && t.at < 92 && Math.abs(t.at - today) > 10).map((t) => <span key={t.at} style={{ left: t.at + '%' }}>{t.label}</span>)}
-          <em style={{ left: today + '%' }}>Today</em>
+          {today > 0 && today < 100 && <em style={{ left: today + '%' }}>Today</em>}
         </div>
       </div>
       {groups.map((g) => (
@@ -586,7 +613,7 @@ function TimelineStack({ groups, d, onOpen }) {
                       <b style={{ width: prog * 100 + '%' }} />
                     </i>
                   )}
-                  {r <= l && <span className="tlm-off">{end < from ? '← earlier' : 'later →'}</span>}
+                  {r <= l && <span className={'tlm-off ' + (end < from ? 'l' : 'r')}>{end < from ? '← earlier' : 'later →'}</span>}
                 </span>
               </button>
             )

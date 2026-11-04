@@ -190,8 +190,17 @@ html[data-exp='vercel'] .tlm-axis em { background: var(--bg); }
 .tlm-bar.s4, .tlm-bar.s5 { --bar: var(--green); }
 .tlm-bar.s6 { --bar: var(--violet); }
 .tlm-off { position: absolute; top: -3px; font-size: 10.5px; color: var(--muted); right: 0; }
-.tlm-off:first-letter { letter-spacing: 0; }
+.tlm-off.l { left: 0; right: auto; }
 html[data-exp='vercel'] .tlm { background: var(--surface); border-radius: 8px; box-shadow: 0 0 0 1px var(--line); overflow: clip; }
+
+.tlm { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.tlm:not(.dragging) .tlm-bar { transition: left 240ms cubic-bezier(.23,1,.32,1), width 240ms cubic-bezier(.23,1,.32,1); }
+.tlm-nav { display: flex; align-items: center; gap: 6px; height: 40px; margin: 0 -6px; }
+.tlm-step { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; color: var(--fg-2); }
+.tlm-step:active, .tlm-today:active { transform: scale(.97); background: var(--hover); }
+.tlm-range { flex: 1; text-align: center; font-size: 12.5px; font-weight: 500; color: var(--fg-2); }
+.tlm-today { height: 26px; padding: 0 10px; border-radius: 99px; font-size: 12px; font-weight: 500; color: var(--pink); background: color-mix(in oklab, var(--pink) 12%, transparent); }
+.tlm-track::after { opacity: var(--tv, 1); }
 
 /* Touch screens: controls that appear on hover are always visible */
 @media (hover: none) {
