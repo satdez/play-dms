@@ -25,8 +25,9 @@ import './styles.css'
 import './exp.css'
 import './settings.css'
 import './media.css'
-import { Palette, Settings as Gear } from 'lucide-react'
-import { PopTuner, PRESETS, TUNE_AXES, normTune, presetOf, applyTune, clearTune, toneSwatch } from './popTune'
+import './mobile.css'
+import { Palette, Settings as Gear, Menu as MenuIcon } from 'lucide-react'
+import { PopTuner, PRESETS, TUNE_AXES, normTune, presetOf, applyTune, clearTune, toneSwatch, Orb } from './popTune'
 
 export const STYLES = [
   { id: 'paper', label: 'Khadi' },
@@ -40,13 +41,10 @@ export const EXPERIENCES = [
   { id: 'attio', label: 'Attio' },
 ]
 const swatch = { paper: ['#fafaf9', '#18181b'], ink: ['#08080a', '#5fcf86'], pop: ['#eeefe9', '#f2bd2f'] }
-const Swatch = ({ id, tune }) => {
-  const sw = id === 'pop' && tune ? toneSwatch(tune) : swatch[id]
-  return (
-    <span style={{ width: 14, height: 14, borderRadius: 4, background: sw[0], boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.15)', display: 'inline-grid', placeItems: 'center', flex: 'none' }}>
-      <span style={{ width: 6, height: 6, borderRadius: 2, background: sw[1] }} />
-    </span>
-  )
+const Swatch = ({ id, tune, on }) => {
+  const dark = document.documentElement.dataset.theme === 'dark'
+  const sw = id === 'pop' && tune ? toneSwatch(tune, dark) : swatch[id]
+  return <Orb sw={sw} size={16} on={on} />
 }
 /** Tiny wireframe of each experience's shell. */
 const ExpGlyph = ({ id }) => (
@@ -124,6 +122,7 @@ function Shell({ path }) {
     try { return localStorage.getItem(ROLE_KEY) || 'pod' } catch { return 'pod' }
   })
   const [cmd, setCmd] = useState(false)
+  const [navOpen, setNavOpen] = useState(false) // phone drawer
   const qs = new URLSearchParams(location.search)
   const [style, setStyle] = useState(() => { const v = qs.get('style') || read('wldd-style', 'paper'); return swatch[v] ? v : 'paper' })
   const [exp, setExp] = useState(() => { const v = qs.get('exp') || read('wldd-exp', 'linear'); return EXPERIENCES.some((x) => x.id === v) ? v : 'linear' })
@@ -191,6 +190,24 @@ function Shell({ path }) {
     return () => window.removeEventListener('keydown', on, true)
   }) // re-bind each render; cheap and keeps role fresh
 
+  useEffect(() => { setNavOpen(false) }, [path])
+  useEffect(() => {
+    if (!navOpen) return
+    const k = (e) => { if (e.key === 'Escape') setNavOpen(false) }
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [navOpen])
+  // Phones: split views stack list over detail, so picking a row brings its detail into view.
+  useEffect(() => {
+    const on = (e) => {
+      if (window.innerWidth > 760 || !e.target.closest?.('.split-l .li')) return
+      setTimeout(() => document.querySelector('.split-r')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+    }
+    document.addEventListener('click', on)
+    return () => document.removeEventListener('click', on)
+  }, [])
+  const scrim = <div className={'m-scrim' + (navOpen ? ' on' : '')} onClick={() => setNavOpen(false)} aria-hidden />
+
   const switchRole = (r) => { if (r === role) return; setRole(r); go('/home') }
 
   let page = null
@@ -215,9 +232,10 @@ function Shell({ path }) {
     return (
       <ExpCtx.Provider value={exp}>
         <div className="d vx">
-          <VxSidebar role={role} switchRole={switchRole} path={path} setCmd={setCmd} look={look} />
+          <VxSidebar role={role} switchRole={switchRole} path={path} setCmd={setCmd} look={look} open={navOpen} />
+          {scrim}
           <main className="vx-main">
-            <VxBar parts={parts} role={role} />
+            <VxBar parts={parts} role={role} openNav={() => setNavOpen(true)} />
             {body}
           </main>
           {cmdk}
@@ -228,9 +246,10 @@ function Shell({ path }) {
   return (
     <ExpCtx.Provider value={exp}>
       <div className="d">
-        <Sidebar role={role} switchRole={switchRole} path={path} look={look} />
+        <Sidebar role={role} switchRole={switchRole} path={path} look={look} open={navOpen} />
+        {scrim}
         <main className="d-main">
-          <TopBar parts={parts} role={role} setCmd={setCmd} />
+          <TopBar parts={parts} role={role} setCmd={setCmd} openNav={() => setNavOpen(true)} />
           {body}
         </main>
         {cmdk}
@@ -272,14 +291,14 @@ function Appearance({ look, close }) {
 }
 
 /* ───────── Vercel: flat sidebar (scope · Find · nav) + header bar ───────── */
-function VxSidebar({ role, switchRole, path, setCmd, look }) {
+function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
   const s = useStore()
   const nav = useNav(role, s)
   const r = ROLES.find((x) => x.id === role)
   const pinned = s.campaigns.filter((c) => c.pinned)
   const active = (to) => path === to || (to !== '/home' && path.startsWith(to)) || (to === '/home' && (path === '/' || path === ''))
   return (
-    <aside className="vx-side">
+    <aside className={'vx-side' + (open ? ' open' : '')}>
       <Popover align="left" width={232} trigger={({ toggle }) => (
         <button className="vx-scope" onClick={toggle}>
           <img src="/wldd-logo.svg" alt="WLDD" />
@@ -328,14 +347,14 @@ function VxSidebar({ role, switchRole, path, setCmd, look }) {
   )
 }
 
-function VxBar({ parts, role }) {
+function VxBar({ parts, role, openNav }) {
   const meta = usePageMeta(parts, role)
   return (
     <header className="vx-bar">
-      <div className="vx-bar-l">{meta.detail && <a href={'#' + meta.to} className="vx-back">← {meta.title}</a>}</div>
+      <div className="vx-bar-l"><button className="b ghost icon m-menu" onClick={openNav} aria-label="Menu"><MenuIcon size={18} /></button>{meta.detail && <a href={'#' + meta.to} className="vx-back">← {meta.title}</a>}</div>
       <div className="vx-bar-c ell">{meta.detail ? <span className={meta.plain ? '' : 'mono'}>{meta.detail}</span> : <>{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400, marginLeft: 8 }}>{meta.count}</span>}</>}</div>
       <div className="vx-bar-r">
-        {role === 'pod' && <button className="vx-create" onClick={openNewCampaign}><Plus size={15} /> Create New</button>}
+        {role === 'pod' && <button className="vx-create" onClick={openNewCampaign}><Plus size={15} /><span className="m-hide">Create New</span></button>}
       </div>
     </header>
   )
@@ -367,7 +386,7 @@ function Notifications() {
 }
 
 /* ───────── Sidebar ───────── */
-function Sidebar({ role, switchRole, path, look }) {
+function Sidebar({ role, switchRole, path, look, open }) {
   const { theme, setTheme } = look
   const s = useStore()
   const nav = useNav(role, s)
@@ -376,7 +395,7 @@ function Sidebar({ role, switchRole, path, look }) {
   const pinned = s.campaigns.filter((c) => c.pinned)
   const active = (to) => path === to || (to !== '/home' && path.startsWith(to)) || (to === '/home' && (path === '/' || path === ''))
   return (
-    <aside className="d-side">
+    <aside className={'d-side' + (open ? ' open' : '')}>
       <div className="d-brand">
         <a href="#/home" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
         <Tip label={theme === 'light' ? 'Dark' : 'Light'}>
@@ -490,15 +509,16 @@ function Crumb({ meta }) {
   )
 }
 
-function TopBar({ parts, role, setCmd }) {
+function TopBar({ parts, role, setCmd, openNav }) {
   const meta = usePageMeta(parts, role)
   return (
     <header className="d-top">
+      <button className="b ghost icon m-menu" onClick={openNav} aria-label="Menu"><MenuIcon size={18} /></button>
       <Crumb meta={meta} />
       <div className="d-top-r">
         <Tip label="Search" kbd={MOD + 'K'}><button className="b ghost icon" onClick={() => setCmd(true)} aria-label="Search"><Search size={16} /></button></Tip>
         <Notifications />
-        {role === 'pod' && parts[0] !== 'settings' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={openNewCampaign} style={{ marginLeft: 6 }}><Plus size={15} /> New</button></Tip>}
+        {role === 'pod' && parts[0] !== 'settings' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={openNewCampaign} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
       </div>
     </header>
   )

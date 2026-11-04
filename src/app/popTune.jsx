@@ -61,7 +61,10 @@ export const themeActive = (t, style, tune) => t.style === style && (style !== '
 
 export const normTune = (t) => Object.fromEntries(TUNE_AXES.map((a) => [a.id, a.opts.some((o) => o.id === t?.[a.id]) ? t[a.id] : PRESETS[0].v[a.id]]))
 export const presetOf = (t) => PRESETS.find((p) => TUNE_AXES.every((a) => p.v[a.id] === t[a.id]))
-export const toneSwatch = (t) => TONE_BY[t.tone].light
+const isDark = () => typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark'
+export const toneSwatch = (t, dark = isDark()) => TONE_BY[t.tone][dark ? 'dark' : 'light']
+/** Split colour orb: background ↗ accent. Shared by every colour picker. */
+export const Orb = ({ sw, size = 16, on }) => <span className={'orb' + (on ? ' on' : '')} style={{ '--a': sw[0], '--b': sw[1], width: size, height: size }} />
 
 export function applyTune(t) {
   const d = document.documentElement.dataset
@@ -73,16 +76,16 @@ export function clearTune() {
 }
 
 const Glyph = ({ axis, o }) => {
-  if (axis === 'tone') return <span className="pt-sw" style={{ background: o.sw[0] }}><i style={{ background: o.sw[1] }} /></span>
   if (axis === 'font') return <span className="pt-aa" style={{ fontFamily: o.ff }}>Aa</span>
   if (axis === 'corner') return <span className="pt-cr" style={{ borderTopLeftRadius: +o.id }} />
   return <span className={'pt-bt ' + o.id} />
 }
 
-/** Mix-and-match panel. `axes` limits which rows show (Settings hides tone/type, which have their own pickers). */
+/** Mix-and-match panel. `axes` limits which rows show. */
 export function PopTuner({ tune, setTune, axes, presets = true }) {
   const [copied, setCopied] = useState(false)
   const cur = presetOf(tune)
+  const dark = isDark()
   const copy = () => {
     const u = new URL(location.href)
     u.searchParams.set('style', 'pop')
@@ -93,24 +96,38 @@ export function PopTuner({ tune, setTune, axes, presets = true }) {
   return (
     <div className="pt">
       {presets && (
-        <div className="pt-presets">
+        <div className="pt-presets" role="radiogroup" aria-label="Presets">
           {PRESETS.map((p) => {
-            const sw = toneSwatch(p.v)
+            const on = cur?.id === p.id
             return (
-              <button key={p.id} className={'pt-preset' + (cur?.id === p.id ? ' on' : '')} onClick={() => setTune(p.v)}>
-                <span className="pt-sw lg" style={{ background: sw[0] }}><i style={{ background: sw[1] }} /></span>{p.label}
+              <button key={p.id} role="radio" aria-checked={on} className={'pt-preset' + (on ? ' on' : '')} onClick={() => setTune(p.v)}>
+                <Orb sw={toneSwatch(p.v, dark)} size={26} on={on} />
+                <span className="ell">{p.label}</span>
               </button>
             )
           })}
         </div>
       )}
-      {TUNE_AXES.filter((a) => !axes || axes.includes(a.id)).map((a) => (
+      {TUNE_AXES.filter((a) => !axes || axes.includes(a.id)).map((a) => a.id === 'tone' ? (
+        <div key="tone" className="pt-row col">
+          <span className="pt-l">Tone<b>{TONE_BY[tune.tone].label}</b></span>
+          <div className="pt-tones" role="radiogroup" aria-label="Tone">
+            {TONES.map((t) => (
+              <Tip key={t.id} label={t.label}>
+                <button role="radio" aria-checked={tune.tone === t.id} aria-label={'Tone ' + t.label} className="pt-tone" onClick={() => setTune({ ...tune, tone: t.id })}>
+                  <Orb sw={dark ? t.dark : t.light} size={16} on={tune.tone === t.id} />
+                </button>
+              </Tip>
+            ))}
+          </div>
+        </div>
+      ) : (
         <div key={a.id} className="pt-row">
           <span className="pt-l">{a.label}</span>
-          <div className={'pt-opts' + (a.id === 'tone' ? ' many' : '')}>
+          <div className="pt-seg" role="radiogroup" aria-label={a.label}>
             {a.opts.map((o) => (
               <Tip key={o.id} label={o.label}>
-                <button className={'pt-o' + (tune[a.id] === o.id ? ' on' : '')} aria-label={a.label + ' ' + o.label} onClick={() => setTune({ ...tune, [a.id]: o.id })}>
+                <button role="radio" aria-checked={tune[a.id] === o.id} className={'pt-o' + (tune[a.id] === o.id ? ' on' : '')} aria-label={a.label + ' ' + o.label} onClick={() => setTune({ ...tune, [a.id]: o.id })}>
                   <Glyph axis={a.id} o={o} />
                 </button>
               </Tip>
@@ -119,7 +136,7 @@ export function PopTuner({ tune, setTune, axes, presets = true }) {
         </div>
       ))}
       <div className="pt-foot">
-        <span className="mono mute ell">{cur ? cur.label : 'Custom'}</span>
+        <span className="pt-mix ell">{cur ? cur.label + ' preset' : 'Custom mix'}</span>
         <Tip label="Copy link to this mix"><button className="pt-copy" onClick={copy} aria-label="Copy link">{copied ? <Check size={13} /> : <Link2 size={13} />}</button></Tip>
       </div>
     </div>

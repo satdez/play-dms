@@ -88,8 +88,10 @@ export function Popover({ trigger, children, align = 'right', width, side: force
     const p = { side }
     if (side === 'top') p.bottom = window.innerHeight - r.top + 6
     else p.top = r.bottom + 6
-    if (align === 'left') p.left = Math.max(8, r.left)
-    else p.right = Math.max(8, window.innerWidth - r.right)
+    const w = Math.min(width || 0, window.innerWidth - 16)
+    if (align === 'left') p.left = Math.max(8, Math.min(r.left, window.innerWidth - 8 - w))
+    else p.right = Math.max(8, Math.min(window.innerWidth - r.right, window.innerWidth - 8 - w))
+    if (window.innerWidth <= 960) p.maxH = side === 'top' ? r.top - 14 : window.innerHeight - r.bottom - 14 // phones only
     return p
   }
   const toggle = () => { if (!open && ref.current) setPos(place()); setOpen((o) => !o) }
@@ -118,7 +120,7 @@ export function Popover({ trigger, children, align = 'right', width, side: force
         <AnimatePresence>
           {open && pos && (
             <motion.div ref={popRef} className={'pop ' + className} onClick={(e) => e.stopPropagation()}
-              style={{ position: 'fixed', top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right, width, transformOrigin: `${pos.side === 'top' ? 'bottom' : 'top'} ${align}` }}
+              style={{ position: 'fixed', top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right, width, maxWidth: 'calc(100vw - 16px)', maxHeight: pos.maxH, overflowY: pos.maxH ? 'auto' : undefined, transformOrigin: `${pos.side === 'top' ? 'bottom' : 'top'} ${align}` }}
               initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.1 } }} transition={{ duration: 0.15, ease: EASE }}>
               {children(() => setOpen(false))}
             </motion.div>

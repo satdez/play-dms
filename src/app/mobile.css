@@ -1,0 +1,133 @@
+/* ═════════ Phone & tablet ═════════
+   Everything here sits behind a max-width query — nothing changes above 960px.
+   ≤960: sidebar becomes a drawer behind the menu button.
+   ≤760: content reflows for a phone (tables scroll, rows drop secondary columns, splits stack). */
+
+.m-menu, .m-scrim { display: none; }
+
+@media (max-width: 960px) {
+  .d { height: 100dvh; }
+
+  /* Drawer: the same sidebar, slid in from the left. Motion only on open/close. */
+  .m-menu { display: inline-grid; place-items: center; flex: none; margin-left: -6px; }
+  .d-side, .vx-side {
+    display: flex; position: fixed; z-index: 80; top: 0; bottom: 0; left: 0; width: min(288px, 84vw);
+    background: var(--bg); overflow-y: auto; overscroll-behavior: contain;
+    padding-top: calc(14px + env(safe-area-inset-top)); padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    transform: translateX(-104%); visibility: hidden;
+    transition: transform 360ms cubic-bezier(.32,.72,0,1), visibility 0s linear 360ms;
+  }
+  .d-side.open, .vx-side.open { transform: none; visibility: visible; box-shadow: var(--shadow-pop); transition: transform 360ms cubic-bezier(.32,.72,0,1); }
+  .m-scrim { display: block; position: fixed; inset: 0; z-index: 79; background: var(--overlay, rgba(0,0,0,.4)); opacity: 0; pointer-events: none; transition: opacity 260ms ease; }
+  .m-scrim.on { opacity: 1; pointer-events: auto; }
+  /* Thumb-sized nav rows inside the drawer */
+  .d-side .d-item, .vx-side .vx-item { min-height: 38px; }
+  .d-side .d-role { min-height: 40px; }
+
+  /* Bars */
+  html[data-exp] .d-top { padding: 0 10px 0 14px; gap: 6px; }
+  .d-crumb { min-width: 0; overflow: hidden; white-space: nowrap; }
+  .vx-bar { padding: 0 10px 0 14px; }
+  .vx-bar-l { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .vx-bar-c { max-width: 52vw; }
+}
+
+@media (max-width: 760px) {
+  /* Top bars: icon-only create, back link collapses to an arrow */
+  .m-hide { display: none; }
+  .d-top .b.ink { width: 32px; padding: 0; justify-content: center; margin-left: 2px !important; }
+  .vx-create { width: 34px; padding: 0 !important; justify-content: center; }
+  .vx-back { font-size: 0; }
+  .vx-back::first-letter { font-size: 14px; }
+
+  /* Page frame */
+  html[data-exp] .d-page { padding: 14px 16px 96px; }
+  .d-head { flex-wrap: wrap; row-gap: 8px; }
+  .d-head > .inp { flex: 1 1 100%; width: auto !important; order: -1; }
+
+  /* Segments and tabs scroll sideways instead of clipping */
+  .seg, .tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .seg::-webkit-scrollbar, .tabs::-webkit-scrollbar, .vbar::-webkit-scrollbar, .tbl::-webkit-scrollbar { display: none; }
+  .seg button { flex: none; }
+  .tabs { gap: 18px; }
+  .tabs button { flex: none; }
+  .tabs-u { bottom: 0; }
+
+  /* Tables: keep columns, scroll the table itself */
+  .tbl { display: block; max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .tbl td, .tbl th { white-space: nowrap; }
+
+  /* List rows: let the text column shrink, drop secondary columns */
+  .li .grow { min-width: 0; }
+  .vli .vli-id, .vli .svc, .vli .track, .vli .vli-d, .vli .av-stack, .vli .pod-tag, .vli > .tipw:last-child:not(:first-child) { display: none; }
+  .vli { gap: 10px; }
+  .vli .vli-n:not(.fg2) { display: none; } /* keep budget only */
+  .q-age { display: none; }
+  .q-act { min-width: 0; }
+  .side-li .track { display: none; }
+
+  /* View bars (Linear / Attio / Vercel): one scrolling strip, search first */
+  .vbar { overflow-x: auto; scrollbar-width: none; }
+  .vbar > * { flex: none; }
+  .vbar.at { padding: 0 12px; }
+  .at-q { width: 132px; }
+  html[data-exp='vercel'] .vbar.vc { flex-wrap: wrap; overflow: visible; }
+  html[data-exp='vercel'] .vbar.vc > .inp { flex: 1 1 100%; width: auto !important; }
+  html[data-exp='linear'] .vbar.lin { padding: 0 10px; }
+  html[data-exp='linear'] .vlist .li { padding: 0 14px; }
+  html[data-exp='linear'] .vlist .vgroup { padding: 0 14px; }
+
+  /* Grids collapse to one column */
+  .ov, .home-grid { grid-template-columns: minmax(0, 1fr); }
+  .kv-grid { grid-template-columns: 1fr; }
+  .vgrid { grid-template-columns: minmax(0, 1fr); }
+  .ov-main svg[viewBox] { max-width: 100%; height: auto; }
+
+  /* Boards: swipe between columns */
+  .board { display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 6px; margin: -6px; }
+  .board > * { scroll-snap-align: start; }
+
+  /* Campaign header: title row, then the action full width */
+  .cp-head { flex-wrap: wrap; row-gap: 12px; }
+  .cp-head > .grow { flex: 1 1 0; min-width: 0; }
+  .cp-head > .b.ink, .cp-head > .tipw:last-child { flex: 1 1 100%; }
+  .cp-head > .b.ink { justify-content: center; }
+  .cp-head .d-h1 .mute { display: block; font-size: 15px; }
+
+  /* Plan rows: name + cost on top, quantities underneath */
+  .plan-li { flex-wrap: wrap; row-gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+  .plan-li > :first-child { order: -3; }
+  .plan-li > .grow { order: -2; flex: 1 1 0; }
+  .plan-li > .plan-cost { order: -1; width: auto; }
+  .plan-li::after { content: ''; order: -1; flex-basis: 100%; height: 0; }
+  .plan-li > .tipw:nth-child(3) { margin-left: 42px; }
+  .plan-bar { flex-wrap: wrap; gap: 10px; padding: 10px 10px 10px 14px; }
+
+  /* Tracker toolbar wraps; progress takes its own line */
+  .row:has(> .trk-prog) { flex-wrap: wrap; row-gap: 10px; }
+  .trk-prog { width: auto; flex: 1 1 100%; order: 5; }
+
+  /* Split views (Requests, Inbound, Approvals): stack list over detail, page scrolls */
+  .split { display: block; height: auto; }
+  .split > * { overflow: visible; }
+  .split-l { border-right: 0; border-bottom: 1px solid var(--line); padding: 8px 8px 16px; }
+  .split-r { padding: 20px 16px 60px; }
+
+  /* Settings bars */
+  .st-bar { flex-wrap: wrap; }
+  .st-bar > .inp, .st-bar > span:first-child { flex: 1 1 100%; width: auto !important; }
+
+  /* Overlays */
+  .sheet { top: 8px; left: 8px; right: 8px; bottom: 8px; width: auto !important; max-width: none; padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); }
+  .bar { left: 8px; right: 8px; translate: none; bottom: calc(12px + env(safe-area-inset-bottom)); overflow-x: auto; scrollbar-width: none; }
+  .cmdk-content { top: 8px; }
+}
+
+/* Touch screens: controls that appear on hover are always visible */
+@media (hover: none) {
+  .qty button { opacity: 1; }
+}
+/* iOS zooms into inputs under 16px */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 760px) { input, textarea, select { font-size: 16px !important; } }
+}

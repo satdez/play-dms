@@ -97,5 +97,18 @@ There are two independent axes. Both are switched from the Appearance menu (the 
 - `Tip` wraps its child in `span.tipw`. Never style with descendant selectors like `.x span`; give the inner element a class (e.g. `.svc-c`).
 - Prefer a dot plus text (`.pod-tag`) over a filled pill for categorical values in dense rows.
 
+## 5c. Mobile
+- All phone/tablet rules live in `src/app/mobile.css`, behind `max-width` queries. **Desktop (>960px) must stay pixel-identical**, so never add an unscoped rule there.
+- ≤960: the sidebar (`.d-side` / `.vx-side`) becomes a left drawer. `.m-menu` in the top bar opens it, `.m-scrim` closes it, and it also closes on route change or Esc. It's the same component, not a second nav.
+- ≤760:
+  - Tables scroll sideways inside themselves.
+  - `.vli` rows keep only stage, logo, name and budget.
+  - Segments, tabs and view bars become scroll strips.
+  - Boards swipe column by column.
+  - `.split` stacks the list over the detail, and tapping a row scrolls to the detail.
+  - Sheets go near full-screen.
+  - Create buttons go icon-only via `.m-hide`.
+- New components: give flex text columns `.grow` (shrinks via `min-width:0`), and add a mobile.css rule if a row has more than about 3 trailing columns.
+
 ## 6. Tokens
 `src/app/app.css` holds everything as CSS variables on `html[data-variant='app']`, with a dark mode. Never hard-code colours in components; use `var(--fg|--muted|--line|--green|…)`.
