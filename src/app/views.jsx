@@ -242,7 +242,7 @@ export function CampaignViews({ exp }) {
       {d.layout === 'list' && <ListView groups={groups} d={d} onOpen={open} exp={exp} />}
       {d.layout === 'board' && <BoardView groups={groups} d={d} groupBy={groupBy} onOpen={open} />}
       {d.layout === 'table' && <TableView rows={rows} d={d} setD={setD} onOpen={open} />}
-      {d.layout === 'timeline' && <TimelineView groups={groups} d={d} onOpen={open} />}
+      {d.layout === 'timeline' && <TimelineSwitch groups={groups} d={d} onOpen={open} />}
       {d.layout === 'grid' && exp === 'vercel' && <VxDash rows={rows} all={s.campaigns}><VxCards rows={rows} d={d} onOpen={open} /></VxDash>}
       {d.layout === 'grid' && exp !== 'vercel' && <GridView groups={groups} d={d} onOpen={open} />}
       {!rows.length && <div className="empty"><b>No campaigns</b></div>}
@@ -525,6 +525,78 @@ const Check2 = ({ on, onClick }) => (
 )
 
 /* ───────── Timeline ───────── */
+const usePhone = () => {
+  const q = '(max-width: 760px)'
+  const [m, setM] = useState(() => window.matchMedia(q).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(q), on = () => setM(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return m
+}
+function TimelineSwitch(props) {
+  return usePhone() ? <TimelineStack {...props} /> : <TimelineView {...props} />
+}
+
+/* ───────── Timeline on phones: two-line rows, one shared full-width scale ─────────
+   Line 1 = who + when, line 2 = where it sits in time. No frozen column, no sideways scroll. */
+function TimelineStack({ groups, d, onOpen }) {
+  const span = { week: 70, month: 168, quarter: 280 }[d.zoom] || 168
+  const from = new Date(TODAY.getTime() - Math.round(span * 0.3) * DAY)
+  from.setHours(0, 0, 0, 0)
+  const to = new Date(from.getTime() + span * DAY)
+  const pct = (dt) => Math.min(100, Math.max(0, ((dt - from) / (to - from)) * 100))
+  const ticks = []
+  for (let dt = new Date(from.getFullYear(), from.getMonth() + 1, 1); dt < to; dt = new Date(dt.getFullYear(), dt.getMonth() + 1, 1)) {
+    ticks.push({ at: pct(dt), label: dt.toLocaleDateString('en-GB', { month: 'short' }) })
+  }
+  if (d.zoom === 'week') { // weeks are the useful unit at this zoom
+    ticks.length = 0
+    const mon = new Date(from); mon.setDate(mon.getDate() + ((8 - mon.getDay()) % 7))
+    for (let dt = mon; dt < to; dt = new Date(dt.getTime() + 14 * DAY)) ticks.push({ at: pct(dt), label: fmt.date(dt) })
+  }
+  const today = pct(TODAY)
+  return (
+    <div className="tlm" style={{ '--today': today + '%' }}>
+      <div className="tlm-scale">
+        <div className="tlm-axis">
+          {ticks.filter((t) => t.at > 4 && t.at < 92 && Math.abs(t.at - today) > 10).map((t) => <span key={t.at} style={{ left: t.at + '%' }}>{t.label}</span>)}
+          <em style={{ left: today + '%' }}>Today</em>
+        </div>
+      </div>
+      {groups.map((g) => (
+        <div key={g.key}>
+          {g.label && <div className="tlm-g">{g.icon}{g.label}<span className="mute num">{g.items.length}</span></div>}
+          {g.items.map((c) => {
+            const end = c.end || new Date(c.start.getTime() + 30 * DAY)
+            const l = pct(c.start), r = pct(end)
+            const prog = c.stage === 6 ? 1 : c.stage / 6
+            const outL = c.start < from, outR = end > to
+            return (
+              <button key={c.id} className="tlm-row" onClick={() => onOpen(c)}>
+                <span className="tlm-top">
+                  <ClientLogo name={c.client} industry={c.industry} />
+                  <span className="ell grow"><span className="li-t">{c.client}</span> <span className="mute">× {c.activity}</span></span>
+                  <span className="tlm-d num">{fmt.date(c.start)} – {fmt.date(end)}</span>
+                </span>
+                <span className="tlm-track">
+                  {r > l && (
+                    <i className={'tlm-bar s' + Math.min(c.stage, 6) + (outL ? ' cl' : '') + (outR ? ' cr' : '')} style={{ left: l + '%', width: Math.max(r - l, 1.5) + '%' }}>
+                      <b style={{ width: prog * 100 + '%' }} />
+                    </i>
+                  )}
+                  {r <= l && <span className="tlm-off">{end < from ? '← earlier' : 'later →'}</span>}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function TimelineView({ groups, d, onOpen }) {
   const scroller = useRef(null)
   // Phones/tablets: a narrow frozen name column, plus "Fit" to see the whole range at once. Desktop unchanged.

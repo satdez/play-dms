@@ -165,6 +165,34 @@
   .tray-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
+/* ═════════ Phone timeline (TimelineStack) — only rendered ≤760px ═════════ */
+.tlm { --pad: 16px; padding-bottom: 96px; }
+.tlm-scale { position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 1px solid var(--line); padding: 0 var(--pad); }
+html[data-exp='vercel'] .tlm-scale { background: var(--bg); }
+.tlm-axis { position: relative; height: 34px; }
+.tlm-axis span { position: absolute; top: 10px; translate: -50% 0; font-size: 11.5px; font-weight: 500; color: var(--muted); white-space: nowrap; }
+.tlm-axis span::after { content: ''; position: absolute; left: 50%; top: 18px; width: 1px; height: 6px; background: var(--line-2); }
+.tlm-axis em { position: absolute; bottom: -1px; translate: -50% 0; font-style: normal; font-size: 10.5px; font-weight: 600; color: var(--pink); background: var(--surface); padding: 0 4px; border-radius: 4px 4px 0 0; line-height: 16px; }
+html[data-exp='vercel'] .tlm-axis em { background: var(--bg); }
+.tlm-g { display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 var(--pad); font-weight: 600; font-size: 12.5px; background: var(--sunken); border-bottom: 1px solid var(--line); }
+.tlm-row { display: flex; flex-direction: column; gap: 9px; width: 100%; padding: 11px var(--pad) 12px; text-align: left; border-bottom: 1px solid color-mix(in oklab, var(--line) 70%, transparent); }
+.tlm-row:active { background: var(--hover); }
+.tlm-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tlm-top .grow { min-width: 0; }
+.tlm-d { flex: none; font-size: 12px; color: var(--muted); }
+.tlm-track { position: relative; display: block; height: 8px; border-radius: 99px; background: color-mix(in oklab, var(--fg) 5%, transparent); }
+.tlm-track::after { content: ''; position: absolute; left: var(--today); top: -4px; bottom: -4px; width: 1.5px; margin-left: -.75px; background: var(--pink); border-radius: 2px; }
+.tlm-bar { position: absolute; top: 0; bottom: 0; border-radius: 99px; overflow: hidden; --bar: var(--muted); background: color-mix(in oklab, var(--bar) 30%, transparent); }
+.tlm-bar b { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar); }
+.tlm-bar.cl { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.tlm-bar.cr { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.tlm-bar.s1, .tlm-bar.s2, .tlm-bar.s3 { --bar: var(--yellow); }
+.tlm-bar.s4, .tlm-bar.s5 { --bar: var(--green); }
+.tlm-bar.s6 { --bar: var(--violet); }
+.tlm-off { position: absolute; top: -3px; font-size: 10.5px; color: var(--muted); right: 0; }
+.tlm-off:first-letter { letter-spacing: 0; }
+html[data-exp='vercel'] .tlm { background: var(--surface); border-radius: 8px; box-shadow: 0 0 0 1px var(--line); overflow: clip; }
+
 /* Touch screens: controls that appear on hover are always visible */
 @media (hover: none) {
   .qty button { opacity: 1; }
@@ -173,3 +201,4 @@
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 760px) { input, textarea, select { font-size: 16px !important; } }
 }
+html[data-exp='linear'] .tlm-scale { top: 44px; } /* below the sticky view bar */

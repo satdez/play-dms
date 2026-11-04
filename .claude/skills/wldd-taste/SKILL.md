@@ -108,6 +108,7 @@ There are two independent axes. Both are switched from the Appearance menu (the 
   - `.split` stacks the list over the detail, and tapping a row scrolls to the detail.
   - Sheets go near full-screen.
   - Create buttons go icon-only via `.m-hide`.
+- **Don't shrink desktop visualisations onto phones; give them a phone-native form.** The timeline is the example: ≤760 renders `TimelineStack`, with two-line rows (who + dates, then a full-width bar), one sticky shared scale and a Today line through every row. 761–960 keeps the Gantt with a narrow name column and a Fit toggle.
 - New components: give flex text columns `.grow` (shrinks via `min-width:0`), and add a mobile.css rule if a row has more than about 3 trailing columns.
 
 ## 6. Tokens
