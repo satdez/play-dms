@@ -533,7 +533,15 @@ function TimelineView({ groups, d, onOpen }) {
   const W = days * dw
   const x = (dt) => ((dt - from) / DAY) * dw
   const scroller = useRef(null)
-  useLayoutEffect(() => { if (scroller.current) scroller.current.scrollLeft = Math.max(0, x(TODAY) - 320) }, [d.zoom]) // eslint-disable-line
+  // Phones get a narrow frozen name column so the bars have room; desktop keeps 300.
+  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 760px)').matches)
+  useEffect(() => {
+    const m = window.matchMedia('(max-width: 760px)'), on = () => setNarrow(m.matches)
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [])
+  const NW = narrow ? 128 : 300
+  useLayoutEffect(() => { if (scroller.current) scroller.current.scrollLeft = Math.max(0, x(TODAY) - (narrow ? 48 : 320)) }, [d.zoom, narrow]) // eslint-disable-line
 
   const months = []
   for (let i = 0; i < days; i++) {
@@ -544,8 +552,8 @@ function TimelineView({ groups, d, onOpen }) {
   const has = (p) => d.props.includes(p)
 
   return (
-    <div className="tl" ref={scroller}>
-      <div className="tl-in" style={{ width: 300 + W }}>
+    <div className="tl" ref={scroller} style={narrow ? { '--tl-name': NW + 'px' } : undefined}>
+      <div className="tl-in" style={{ width: NW + W }}>
         <div className="tl-head">
           <div className="tl-name tl-corner" />
           <div className="tl-scale" style={{ width: W }}>
@@ -554,8 +562,8 @@ function TimelineView({ groups, d, onOpen }) {
           </div>
         </div>
         <div className="tl-body">
-          <div className="tl-grid" style={{ left: 300, width: W, backgroundSize: `${7 * dw}px 100%` }} />
-          <div className="tl-today" style={{ left: 300 + x(TODAY) }}><span>Today</span></div>
+          <div className="tl-grid" style={{ left: NW, width: W, backgroundSize: `${7 * dw}px 100%` }} />
+          <div className="tl-today" style={{ left: NW + x(TODAY) }}><span>Today</span></div>
           {groups.map((g) => (
             <div key={g.key}>
               {g.label && <div className="tl-g"><div className="tl-name">{g.icon}{g.label}<span className="mute num">{g.items.length}</span></div></div>}
