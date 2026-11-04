@@ -20,6 +20,8 @@
   .d-side.open, .vx-side.open { transform: none; visibility: visible; box-shadow: var(--shadow-pop); transition: transform 360ms cubic-bezier(.32,.72,0,1); }
   .m-scrim { display: block; position: fixed; inset: 0; z-index: 79; background: var(--overlay, rgba(0,0,0,.4)); opacity: 0; pointer-events: none; transition: opacity 260ms ease; }
   .m-scrim.on { opacity: 1; pointer-events: auto; }
+  /* Menus opened from inside the drawer (workspace, appearance) sit above it */
+  .pop { z-index: 85; }
   /* Thumb-sized nav rows inside the drawer */
   .d-side .d-item, .vx-side .vx-item { min-height: 38px; }
   .d-side .d-role { min-height: 40px; }
