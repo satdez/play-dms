@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Rows3, Columns3, Table2, GanttChart, LayoutGrid, SlidersHorizontal, ChevronDown, ChevronRight, Check, ListFilter, ArrowUpDown, ArrowDown,
-  Plus, Search, Megaphone, GitCommitHorizontal, Hash, Layers, Users, Coins, Percent, Eye, CalendarDays, Clock, CircleDot, Tag, User, ArrowUpRight, Pin, X, Maximize2,
+  Plus, Search, Megaphone, GitCommitHorizontal, Hash, Layers, Users, Coins, Percent, Eye, CalendarDays, Clock, CircleDot, Tag, User, ArrowUpRight, Pin, X, Maximize2, ChevronsLeftRight, ZoomIn,
 } from 'lucide-react'
 import { useStore } from './store'
 import { STAGES, STAGE_FULL, PODS, fmt, TODAY, team } from './data'
@@ -526,22 +526,28 @@ const Check2 = ({ on, onClick }) => (
 
 /* ───────── Timeline ───────── */
 function TimelineView({ groups, d, onOpen }) {
-  const dw = { week: 16, month: 6, quarter: 3 }[d.zoom]
+  const scroller = useRef(null)
+  // Phones/tablets: a narrow frozen name column, plus "Fit" to see the whole range at once. Desktop unchanged.
+  const MQ = '(max-width: 960px)'
+  const [narrow, setNarrow] = useState(() => window.matchMedia(MQ).matches)
+  const [cw, setCw] = useState(0)
+  const [fitOn, setFit] = useState(false)
+  useEffect(() => {
+    const m = window.matchMedia(MQ), on = () => setNarrow(m.matches)
+    m.addEventListener('change', on)
+    const ro = new ResizeObserver(() => setCw(scroller.current?.clientWidth || 0))
+    if (scroller.current) ro.observe(scroller.current)
+    return () => { m.removeEventListener('change', on); ro.disconnect() }
+  }, [])
+  const NW = narrow ? 128 : 300
+  const fit = narrow && fitOn && cw > NW
   const from = new Date(TODAY.getTime() - 63 * DAY)
   from.setDate(from.getDate() - ((from.getDay() + 6) % 7)) // Monday
   const days = d.zoom === 'quarter' ? 280 : 168
+  const dw = fit ? (cw - NW) / days : { week: 16, month: 6, quarter: 3 }[d.zoom]
   const W = days * dw
   const x = (dt) => ((dt - from) / DAY) * dw
-  const scroller = useRef(null)
-  // Phones get a narrow frozen name column so the bars have room; desktop keeps 300.
-  const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 760px)').matches)
-  useEffect(() => {
-    const m = window.matchMedia('(max-width: 760px)'), on = () => setNarrow(m.matches)
-    m.addEventListener('change', on)
-    return () => m.removeEventListener('change', on)
-  }, [])
-  const NW = narrow ? 128 : 300
-  useLayoutEffect(() => { if (scroller.current) scroller.current.scrollLeft = Math.max(0, x(TODAY) - (narrow ? 48 : 320)) }, [d.zoom, narrow]) // eslint-disable-line
+  useLayoutEffect(() => { if (scroller.current) scroller.current.scrollLeft = fit ? 0 : Math.max(0, x(TODAY) - (narrow ? 48 : 320)) }, [d.zoom, narrow, fit]) // eslint-disable-line
 
   const months = []
   for (let i = 0; i < days; i++) {
@@ -555,14 +561,20 @@ function TimelineView({ groups, d, onOpen }) {
     <div className="tl" ref={scroller} style={narrow ? { '--tl-name': NW + 'px' } : undefined}>
       <div className="tl-in" style={{ width: NW + W }}>
         <div className="tl-head">
-          <div className="tl-name tl-corner" />
+          <div className="tl-name tl-corner">
+            {narrow && (
+              <button className={'tl-fit' + (fit ? ' on' : '')} onClick={() => setFit((f) => !f)} aria-pressed={fit}>
+                {fit ? <ZoomIn size={14} /> : <ChevronsLeftRight size={14} />}{fit ? 'Zoom' : 'Fit'}
+              </button>
+            )}
+          </div>
           <div className="tl-scale" style={{ width: W }}>
-            {months.map((m) => <span key={m.i} className="tl-m" style={{ left: m.i * dw }}>{m.label}</span>)}
-            {d.zoom !== 'quarter' && weeks.map((w, i) => <span key={i} className="tl-w num" style={{ left: i * 7 * dw }}>{d.zoom === 'week' ? w.getDate() : ''}</span>)}
+            {(fit ? fitMonths(months, dw, W) : months).map((m) => <span key={m.i} className="tl-m" style={{ left: m.i * dw }}>{m.label}</span>)}
+            {d.zoom !== 'quarter' && !fit && weeks.map((w, i) => <span key={i} className="tl-w num" style={{ left: i * 7 * dw }}>{d.zoom === 'week' ? w.getDate() : ''}</span>)}
           </div>
         </div>
         <div className="tl-body">
-          <div className="tl-grid" style={{ left: NW, width: W, backgroundSize: `${7 * dw}px 100%` }} />
+          <div className="tl-grid" style={{ left: NW, width: W, backgroundSize: `${(fit ? 28 : 7) * dw}px 100%` }} />
           <div className="tl-today" style={{ left: NW + x(TODAY) }}><span>Today</span></div>
           {groups.map((g) => (
             <div key={g.key}>
@@ -595,6 +607,11 @@ function TimelineView({ groups, d, onOpen }) {
     </div>
   )
 }
+
+// Fit mode packs ~6 months into a phone width: short names, and drop a leading partial month that would collide.
+const fitMonths = (months, dw, W) => months
+  .filter((m, k) => !(k === 0 && months[1] && months[1].i * dw < 44) && m.i * dw < W - 30)
+  .map((m) => ({ ...m, label: m.label.split(' ')[0] }))
 
 /* ───────── Grid (cards) ───────── */
 function GridView({ groups, d, onOpen }) {

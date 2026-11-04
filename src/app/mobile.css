@@ -26,6 +26,17 @@
   .d-side .d-item, .vx-side .vx-item { min-height: 38px; }
   .d-side .d-role { min-height: 40px; }
 
+  /* Timeline: narrow frozen names (logo + client), bars get the screen; Fit shows the whole range */
+  .tl { max-height: none !important; }
+  .tl-name { padding: 0 10px; gap: 8px; }
+  .tl-row .tl-name > svg:first-child, .tl-row .tl-name .mute { display: none !important; } /* bar colour carries the stage */
+  .tl-row .tl-name .ell { min-width: 0; }
+  .tl-g .tl-name { white-space: nowrap; overflow: hidden; }
+
+  .tl-fit { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; font-size: 12.5px; font-weight: 500; color: var(--fg-2); background: color-mix(in oklab, var(--fg) 6%, transparent); }
+  .tl-fit.on { color: var(--fg); background: color-mix(in oklab, var(--fg) 12%, transparent); }
+  .tl-fit:active { transform: scale(.97); }
+
   /* Bars */
   html[data-exp] .d-top { padding: 0 10px 0 14px; gap: 6px; }
   .d-crumb { min-width: 0; overflow: hidden; white-space: nowrap; }
@@ -131,13 +142,6 @@
   .gt-rec { gap: 8px; }
   .gt-rec .ell { min-width: 0; }
   html[data-exp='attio'] .gt-wrap { max-height: none; }
-
-  /* Timeline: narrow frozen names (logo + client), bars get the screen */
-  .tl { max-height: none !important; }
-  .tl-name { padding: 0 10px; gap: 8px; }
-  .tl-row .tl-name > svg:first-child, .tl-row .tl-name .mute { display: none !important; } /* bar colour carries the stage */
-  .tl-row .tl-name .ell { min-width: 0; }
-  .tl-g .tl-name { white-space: nowrap; overflow: hidden; }
 
   /* Settings: one section picker instead of a scrolling strip */
   .st-nav { display: none; }
