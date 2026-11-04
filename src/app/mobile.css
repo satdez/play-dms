@@ -171,11 +171,15 @@
   font-size: 12.5px; font-weight: 600; color: var(--fg-2); background: var(--surface); }
 html[data-exp='linear'] .agd-wk { top: 44px; }
 /* The rail is drawn per item so sticky headers and markers can never break it */
-.agd-wk::before, .agd-row::before, .agd-today::before { content: ''; position: absolute; left: calc(var(--rail) - 1px); top: 0; bottom: 0; width: 2px; background: var(--line); }
+.agd-wk::before, .agd-row::before, .agd-today::before, .agd-empty::before { content: ''; position: absolute; left: calc(var(--rail) - 1px); top: 0; bottom: 0; width: 2px; background: var(--line); }
 html[data-exp='vercel'] .agd-wk { background: var(--surface); }
-.agd-today { position: relative; z-index: 1; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 var(--pad) 0 calc(var(--rail) + 18px); font-size: 12px; font-weight: 600; color: var(--pink); scroll-margin-top: 96px; }
+.agd-today { position: relative; z-index: 1; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 var(--pad) 0 calc(var(--rail) + 18px); font-size: 12px; font-weight: 600; color: var(--pink); scroll-margin-top: 96px; }
 .agd-today i { position: absolute; left: calc(var(--rail) - 4.25px); width: 10px; height: 10px; border-radius: 99px; background: var(--pink); box-shadow: 0 0 0 3px color-mix(in oklab, var(--pink) 22%, transparent); }
-.agd-today::after { content: ''; flex: 1; height: 1.5px; background: color-mix(in oklab, var(--pink) 55%, transparent); }
+.agd-today .agd-c { margin-left: auto; font-weight: 500; color: var(--muted); }
+.agd-empty { padding: 8px var(--pad) 16px calc(var(--rail) + 18px); color: var(--muted); font-size: 13px; position: relative; }
+html[data-exp] .agd-past { width: 100%; text-align: left; position: relative; top: auto; }
+.agd-past .agd-chev { margin-left: auto; color: var(--muted); transition: rotate 200ms cubic-bezier(.23,1,.32,1); }
+.agd-past.on .agd-chev { rotate: 180deg; }
 .agd-today .num { font-weight: 500; color: color-mix(in oklab, var(--pink) 75%, var(--muted)); }
 .agd-row { position: relative; display: flex; width: 100%; padding: 10px var(--pad) 12px calc(var(--rail) + 18px); text-align: left; }
 .agd-row:active { background: var(--hover); }
@@ -192,8 +196,6 @@ html[data-exp='vercel'] .agd-wk { background: var(--surface); }
 .agd-row.live .agd-note.soon { color: var(--pink); }
 .agd-prog { display: block; height: 3px; margin-left: 30px; border-radius: 9px; background: color-mix(in oklab, var(--fg) 7%, transparent); overflow: hidden; }
 .agd-prog i { display: block; height: 100%; background: var(--green); border-radius: 9px; }
-.agd-jump { position: fixed; left: 50%; translate: -50% 0; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 20; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 99px;
-  font-weight: 600; font-size: 13px; color: #fff; background: var(--pink); box-shadow: 0 8px 24px -6px rgba(0,0,0,.35); }
 html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; box-shadow: 0 0 0 1px var(--line); }
 
 /* Touch screens: controls that appear on hover are always visible */
