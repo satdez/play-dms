@@ -695,7 +695,7 @@ function TimelineView({ groups, d, onOpen }) {
                     <div className="tl-track" style={{ width: W }}>
                       <Tip label={`${fmt.date(c.start)} → ${fmt.date(c.end || c.start)}`}>
                         <button className={'tl-bar s' + Math.min(c.stage, 6)} style={{ left: l, width: w }} onClick={() => onOpen(c)}>
-                          <i style={{ width: prog * 100 + '%' }} />
+                          <i style={{ transform: `scaleX(${prog})` }} />
                           <span className="ell">{w > 120 ? c.client : ''}{w > 220 && has('budget') ? <span className="tl-amt num"> · {fmt.inr(c.budget)}</span> : null}</span>
                         </button>
                       </Tip>

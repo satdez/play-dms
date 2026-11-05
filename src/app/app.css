@@ -78,7 +78,7 @@ html[data-theme='dark'] .role-ic, html[data-style='ink'] .role-ic { color: var(-
 
 /* ───────── Buttons ───────── */
 .b { height: 32px; padding: 0 12px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500; white-space: nowrap; color: var(--fg-2);
-  background: var(--surface); box-shadow: 0 0 0 1px var(--line-2), var(--shadow-1); transition: background 120ms, color 120ms, box-shadow 120ms, transform 160ms cubic-bezier(.23,1,.32,1); }
+  background: var(--surface); box-shadow: 0 0 0 1px var(--line-2), var(--shadow-1); transition: background 120ms, color 120ms, box-shadow 120ms, transform 160ms var(--ease-out); }
 .b:hover { color: var(--fg); background: var(--sunken); }
 .b:active { transform: scale(.97); }
 .b.ink { background: var(--ink); color: var(--ink-fg); box-shadow: none; }
@@ -133,7 +133,7 @@ html[data-theme='dark'] .seg-bg { background: color-mix(in oklab, var(--fg) 13%,
 .stepper { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
 .step { display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 0; }
 .step-bar { height: 3px; border-radius: 9px; background: var(--line-2); overflow: hidden; }
-.step-bar i { display: block; height: 100%; background: var(--fg); transform-origin: left; transition: transform 500ms cubic-bezier(.23,1,.32,1); border-radius: 9px; }
+.step-bar i { display: block; height: 100%; background: var(--fg); transform-origin: left; transition: transform 500ms var(--ease-out); border-radius: 9px; }
 .step.cur .step-bar i { background: var(--green); }
 .step span { font-size: 12px; color: var(--muted); font-weight: 500; transition: color 200ms; }
 .step.done span { color: var(--fg-2); }
@@ -197,7 +197,7 @@ button.li { width: calc(100% + 24px); text-align: left; }
 
 /* Switch */
 .sw { width: 30px; height: 18px; border-radius: 99px; background: var(--line-2); position: relative; transition: background 200ms; flex: none; }
-.sw i { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 99px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform 220ms cubic-bezier(.23,1,.32,1); }
+.sw i { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 99px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: transform 220ms var(--ease-out); }
 .sw.on { background: var(--green); }
 .sw.on i { transform: translateX(12px); }
 

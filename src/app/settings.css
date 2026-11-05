@@ -63,7 +63,7 @@ html[data-theme='dark'] .st-card { box-shadow: 0 0 0 1px var(--line-2); }
 /* accent swatches */
 .st-accents { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 .st-acc-sw { position: relative; width: 22px; height: 22px; border-radius: 99px; display: inline-grid; place-items: center; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); transition: transform 120ms, box-shadow 120ms; cursor: pointer; }
-.st-acc-sw:hover { transform: scale(1.08); }
+@media (hover: hover) and (pointer: fine) { .st-acc-sw:hover { transform: scale(1.08); } }
 .st-acc-sw.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--fg); }
 .st-acc-sw.pick { color: var(--muted); background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line-2); overflow: hidden; }
 .st-acc-sw.pick.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--fg); }
@@ -124,7 +124,7 @@ html[data-style='pop'] .ck.on { background: var(--hl); color: var(--cta-fg); }
 
 /* sessions / pods / log */
 .st-dev { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--sunken); color: var(--fg-2); flex: none; }
-.st-chev { transition: transform 200ms cubic-bezier(.23,1,.32,1); flex: none; }
+.st-chev { transition: transform 200ms var(--ease-out); flex: none; }
 .st-podmark { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; font-weight: 700; font-size: 12px; background: var(--sunken); color: var(--fg-2); flex: none; }
 .st-pod-n { font-weight: 600; min-width: 64px; }
 .st-podm { padding: 0 16px 10px 64px; }
@@ -149,4 +149,11 @@ html[data-density='compact'] .d-item { height: 27px; }
 html[data-density='compact'] .st-row { min-height: 42px; padding: 4px 0; }
 html[data-density='compact'][data-exp='linear'] .vlist .li { min-height: 34px; }
 html[data-density='compact'][data-exp='vercel'] .vlist .li { min-height: 44px; }
-html[data-motion='reduced'] *, html[data-motion='reduced'] *::before, html[data-motion='reduced'] *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
+/* Reduced motion: movement snaps, but fades and colour still transition so state changes stay readable.
+   Loaders and playback progress keep running. Mirrors MotionConfig: on when chosen here or when the OS asks. */
+html[data-motion='reduced'] *, html[data-motion='reduced'] *::before, html[data-motion='reduced'] *::after { transition-property: opacity, color, background-color, border-color, box-shadow, visibility !important; }
+html[data-motion='reduced'] :not(.spin, .shimmer, .mv-track > i) { animation-duration: 0s !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-property: opacity, color, background-color, border-color, box-shadow, visibility !important; }
+  :not(.spin, .shimmer, .mv-track > i) { animation-duration: 0s !important; }
+}

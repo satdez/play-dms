@@ -9,6 +9,12 @@ h1, h2, h3, h4, p { margin: 0; }
 kbd { font-family: inherit; }
 ::selection { background: color-mix(in oklab, var(--accent, #6e6ef7) 35%, transparent); }
 
+:root {
+  /* Motion curves — mirror EASE / DRAWER in shared/motion.jsx */
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+}
+
 html {
   background: var(--bg, #0a0a0a);
   color: var(--fg, #ededed);
@@ -24,7 +30,7 @@ html[data-theme='light'] { color-scheme: light; }
 * { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--fg) 14%, transparent) transparent; }
 
 /* Tactile press: all buttons scale slightly (Emil) */
-.press { transition: transform 160ms cubic-bezier(.23, 1, .32, 1), background-color 120ms ease, color 120ms ease, border-color 120ms ease, opacity 120ms ease; }
+.press { transition: transform 160ms var(--ease-out), background-color 120ms ease, color 120ms ease, border-color 120ms ease, opacity 120ms ease; }
 .press:active { transform: scale(0.97); }
 
 :focus-visible { outline: 2px solid color-mix(in oklab, var(--accent) 70%, transparent); outline-offset: 1px; border-radius: 6px; }
@@ -49,12 +55,12 @@ html[data-theme='light'] { color-scheme: light; }
 .bars-l { color: var(--muted); }
 
 /* ───────── Command menu ───────── */
-.cmdk-overlay { position: fixed; inset: 0; background: var(--overlay, rgba(0,0,0,.45)); z-index: 90; animation: fadeIn 160ms ease-out; }
+.cmdk-overlay { position: fixed; inset: 0; background: var(--overlay, rgba(0,0,0,.45)); z-index: 90; }
 .cmdk-content {
   position: fixed; z-index: 91; top: 14vh; left: 50%; width: min(640px, calc(100vw - 32px)); transform: translateX(-50%);
   background: var(--pop, var(--panel)); color: var(--fg); border: 1px solid var(--border); border-radius: var(--cmd-radius, 12px);
   box-shadow: 0 24px 80px -12px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.08);
-  overflow: hidden; transform-origin: top center; animation: popIn 180ms cubic-bezier(.23, 1, .32, 1);
+  overflow: hidden; /* opened from the keyboard many times a day: appears instantly, no entrance */
   font-family: var(--font);
 }
 .cmdk-content [cmdk-input] {
@@ -62,7 +68,9 @@ html[data-theme='light'] { color-scheme: light; }
   border-bottom: 1px solid var(--border); color: var(--fg);
 }
 .cmdk-content [cmdk-input]::placeholder { color: var(--muted); }
-.cmdk-content [cmdk-list] { max-height: min(420px, 60vh); overflow: auto; padding: 6px; scroll-padding: 8px; transition: height 140ms cubic-bezier(.23, 1, .32, 1); height: var(--cmdk-list-height); }
+/* Always focused while open, so the caret is the focus cue; the global ring would draw a box over the divider. */
+.cmdk-content [cmdk-input]:focus-visible { outline: none; border-radius: 0; }
+.cmdk-content [cmdk-list] { max-height: min(420px, 60vh); overflow: auto; padding: 6px; scroll-padding: 8px; transition: height 140ms var(--ease-out); height: calc(var(--cmdk-list-height) + 12px); /* + padding, since the measured height is the contents only */ }
 .cmdk-content [cmdk-group-heading] { padding: 10px 10px 6px; font-size: 11px; color: var(--muted); font-weight: 500; }
 .cmdk-content [cmdk-item] {
   display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 8px; cursor: default;
@@ -85,7 +93,7 @@ html[data-theme='light'] { color-scheme: light; }
   border: 1px solid rgba(255,255,255,.09); border-radius: 12px; box-shadow: 0 10px 30px -10px rgba(0,0,0,.5);
   font-family: 'Inter', sans-serif; font-size: 12px; color: rgba(255,255,255,.62);
 }
-.dock button { height: 28px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; position: relative; transition: color 120ms ease, transform 160ms cubic-bezier(.23,1,.32,1); }
+.dock button { height: 28px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; position: relative; transition: color 120ms ease, transform 160ms var(--ease-out); }
 .dock button:active { transform: scale(.96); }
 .dock button:hover { color: #fff; }
 .dock-home, .dock-toggle { width: 28px; padding: 0 !important; justify-content: center; }
@@ -114,7 +122,7 @@ html[data-theme='light'] { color-scheme: light; }
   display: inline-flex; align-items: center; gap: 8px; height: 26px; padding: 0 8px; border-radius: 7px;
   background: var(--tip-bg, #111); color: var(--tip-fg, #fff); font: 500 12px/1 var(--font, Inter, sans-serif);
   box-shadow: 0 4px 14px -4px rgba(0,0,0,.3);
-  animation: tipIn 125ms cubic-bezier(.23,1,.32,1);
+  animation: tipIn 125ms var(--ease-out);
 }
 .tip-bottom { translate: -50% 0; transform-origin: top center; }
 .tip-top { translate: -50% -100%; transform-origin: bottom center; }
@@ -125,14 +133,14 @@ html[data-theme='light'] { color-scheme: light; }
 
 .roll { display: inline-flex; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .roll-d { display: inline-block; height: 1.2em; line-height: 1.2em; overflow: hidden; vertical-align: top; margin: -0.1em 0; }
-.roll-s { display: flex; flex-direction: column; transition: transform 550ms cubic-bezier(.23,1,.32,1); }
+.roll-s { display: flex; flex-direction: column; transition: transform 550ms var(--ease-out); }
 .roll-s > span { height: 1.2em; }
 
 .morph { display: inline-flex; white-space: pre; }
 .autow { vertical-align: middle; gap: 6px; }
 
-.chart-x { transition: transform 140ms cubic-bezier(.23,1,.32,1), opacity 120ms ease; }
-.chart-tip-move { left: 0 !important; top: 0 !important; transition: transform 140ms cubic-bezier(.23,1,.32,1), opacity 120ms ease; }
+.chart-x { transition: transform 140ms var(--ease-out), opacity 120ms ease; }
+.chart-tip-move { left: 0 !important; top: 0 !important; transition: transform 140ms var(--ease-out), opacity 120ms ease; }
 .chart-labels span.on { opacity: 1; color: var(--fg); }
 
 /* Confirm buttons swap to a success tint */
@@ -150,7 +158,7 @@ html[data-theme='light'] { color-scheme: light; }
 .tray-ib { width: 32px; height: 32px; border-radius: 99px; display: grid; place-items: center; background: var(--hover); color: var(--fg); }
 .tray-t { text-align: center; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; display: flex; justify-content: center; }
 .tray-dots { display: flex; gap: 4px; justify-content: flex-end; }
-.tray-dots i { width: 5px; height: 5px; border-radius: 9px; background: var(--border-2, var(--border)); transition: background 200ms, width 250ms cubic-bezier(.23,1,.32,1); }
+.tray-dots i { width: 5px; height: 5px; border-radius: 9px; background: var(--border-2, var(--border)); transition: background 200ms, width 250ms var(--ease-out); }
 .tray-dots i.on { background: var(--fg); }
 .tray-b { padding: 4px 10px 8px; }
 .tray-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
@@ -167,7 +175,7 @@ html[data-theme='light'] { color-scheme: light; }
 .tray-chips { display: flex; gap: 6px; }
 .tray-chip { height: 34px; padding: 0 14px; border-radius: 99px; background: var(--hover); font-weight: 500; }
 .tray-chip.on { background: var(--fg); color: var(--bg); }
-.tray-cta { width: 100%; height: 50px; border-radius: 16px; background: var(--fg); color: var(--bg); font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 200ms, transform 160ms cubic-bezier(.23,1,.32,1); }
+.tray-cta { width: 100%; height: 50px; border-radius: 16px; background: var(--fg); color: var(--bg); font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 200ms, transform 160ms var(--ease-out); }
 .tray-cta:active { transform: scale(.97); }
 .tray-review { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
 .tray-sum { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 16px; background: var(--hover); }

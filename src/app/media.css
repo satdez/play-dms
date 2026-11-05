@@ -7,7 +7,7 @@
 
 .mt { display: flex; flex-direction: column; gap: 8px; min-width: 0; text-align: left; color: var(--fg); }
 .mt-media { position: relative; overflow: hidden; border-radius: var(--pr-l, 12px); background: #111; color: #fff; isolation: isolate;
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 8%, transparent); transition: box-shadow 160ms, transform 160ms cubic-bezier(.23,1,.32,1); }
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 8%, transparent); transition: box-shadow 160ms, transform 160ms var(--ease-out); }
 .mt:hover .mt-media { box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 16%, transparent), 0 10px 24px -12px rgba(0,0,0,.45); }
 .mt:active .mt-media { transform: scale(.98); }
 .mt:focus-visible { outline: none; }
@@ -19,13 +19,15 @@
 .mt-bot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; align-items: center; gap: 4px; padding: 26px 9px 9px; font-size: 11.5px; font-weight: 600; background: linear-gradient(transparent, rgba(0,0,0,.55)); }
 .mt-play { position: absolute; left: 50%; top: 50%; z-index: 2; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 99px; translate: -50% -50%;
   background: rgba(255,255,255,.22); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.3);
-  opacity: 0; scale: .9; transition: opacity 160ms, scale 200ms cubic-bezier(.23,1,.32,1); }
+  opacity: 0; scale: .9; transition: opacity 160ms, scale 200ms var(--ease-out); }
 .mt-play svg { margin-left: 2px; }
-.mt:hover .mt-play { opacity: 1; scale: 1; }
 .mt-prog { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; z-index: 3; background: rgba(255,255,255,.18); opacity: 0; transition: opacity 160ms; }
-.mt-prog i { display: block; height: 100%; width: 0; background: #fff; }
-.mt:hover .mt-prog { opacity: 1; }
-.mt:hover .mt-prog i { width: 100%; transition: width var(--dur) linear; }
+.mt-prog i { display: block; height: 100%; width: 100%; background: #fff; transform: scaleX(0); transform-origin: left; }
+@media (hover: hover) and (pointer: fine) {
+  .mt:hover .mt-play { opacity: 1; scale: 1; }
+  .mt:hover .mt-prog { opacity: 1; }
+  .mt:hover .mt-prog i { transform: scaleX(1); transition: transform var(--dur) linear; }
+}
 
 .mt-cap { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 0 2px; }
 .mt-h { font-size: 12.5px; font-weight: 600; }

@@ -43,7 +43,7 @@
 .vlist .li.sel { background: color-mix(in oklab, var(--fg) 4.5%, transparent); }
 .vlist .li.sel::before, .vlist .li.sel + .li::before { opacity: 0; }
 .vgroup { display: flex; align-items: center; gap: 8px; width: 100%; height: 36px; margin-top: 14px; font-weight: 600; font-size: 12.5px; color: var(--fg-2); text-align: left; }
-.vgroup-c { color: var(--muted); transition: rotate 180ms cubic-bezier(.23,1,.32,1); }
+.vgroup-c { color: var(--muted); transition: rotate 180ms var(--ease-out); }
 .vgroup-sum { margin-left: auto; font-weight: 500; }
 .vli { gap: 12px; min-height: 44px; }
 .vli-id { width: 58px; flex: none; }
@@ -108,10 +108,10 @@
 .tl-track { position: relative; flex: none; }
 .tl-bar { position: absolute; top: 9px; height: 24px; border-radius: 6px; overflow: hidden; display: flex; align-items: center; padding: 0 8px; font-size: 12px; font-weight: 500; text-align: left;
   background: color-mix(in oklab, var(--bar) 16%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--bar) 45%, transparent); color: var(--fg); --bar: var(--muted);
-  transition: box-shadow 120ms, transform 160ms cubic-bezier(.23,1,.32,1); }
+  transition: box-shadow 120ms, transform 160ms var(--ease-out); }
 .tl-bar:hover { box-shadow: inset 0 0 0 1.5px var(--bar); }
 .tl-bar:active { transform: scale(.98); }
-.tl-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: color-mix(in oklab, var(--bar) 30%, transparent); transition: width 300ms cubic-bezier(.23,1,.32,1); }
+.tl-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; transform-origin: left; background: color-mix(in oklab, var(--bar) 30%, transparent); transition: transform 300ms var(--ease-out); }
 .tl-bar span { position: relative; }
 .tl-amt { color: var(--muted); }
 .tl-bar.s1, .tl-bar.s2, .tl-bar.s3 { --bar: var(--yellow); }

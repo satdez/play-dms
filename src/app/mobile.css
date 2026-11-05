@@ -15,9 +15,9 @@
     background: var(--bg); overflow-y: auto; overscroll-behavior: contain;
     padding-top: calc(14px + env(safe-area-inset-top)); padding-bottom: calc(10px + env(safe-area-inset-bottom));
     transform: translateX(-104%); visibility: hidden;
-    transition: transform 360ms cubic-bezier(.32,.72,0,1), visibility 0s linear 360ms;
+    transition: transform 360ms var(--ease-drawer), visibility 0s linear 360ms;
   }
-  .d-side.open, .vx-side.open { transform: none; visibility: visible; box-shadow: var(--shadow-pop); transition: transform 360ms cubic-bezier(.32,.72,0,1); }
+  .d-side.open, .vx-side.open { transform: none; visibility: visible; box-shadow: var(--shadow-pop); transition: transform 360ms var(--ease-drawer); }
   .m-scrim { display: block; position: fixed; inset: 0; z-index: 79; background: var(--overlay, rgba(0,0,0,.4)); opacity: 0; pointer-events: none; transition: opacity 260ms ease; }
   .m-scrim.on { opacity: 1; pointer-events: auto; }
   /* Menus opened from inside the drawer (workspace, appearance) sit above it */
@@ -178,7 +178,7 @@ html[data-exp='vercel'] .agd-wk { background: var(--surface); }
 .agd-today .agd-c { margin-left: auto; font-weight: 500; color: var(--muted); }
 .agd-empty { padding: 8px var(--pad) 16px calc(var(--rail) + 18px); color: var(--muted); font-size: 13px; position: relative; }
 html[data-exp] .agd-past { width: 100%; text-align: left; position: relative; top: auto; }
-.agd-past .agd-chev { margin-left: auto; color: var(--muted); transition: rotate 200ms cubic-bezier(.23,1,.32,1); }
+.agd-past .agd-chev { margin-left: auto; color: var(--muted); transition: rotate 200ms var(--ease-out); }
 .agd-past.on .agd-chev { rotate: 180deg; }
 .agd-today .num { font-weight: 500; color: color-mix(in oklab, var(--pink) 75%, var(--muted)); }
 .agd-row { position: relative; display: flex; width: 100%; padding: 10px var(--pad) 12px calc(var(--rail) + 18px); text-align: left; }

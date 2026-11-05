@@ -69,7 +69,7 @@ html[data-style='pop'] .metric-v { font-weight: 700; letter-spacing: -0.02em; }
 html[data-style='pop'] .b, html[data-style='pop'] .d-role {
   border-radius: var(--pr); font-weight: 600; background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line-2), 0 2px 0 var(--lip);
-  transition: transform 100ms cubic-bezier(.23,1,.32,1), box-shadow 100ms cubic-bezier(.23,1,.32,1), background 120ms, color 120ms;
+  transition: transform 100ms var(--ease-out), box-shadow 100ms var(--ease-out), background 120ms, color 120ms;
 }
 html[data-style='pop'] .b:hover { background: color-mix(in oklab, var(--surface) 92%, var(--fg)); }
 html[data-style='pop'] .b:active, html[data-style='pop'] .d-role:active { transform: translateY(2px); box-shadow: inset 0 0 0 1px var(--line-2), 0 0 0 var(--lip); }
@@ -244,7 +244,7 @@ html[data-style='pop'][data-pop-btn='pill'] .tray-cta { box-shadow: 0 1px 0 var(
 
 /* ── Colour orb (shared) ── */
 .orb { display: inline-block; flex: none; border-radius: 99px; background: linear-gradient(135deg, var(--a) 0 52%, var(--b) 52% 100%);
-  box-shadow: inset 0 0 0 1px rgba(128,128,128,.32); transition: box-shadow 140ms cubic-bezier(.23,1,.32,1), transform 140ms cubic-bezier(.23,1,.32,1); }
+  box-shadow: inset 0 0 0 1px rgba(128,128,128,.32); transition: box-shadow 140ms var(--ease-out), transform 140ms var(--ease-out); }
 .orb.on { box-shadow: inset 0 0 0 1px rgba(128,128,128,.32), 0 0 0 2px var(--ring-gap, var(--pop)), 0 0 0 3.5px var(--fg); }
 
 /* ── Tuner panel (Appearance popover + Settings mixer) ── */
@@ -254,7 +254,7 @@ html[data-style='pop'][data-pop-btn='pill'] .tray-cta { box-shadow: 0 1px 0 var(
   font-size: 10.5px; font-weight: 500; color: var(--muted); background: transparent; box-shadow: none; text-align: center; min-width: 0; transition: background 120ms, color 120ms; }
 .pt .pt-preset > span.ell { max-width: 100%; }
 .pt .pt-preset:hover { background: var(--hover); color: var(--fg); }
-.pt .pt-preset:hover .orb { transform: scale(1.06); }
+@media (hover: hover) and (pointer: fine) { .pt .pt-preset:hover .orb { transform: scale(1.06); } }
 .pt .pt-preset.on { color: var(--fg); }
 .pt-row { display: flex; align-items: center; gap: 8px; }
 .pt-row.col { flex-direction: column; align-items: stretch; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
@@ -264,7 +264,7 @@ html[data-style='pop'][data-pop-btn='pill'] .tray-cta { box-shadow: 0 1px 0 var(
 .pt-tones { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); justify-items: center; }
 .pt-tones .tipw { display: grid; place-items: center; }
 .pt .pt-tone { display: grid; place-items: center; width: 20px; height: 22px; padding: 0; border-radius: 99px; background: none; }
-.pt .pt-tone:hover .orb { transform: scale(1.15); }
+@media (hover: hover) and (pointer: fine) { .pt .pt-tone:hover .orb { transform: scale(1.15); } }
 .pt .pt-tone:active .orb { transform: scale(.92); }
 .pt-seg { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 2px; border-radius: 8px; background: color-mix(in oklab, var(--fg) 6%, transparent); }
 .pt-seg > * { min-width: 0; }
