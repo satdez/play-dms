@@ -24,7 +24,7 @@
   .pop { z-index: 85; }
   /* Thumb-sized nav rows inside the drawer */
   .d-side .d-item, .vx-side .vx-item { min-height: 38px; }
-  .d-side .d-role { min-height: 40px; }
+  html[data-variant='app'] .d-side .d-role { --g: 9px; } /* 40px thumb target, same even inset */
 
   /* Timeline: narrow frozen names (logo + client), bars get the screen; Fit shows the whole range */
   .tl { max-height: none !important; }
@@ -206,3 +206,18 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 760px) { input, textarea, select { font-size: 16px !important; } }
 }
+
+/* Sidebar shapes inside the drawer: rail keeps the safe-area inset; icons shows its labels (it's ≥960px only) */
+@media (max-width: 960px) {
+  html[data-variant='app'] .d-side.sb-rail { width: min(300px, 88vw); padding: 0; }
+  .sb-rail .sb-railcol, .sb-rail .sb-panel { padding-top: calc(14px + env(safe-area-inset-top)); padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .sb-rail .sb-ws-t { width: 40px; height: 36px; }
+  .sb-stack .sb-wsh { min-height: 40px; }
+  /* Icons in the drawer: workspaces sit in a row, pages show their labels */
+  html[data-variant='app'] .d-side.sb-icons { width: min(288px, 84vw); }
+  .sb-icons .sb-mark { align-self: flex-start; margin-left: 8px; }
+  .sb-icons .sb-wsrow { flex-direction: row; padding-left: 4px; }
+  .sb-icons .sb-railf { flex-direction: row; align-self: stretch; padding: 8px 4px 0; }
+}
+/* Collapse is a desktop idea — the drawer has its own open/close */
+@media (max-width: 960px) { .sb-col, .sb-show { display: none; } }

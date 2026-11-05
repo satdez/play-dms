@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useStore } from './store'
 import { STAGES, STAGE_FULL, PODS, fmt, TODAY, team } from './data'
-import { Tip, EASE, openNewCampaign, AutoHeight, MOD } from '../shared/motion'
+import { Tip, EASE, openNewCampaign, AutoHeight, MOD, MOD_SHIFT } from '../shared/motion'
 import { Avatar, AvatarStack, Sparkline } from '../shared/ui'
 import { Svc, Track, ClientLogo, Popover, Select, Switch, go } from './ui'
 import { Sheet } from './pages/Finance'
@@ -150,10 +150,10 @@ export function CampaignViews({ exp }) {
 
   const open = (c) => (exp === 'attio' ? setPeek(c.id) : go(`/pod/campaigns/${c.id}`))
 
-  // ⌘B / Ctrl+B flips list ⇄ board, like Linear.
+  // ⇧⌘B / Ctrl+Shift+B flips list ⇄ board (⌘B alone collapses the sidebar).
   useEffect(() => {
     const on = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') { e.preventDefault(); setD({ layout: d.layout === 'board' ? 'list' : 'board' }) }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'b') { e.preventDefault(); setD({ layout: d.layout === 'board' ? 'list' : 'board' }) }
     }
     window.addEventListener('keydown', on)
     return () => window.removeEventListener('keydown', on)
@@ -258,7 +258,7 @@ function DisplayMenu({ d, setD, reset, exp }) {
   const label = exp === 'attio' ? 'View settings' : exp === 'linear' ? 'Display' : null
   return (
     <Popover width={340} className="dv" trigger={({ toggle, open }) => (
-      <Tip label="Display options" kbd={MOD + 'B'}><button className={'b sm' + (label ? '' : ' icon') + (open ? ' on' : '')} onClick={toggle} aria-label="Display options">
+      <Tip label="Display options" kbd={MOD_SHIFT + 'B'}><button className={'b sm' + (label ? '' : ' icon') + (open ? ' on' : '')} onClick={toggle} aria-label="Display options">
         <SlidersHorizontal size={14} />{label}
       </button></Tip>
     )}>

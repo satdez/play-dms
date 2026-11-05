@@ -302,3 +302,6 @@ html[data-exp='vercel'] .svc-c { border-radius: 4px; }
 html[data-exp='vercel'] .seg-bg { border-radius: 5px; }
 html[data-exp='vercel'] .seg { border-radius: 7px; }
 .pod-tag { display: inline-flex; align-items: center; gap: 6px; color: var(--fg-2); font-weight: 500; white-space: nowrap; }
+
+/* Sidebar hidden (⌘B on the Icons shape): the inset panel keeps the same 8px gutter on its left as on its other edges */
+@media (min-width: 961px) { html[data-exp='linear'] .d.no-side .d-main { margin-left: 8px; } }

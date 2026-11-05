@@ -3,21 +3,22 @@ import { Command } from 'cmdk'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import {
   Sun, Moon, Search, Bell, Plus, ChevronsUpDown, Check, Inbox, Megaphone, CheckCheck, BookOpen, LayoutGrid, Receipt, Banknote,
-  FileSignature, Store, BarChart3, Send, MailOpen, Pin, ChevronRight, Building2,
+  FileSignature, Store, BarChart3, Send, MailOpen, Pin, ChevronRight, Building2, Eye, X, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react'
 import { useVariantRoot } from '../shared/ui'
 import { BrandLogo } from '../shared/brands'
 import { Tip, TextMorph, Ticker, SlidePanel, openNewCampaign, EASE, ALT, MOD } from '../shared/motion'
 import { ROLES, clients, team, me, fmt } from './data'
+import { PERSONAS, personaOf, setView } from './personas'
 import { kbTotal } from '../data'
 import { StoreProvider, useStore } from './store'
-import { go, Popover, RoleIcon, ExpCtx } from './ui'
+import { go, Popover, RoleIcon, ROLE_ICON, ExpCtx } from './ui'
 import Home from './pages/Home'
 import { CampaignList, CampaignPage, PodApprovals } from './pages/Pod'
 import { FinCampaigns, FinInvoices, Payments, Requests, Vendors } from './pages/Finance'
 import { BdDashboard, Outreach, Proposals, InboundPage } from './pages/Bd'
 import Knowledge from './pages/Knowledge'
-import Settings, { SETTINGS_FLAT } from './pages/Settings'
+import Settings, { SETTINGS_FLAT, SETTINGS_SECTIONS } from './pages/Settings'
 import { fmt as baseFmt } from '../data'
 import './app.css'
 import './pages.css'
@@ -64,9 +65,17 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'panel', viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+
+/** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
+let VIEW = PERSONAS[0]
+/** Workspaces the current persona can open, in ⌥1–3 order. */
+const seen = () => ROLES.filter((r) => VIEW.roles.includes(r.id))
 
 function useNav(role, s) {
+  return navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to))
+}
+function navFor(role, s) {
   const inLead = s.invoices.filter((x) => x.stage === 'lead').length
   const inFin = s.invoices.filter((x) => x.stage === 'finance').length
   const sched = s.invoices.filter((x) => x.stage === 'scheduled').length
@@ -115,6 +124,7 @@ function Shell({ path }) {
   const setTheme = (t) => setMode(typeof t === 'function' ? t(theme) : t)
   const [prefs, setPrefsRaw] = useState(() => { try { return { ...PREF_DEFAULTS, ...JSON.parse(read('wldd-prefs', '{}')) } } catch { return PREF_DEFAULTS } })
   const setPrefs = (p) => { setPrefsRaw(p); try { localStorage.setItem('wldd-prefs', JSON.stringify(p)) } catch {} }
+  VIEW = personaOf(prefs.viewAs); setView(VIEW)
   const [role, setRole] = useState(() => {
     const m = path.split('/').filter(Boolean)[0]
     if (['pod', 'finance', 'bd'].includes(m)) return m // deep link decides — no switch animation on load
@@ -164,12 +174,19 @@ function Shell({ path }) {
     try { localStorage.setItem('wldd-theme', mode); localStorage.setItem(ROLE_KEY, role); localStorage.setItem('wldd-style', style); localStorage.setItem('wldd-exp', exp) } catch {}
   }, [mode, role, style, exp])
   useEffect(() => () => { delete document.documentElement.dataset.style; delete document.documentElement.dataset.exp }, [])
-  const look = { exp, setExp, style, setStyle, theme, setTheme, mode, setMode, tune, setTune, prefs, setPrefs, styles: STYLES, exps: EXPERIENCES }
+  const look = { persona: VIEW, exp, setExp, style, setStyle, theme, setTheme, mode, setMode, tune, setTune, prefs, setPrefs, styles: STYLES, exps: EXPERIENCES }
 
   const parts = path.split('/').filter(Boolean) // e.g. ['pod','campaigns','c1','plan']
   const mod = parts[0] || 'home'
   // URL module wins over stored role, so deep links land in the right workspace.
-  useEffect(() => { if (['pod', 'finance', 'bd'].includes(mod) && mod !== role) setRole(mod) }, [mod]) // eslint-disable-line
+  useEffect(() => { if (['pod', 'finance', 'bd'].includes(mod) && mod !== role && VIEW.roles.includes(mod)) setRole(mod) }, [mod]) // eslint-disable-line
+  // View as: keep the person inside what their role can open.
+  useEffect(() => {
+    if (!VIEW.roles.includes(role)) setRole(VIEW.roles[0])
+    const blocked = (['pod', 'finance', 'bd'].includes(mod) && !VIEW.roles.includes(mod)) || VIEW.hide?.some((h) => path.startsWith(h))
+      || (mod === 'settings' && VIEW.id !== 'admin' && SETTINGS_SECTIONS[1].items.some((x) => x.id === parts[1]))
+    if (blocked) go(mod === 'settings' ? '/settings/preferences' : '/home')
+  }, [prefs.viewAs, path]) // eslint-disable-line
 
   // Keyboard: ⌘K, C = new campaign (Pod), ⌥1–3 switch role. Capture so pages never see them.
   useEffect(() => {
@@ -178,8 +195,10 @@ function Shell({ path }) {
       const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd((o) => !o); return }
       if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); go('/settings'); return }
+      // ⌘B / Ctrl+B collapses the sidebar (list ⇄ board moved to ⇧⌘B). Instant: keyboard actions never animate.
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b' && exp !== 'vercel') { e.preventDefault(); setPrefs({ ...prefs, collapsed: !prefs.collapsed }); return }
       if (typing || e.metaKey || e.ctrlKey) return
-      if (e.altKey && /^[1-3]$/.test(e.key)) { e.preventDefault(); switchRole(ROLES[+e.key - 1].id); return }
+      if (e.altKey && /^[1-3]$/.test(e.key)) { e.preventDefault(); const t = seen()[+e.key - 1]; if (t) switchRole(t.id); return }
       if (e.altKey && e.code === 'KeyE') { e.preventDefault(); setExp((s) => EXPERIENCES[(EXPERIENCES.findIndex((x) => x.id === s) + 1) % EXPERIENCES.length].id); return }
       if (e.altKey && e.code === 'KeyS') { e.preventDefault(); setStyle((s) => STYLES[(STYLES.findIndex((x) => x.id === s) + 1) % STYLES.length].id); return }
       if (e.altKey && e.code === 'KeyP') { e.preventDefault(); const i = PRESETS.findIndex((p) => p.id === presetOf(tune)?.id); setTune(PRESETS[style === 'pop' ? (i + 1) % PRESETS.length : Math.max(i, 0)].v); return }
@@ -235,7 +254,7 @@ function Shell({ path }) {
           <VxSidebar role={role} switchRole={switchRole} path={path} setCmd={setCmd} look={look} open={navOpen} />
           {scrim}
           <main className="vx-main">
-            <VxBar parts={parts} role={role} openNav={() => setNavOpen(true)} />
+            <VxBar parts={parts} role={role} openNav={() => setNavOpen(true)} look={look} />
             {body}
           </main>
           {cmdk}
@@ -245,11 +264,11 @@ function Shell({ path }) {
   }
   return (
     <ExpCtx.Provider value={exp}>
-      <div className="d">
+      <div className={'d' + (prefs.collapsed && prefs.sidebar === 'icons' ? ' no-side' : '')}>
         <Sidebar role={role} switchRole={switchRole} path={path} look={look} open={navOpen} />
         {scrim}
         <main className="d-main">
-          <TopBar parts={parts} role={role} setCmd={setCmd} openNav={() => setNavOpen(true)} />
+          <TopBar parts={parts} role={role} setCmd={setCmd} openNav={() => setNavOpen(true)} look={look} />
           {body}
         </main>
         {cmdk}
@@ -306,9 +325,9 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
           <ChevronsUpDown size={14} className="mute" style={{ marginLeft: 'auto' }} />
         </button>
       )}>
-        {(close) => ROLES.map((x, i) => (
+        {(close) => seen().map((x, i) => (
           <button key={x.id} onClick={() => { close(); switchRole(x.id) }}>
-            <RoleIcon role={x.id} /> {x.label}
+            <RoleIcon role={x.id} size={22} /> {x.label}
             <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{x.id === role && <Check size={14} />}<kbd className="k">{ALT}{i + 1}</kbd></span>
           </button>
         ))}
@@ -333,8 +352,8 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
         </>
       )}
       <div className="vx-foot">
-        <span className="av" style={{ width: 22, height: 22, fontSize: 9, background: 'oklch(0.62 0.13 340)' }}>SH</span>
-        <span className="ell grow">{me.name}</span>
+        <Avatar size={22} />
+        <span className="ell grow">{VIEW.person.name}</span>
         <Popover align="left" width={264} trigger={({ toggle }) => (
           <Tip label="Appearance" kbd={ALT + 'E'} side="top"><button className="b ghost icon sm" onClick={toggle} aria-label="Appearance"><Palette size={15} /></button></Tip>
         )}>
@@ -347,13 +366,24 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
   )
 }
 
-function VxBar({ parts, role, openNav }) {
+/** Shown while previewing another role; one click back to Admin. */
+function ViewingAs({ look }) {
+  if (look.persona.id === 'admin') return null
+  return (
+    <Tip label={'Viewing as ' + look.persona.person.name + ' · back to Admin'}>
+      <button className="b sm vw-chip" onClick={() => look.setPrefs({ ...look.prefs, viewAs: 'admin' })}><Eye size={13} /><span className="m-hide">{look.persona.label}</span><X size={12} className="mute" /></button>
+    </Tip>
+  )
+}
+
+function VxBar({ parts, role, openNav, look }) {
   const meta = usePageMeta(parts, role)
   return (
     <header className="vx-bar">
       <div className="vx-bar-l"><button className="b ghost icon m-menu" onClick={openNav} aria-label="Menu"><MenuIcon size={18} /></button>{meta.detail && <a href={'#' + meta.to} className="vx-back">← {meta.title}</a>}</div>
       <div className="vx-bar-c ell">{meta.detail ? <span className={meta.plain ? '' : 'mono'}>{meta.detail}</span> : <>{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400, marginLeft: 8 }}>{meta.count}</span>}</>}</div>
       <div className="vx-bar-r">
+        <ViewingAs look={look} />
         {role === 'pod' && <button className="vx-create" onClick={openNewCampaign}><Plus size={15} /><span className="m-hide">Create New</span></button>}
       </div>
     </header>
@@ -385,89 +415,301 @@ function Notifications() {
   )
 }
 
-/* ───────── Sidebar ───────── */
-function Sidebar({ role, switchRole, path, look, open }) {
+/* ───────── Sidebar ─────────
+   Four shapes, picked in Settings › Preferences (prefs.sidebar). Same nav data, same footer controls.
+   panel   — logo, workspace switcher, pages (default)
+   rail    — workspace rail on the left, the workspace's pages beside it
+   icons   — 56px column, labels in tooltips (full labels again in the phone drawer)
+   stack   — every workspace in one list; the current one open, the others show their pending total
+   Navigation itself never animates: the active item is an instant fill. */
+function CollapseBtn({ look, side }) {
+  const c = look.prefs.collapsed
+  return (
+    <Tip label={c ? 'Expand sidebar' : 'Collapse sidebar'} kbd={MOD + 'B'} side={side}>
+      <button className="b ghost icon sm sb-col" onClick={() => look.setPrefs({ ...look.prefs, collapsed: !c })} aria-label={c ? 'Expand sidebar' : 'Collapse sidebar'}>
+        {c ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+      </button>
+    </Tip>
+  )
+}
+
+function ThemeToggle({ look, side }) {
   const { theme, setTheme } = look
+  return (
+    <Tip label={theme === 'light' ? 'Dark' : 'Light'} side={side}>
+      <button className="b ghost icon sm" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Toggle theme">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span key={theme} initial={{ opacity: 0, rotate: -60, scale: 0.7 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: 60, scale: 0.7 }} transition={{ duration: 0.22, ease: EASE }} style={{ display: 'grid' }}>
+            {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+          </motion.span>
+        </AnimatePresence>
+      </button>
+    </Tip>
+  )
+}
+
+function RoleMenu({ role, switchRole, close }) {
+  return (
+    <>
+      <div className="pop-h">Switch workspace</div>
+      {seen().map((x, i) => (
+        <button key={x.id} onClick={() => { close(); switchRole(x.id) }}>
+          <RoleIcon role={x.id} size={22} /> {x.label}
+          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
+            {x.id === role && <Check size={14} />}<kbd className="k">{ALT}{i + 1}</kbd>
+          </span>
+        </button>
+      ))}
+    </>
+  )
+}
+
+const initials = (n) => n.split(' ').map((p) => p[0]).join('').slice(0, 2)
+const Avatar = ({ size = 24 }) => <span className="av" style={{ width: size, height: size, fontSize: size > 22 ? 10 : 9, background: `oklch(0.62 0.13 ${VIEW.person.hue})` }}>{initials(VIEW.person.name)}</span>
+
+function AppearanceBtn({ look, side = 'top' }) {
+  return (
+    <Popover align="left" width={264} trigger={({ toggle }) => (
+      <Tip label="Appearance" kbd={ALT + 'E'} side={side}><button className="b ghost icon sm" onClick={toggle} aria-label="Appearance"><Palette size={15} /></button></Tip>
+    )}>
+      {(close) => <Appearance look={look} close={close} />}
+    </Popover>
+  )
+}
+const SettingsBtn = ({ path, side = 'top' }) => (
+  <Tip label="Settings" kbd={MOD + ','} side={side}><a className={'b ghost icon sm' + (path.startsWith('/settings') ? ' on' : '')} href="#/settings" aria-label="Settings"><Gear size={15} /></a></Tip>
+)
+
+/** Pages of one workspace. `tips` puts the label in a tooltip for the icon-only column. */
+function NavItems({ nav, active, tips }) {
+  return nav.map((n) => {
+    const on = active(n.to)
+    const a = (
+      <a key={n.to} href={'#' + n.to} className={'d-item' + (on ? ' on' : '')} title={tips ? undefined : n.label} aria-label={tips ? n.label : undefined}>
+        <n.icon size={16} strokeWidth={1.75} /> <span className="d-lbl">{n.label}</span>
+        {n.n ? <span className="n num"><Ticker value={n.n} /></span> : null}
+      </a>
+    )
+    return tips ? <Tip key={n.to} label={n.n ? `${n.label} · ${n.n}` : n.label} side="right">{a}</Tip> : a
+  })
+}
+
+function Pinned({ pinned, path, tips }) {
+  if (!pinned.length) return null
+  return (
+    <>
+      <div className="d-sec">Pinned</div>
+      {pinned.map((c) => {
+        const a = (
+          <a key={c.id} href={`#/pod/campaigns/${c.id}`} className={'d-item d-pin' + (path.includes(c.id) ? ' on' : '')} aria-label={tips ? c.client : undefined}>
+            <BrandLogo name={c.client} size={16} radius={4} /><span className="ell d-lbl">{c.client}</span>
+          </a>
+        )
+        return tips ? <Tip key={c.id} label={c.client} side="right">{a}</Tip> : a
+      })}
+    </>
+  )
+}
+
+/** ≤960px the sidebar is a drawer, so collapsing doesn't apply there. */
+function useNarrow() {
+  const q = '(max-width: 960px)'
+  const [n, setN] = useState(() => window.matchMedia?.(q).matches ?? false)
+  useEffect(() => { const m = window.matchMedia?.(q); if (!m) return; const on = (e) => setN(e.matches); m.addEventListener('change', on); return () => m.removeEventListener('change', on) }, [])
+  return n
+}
+
+/** Collapsed (⌘B) = the slim Icons column; collapsing the Icons shape itself hides the sidebar (the top bar brings it back). */
+function Sidebar(props) {
+  const kind = props.look.prefs.sidebar
+  const narrow = useNarrow()
+  if (props.look.prefs.collapsed && !narrow) return kind === 'icons' ? null : <IconSidebar {...props} />
+  if (kind === 'rail') return <RailSidebar {...props} />
+  if (kind === 'icons') return <IconSidebar {...props} />
+  if (kind === 'stack') return <StackSidebar {...props} />
+  return <PanelSidebar {...props} />
+}
+
+function useSide(role, path) {
   const s = useStore()
-  const nav = useNav(role, s)
-  const r = ROLES.find((x) => x.id === role)
-  const idx = ROLES.findIndex((x) => x.id === role)
-  const pinned = s.campaigns.filter((c) => c.pinned)
-  const active = (to) => path === to || (to !== '/home' && path.startsWith(to)) || (to === '/home' && (path === '/' || path === ''))
+  return {
+    s,
+    nav: useNav(role, s),
+    r: ROLES.find((x) => x.id === role),
+    idx: seen().findIndex((x) => x.id === role),
+    pinned: s.campaigns.filter((c) => c.pinned),
+    active: (to) => path === to || (to !== '/home' && path.startsWith(to)) || (to === '/home' && (path === '/' || path === '')),
+  }
+}
+
+function PanelSidebar({ role, switchRole, path, look, open }) {
+  const { nav, r, idx, pinned, active } = useSide(role, path)
   return (
     <aside className={'d-side' + (open ? ' open' : '')}>
       <div className="d-brand">
         <a href="#/home" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
-        <Tip label={theme === 'light' ? 'Dark' : 'Light'}>
-          <button className="b ghost icon sm" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} aria-label="Toggle theme">
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span key={theme} initial={{ opacity: 0, rotate: -60, scale: 0.7 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: 60, scale: 0.7 }} transition={{ duration: 0.22, ease: EASE }} style={{ display: 'grid' }}>
-                {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
-              </motion.span>
-            </AnimatePresence>
-          </button>
-        </Tip>
+        <span className="sb-tools"><ThemeToggle look={look} /><CollapseBtn look={look} /></span>
       </div>
 
-      <Popover align="left" width={216} trigger={({ toggle }) => (
-        <button className="d-role press" onClick={toggle}>
-          <RoleIcon role={r.id} />
-          <TextMorph>{r.label}</TextMorph>
-          <span className="d-role-k"><ChevronsUpDown size={13} /></span>
-        </button>
-      )}>
-        {(close) => (
-          <>
-            <div className="pop-h">Switch workspace</div>
-            {ROLES.map((x, i) => (
-              <button key={x.id} onClick={() => { close(); switchRole(x.id) }}>
-                <RoleIcon role={x.id} /> {x.label}
-                <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {x.id === role && <Check size={14} />}<kbd className="k">{ALT}{i + 1}</kbd>
-                </span>
-              </button>
-            ))}
-          </>
-        )}
-      </Popover>
+      {seen().length > 1 ? (
+        <Popover align="left" width={216} match trigger={({ toggle }) => (
+          <button className="d-role press" onClick={toggle}>
+            <RoleIcon role={r.id} size={22} />
+            <TextMorph>{r.label}</TextMorph>
+            <span className="d-role-k"><ChevronsUpDown size={13} /></span>
+          </button>
+        )}>
+          {(close) => <RoleMenu role={role} switchRole={switchRole} close={close} />}
+        </Popover>
+      ) : (
+        <div className="d-role"><RoleIcon role={r.id} size={22} />{r.label}</div> /* one workspace: nothing to switch */
+      )}
 
       <SlidePanel k={role} index={idx} className="d-nav-wrap">
-        <nav className="d-nav">
-          {nav.map((n) => {
-            const on = active(n.to)
-            return (
-              <a key={n.to} href={'#' + n.to} className={'d-item' + (on ? ' on' : '')} title={n.label}>
-                <n.icon size={16} strokeWidth={1.75} /> {n.label}
-                {n.n ? <span className="n num"><Ticker value={n.n} /></span> : null}
-              </a>
-            )
-          })}
-        </nav>
-        {role === 'pod' && (
-          <>
-            <div className="d-sec">Pinned</div>
-            {pinned.map((c) => (
-              <a key={c.id} href={`#/pod/campaigns/${c.id}`} className={'d-item d-pin' + (path.includes(c.id) ? ' on' : '')}>
-                <BrandLogo name={c.client} size={16} radius={4} /><span className="ell">{c.client}</span>
-              </a>
-            ))}
-          </>
-        )}
+        <nav className="d-nav"><NavItems nav={nav} active={active} /></nav>
+        {role === 'pod' && <Pinned pinned={pinned} path={path} />}
       </SlidePanel>
 
       <div className="d-side-f">
-        <span className="av" style={{ width: 24, height: 24, fontSize: 10, background: 'oklch(0.62 0.13 340)' }}>SH</span>
-        <span className="ell grow" style={{ fontWeight: 500 }}>{me.name}</span>
-        <Popover align="left" width={264} trigger={({ toggle }) => (
-          <Tip label="Appearance" kbd={ALT + 'E'} side="top"><button className="b ghost icon sm" onClick={toggle} aria-label="Appearance"><Palette size={15} /></button></Tip>
-        )}>
-          {(close) => <Appearance look={look} close={close} />}
-        </Popover>
-        <Tip label="Settings" kbd={MOD + ','} side="top"><a className={'b ghost icon sm' + (path.startsWith('/settings') ? ' on' : '')} href="#/settings" aria-label="Settings"><Gear size={15} /></a></Tip>
+        <Avatar />
+        <span className="ell grow" style={{ fontWeight: 500 }}>{VIEW.person.name}</span>
+        <AppearanceBtn look={look} />
+        <SettingsBtn path={path} />
       </div>
     </aside>
   )
 }
+
+/** A workspace on the rail: line icon + short label; the open one sits on a filled tile in its module colour. */
+function WsButton({ x, i, on, due, onClick }) {
+  const I = ROLE_ICON[x.id]
+  return (
+    <Tip label={x.label} kbd={ALT + (i + 1)} side="right">
+      <button className={'sb-ws' + (on ? ' on' : '')} style={{ '--rc': x.color }} onClick={onClick} aria-label={x.label} aria-current={on || undefined}>
+        <span className="sb-ws-t"><I size={18} strokeWidth={on ? 2 : 1.75} />{due > 0 && !on && <i className="sb-due" />}</span>
+        <span className="sb-ws-l">{x.label}</span>
+      </button>
+    </Tip>
+  )
+}
+
+/** Workspaces live on the rail, one click each; the panel only lists the current workspace's pages. */
+function RailSidebar({ role, switchRole, path, look, open }) {
+  const { s, nav, r, idx, pinned, active } = useSide(role, path)
+  return (
+    <aside className={'d-side sb-rail' + (open ? ' open' : '')}>
+      <div className="sb-railcol">
+        <a href="#/home" className="sb-mark" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        {seen().map((x, i) => {
+          const due = pendingOf(x.id, s)
+          return (
+            <WsButton key={x.id} x={x} i={i} on={x.id === role} due={due} onClick={() => switchRole(x.id)} />
+          )
+        })}
+        <div className="sb-railf">
+          <AppearanceBtn look={look} side="right" />
+          <SettingsBtn path={path} side="right" />
+          <Tip label={VIEW.person.name} side="right"><span className="sb-av"><Avatar size={24} /></span></Tip>
+        </div>
+      </div>
+      <div className="sb-panel">
+        <div className="sb-ph">
+          <span className="sb-pt"><TextMorph>{r.label}</TextMorph></span>
+          <span className="sb-tools"><ThemeToggle look={look} /><CollapseBtn look={look} /></span>
+        </div>
+        <SlidePanel k={role} index={idx} className="d-nav-wrap">
+          <nav className="d-nav"><NavItems nav={nav} active={active} /></nav>
+          {role === 'pod' && <Pinned pinned={pinned} path={path} />}
+        </SlidePanel>
+      </div>
+    </aside>
+  )
+}
+
+/** One slim column, top to bottom: logo · workspaces · pages · pinned · controls.
+    Workspaces are one click each (like the rail); every label lives in a tooltip, a dot marks a live count.
+    In the phone drawer the page labels come back (mobile.css). */
+function IconSidebar({ role, switchRole, path, look, open }) {
+  const { s, nav, pinned, active } = useSide(role, path)
+  return (
+    <aside className={'d-side sb-icons' + (open ? ' open' : '')}>
+      <a href="#/home" className="sb-mark" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+      <div className="sb-wsrow">
+        {seen().map((x, i) => {
+          const due = pendingOf(x.id, s)
+          return (
+            <WsButton key={x.id} x={x} i={i} on={x.id === role} due={due} onClick={() => switchRole(x.id)} />
+          )
+        })}
+      </div>
+      <i className="sb-hr" />
+      <nav className="d-nav"><NavItems nav={nav} active={active} tips /></nav>
+      {role === 'pod' && pinned.length > 0 && (
+        <>
+          <i className="sb-hr" />
+          {pinned.map((c) => (
+            <Tip key={c.id} label={c.client} side="right">
+              <a href={`#/pod/campaigns/${c.id}`} className={'d-item d-pin' + (path.includes(c.id) ? ' on' : '')} aria-label={c.client}>
+                <BrandLogo name={c.client} size={18} radius={5} /><span className="ell d-lbl">{c.client}</span>
+              </a>
+            </Tip>
+          ))}
+        </>
+      )}
+      <div className="sb-railf">
+        <CollapseBtn look={look} side="right" />
+        <ThemeToggle look={look} side="right" />
+        <AppearanceBtn look={look} side="right" />
+        <SettingsBtn path={path} side="right" />
+        <Tip label={VIEW.person.name} side="right"><span className="sb-av"><Avatar size={24} /></span></Tip>
+      </div>
+    </aside>
+  )
+}
+
+/** Every workspace at once: handoffs are visible without switching. Opening another workspace switches to it. */
+function StackSidebar({ role, switchRole, path, look, open }) {
+  const { s, nav, pinned, active } = useSide(role, path)
+  return (
+    <aside className={'d-side sb-stack' + (open ? ' open' : '')}>
+      <div className="d-brand">
+        <a href="#/home" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        <span className="sb-tools"><ThemeToggle look={look} /><CollapseBtn look={look} /></span>
+      </div>
+      <nav className="d-nav">
+        {seen().map((x, i) => {
+          const on = x.id === role
+          const due = pendingOf(x.id, s)
+          return (
+            <div key={x.id} className={'sb-ws-g' + (on ? ' on' : '')} style={{ '--rc': x.color }}>
+              <Tip label={on ? x.label : 'Switch to ' + x.label} kbd={ALT + (i + 1)} side="right">
+                <button className="sb-wsh" onClick={() => switchRole(x.id)} aria-expanded={on}>
+                  <RoleIcon role={x.id} size={24} /> <span className="grow ell">{x.label}</span>
+                  {!on && due > 0 && <span className="n num">{due}</span>}
+                </button>
+              </Tip>
+              {on && (
+                <div className="sb-sub">
+                  <div className="sb-tree"><NavItems nav={nav} active={active} /></div>
+                  {role === 'pod' && <Pinned pinned={pinned} path={path} />}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </nav>
+      <div className="d-side-f">
+        <Avatar />
+        <span className="ell grow" style={{ fontWeight: 500 }}>{VIEW.person.name}</span>
+        <AppearanceBtn look={look} />
+        <SettingsBtn path={path} />
+      </div>
+    </aside>
+  )
+}
+
+/** Sum of a workspace's live counts (approvals, invoices, payments, inbound…). */
+const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
 
 /* ───────── Top bar ───────── */
 const LABEL = { home: 'Today', pod: 'Pod', finance: 'Finance', bd: 'Sales', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Outreach', proposals: 'Proposals', inbound: 'Inbound', dashboard: 'Dashboard' }
@@ -509,13 +751,16 @@ function Crumb({ meta }) {
   )
 }
 
-function TopBar({ parts, role, setCmd, openNav }) {
+function TopBar({ parts, role, setCmd, openNav, look }) {
   const meta = usePageMeta(parts, role)
+  const hidden = look.prefs.collapsed && look.prefs.sidebar === 'icons'
   return (
     <header className="d-top">
+      {hidden && <Tip label="Show sidebar" kbd={MOD + 'B'}><button className="b ghost icon sb-show" onClick={() => look.setPrefs({ ...look.prefs, collapsed: false })} aria-label="Show sidebar"><PanelLeftOpen size={16} /></button></Tip>}
       <button className="b ghost icon m-menu" onClick={openNav} aria-label="Menu"><MenuIcon size={18} /></button>
       <Crumb meta={meta} />
       <div className="d-top-r">
+        <ViewingAs look={look} />
         <Tip label="Search" kbd={MOD + 'K'}><button className="b ghost icon" onClick={() => setCmd(true)} aria-label="Search"><Search size={16} /></button></Tip>
         <Notifications />
         {role === 'pod' && parts[0] !== 'settings' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={openNewCampaign} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
@@ -553,11 +798,11 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         )}
         <Command.Group heading="Actions">
           <Command.Item onSelect={run(openNewCampaign)}><Plus size={15} /> New campaign</Command.Item>
-          {ROLES.filter((r) => r.id !== role).map((r) => <Command.Item key={r.id} value={'switch ' + r.label} onSelect={run(() => switchRole(r.id))}><RoleIcon role={r.id} size={16} /> Switch to {r.label}</Command.Item>)}
+          {seen().filter((r) => r.id !== role).map((r) => <Command.Item key={r.id} value={'switch ' + r.label} onSelect={run(() => switchRole(r.id))}><RoleIcon role={r.id} size={20} /> Switch to {r.label}</Command.Item>)}
           <Command.Item onSelect={run(toggleTheme)}><Moon size={15} /> Toggle theme</Command.Item>
         </Command.Group>
         <Command.Group heading="Settings">
-          {SETTINGS_FLAT.map((x) => <Command.Item key={x.id} value={'settings ' + x.label} onSelect={run(() => go('/settings/' + x.id))}><x.icon size={15} /> {x.label}<span className="cmdk-meta">Settings</span></Command.Item>)}
+          {(VIEW.id === 'admin' ? SETTINGS_FLAT : SETTINGS_SECTIONS[0].items).map((x) => <Command.Item key={x.id} value={'settings ' + x.label} onSelect={run(() => go('/settings/' + x.id))}><x.icon size={15} /> {x.label}<span className="cmdk-meta">Settings</span></Command.Item>)}
         </Command.Group>
         <Command.Group heading="Experience">
           {EXPERIENCES.map((x) => <Command.Item key={x.id} value={'experience ' + x.label} onSelect={run(() => look.setExp(x.id))}><ExpGlyph id={x.id} /> {x.label}{look.exp === x.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}

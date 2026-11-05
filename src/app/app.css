@@ -41,10 +41,11 @@ html[data-variant='app'][data-theme='dark'] {
 .d-brand img { height: 30px; display: block; }
 .d-role { position: relative; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 10px; margin: 0 0 10px; border-radius: 10px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-1); font-weight: 600; width: 100%; text-align: left; }
 .d-role:hover { box-shadow: 0 0 0 1px var(--line-2), var(--shadow-1); }
-.role-ic { flex: none; display: inline-grid; place-items: center; border-radius: 5px; color: var(--rc); background: color-mix(in oklab, var(--rc) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--rc) 22%, transparent); transition: color 250ms ease, background 250ms ease; }
+/* Workspace icon: neutral grey tile, module colour only in the outline stroke (Lucide is outline-only; no fills, no ring) */
+.role-ic { flex: none; display: inline-grid; place-items: center; border-radius: 6px; color: var(--rc); background: color-mix(in oklab, var(--fg) 8%, transparent); transition: color 250ms ease, background 250ms ease; }
 .role-ic svg { display: block; }
 .role-ic { color: color-mix(in oklab, var(--rc) 72%, #000); }
-html[data-theme='dark'] .role-ic, html[data-style='ink'] .role-ic { color: var(--rc); background: color-mix(in oklab, var(--rc) 18%, transparent); }
+html[data-theme='dark'] .role-ic, html[data-style='ink'] .role-ic { color: var(--rc); background: color-mix(in oklab, var(--fg) 9%, transparent); }
 .d-role-dot { width: 8px; height: 8px; border-radius: 3px; flex: none; transition: background 250ms ease; }
 .d-role-k { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 11.5px; display: flex; align-items: center; gap: 2px; }
 .d-nav { display: flex; flex-direction: column; gap: 1px; }
@@ -230,3 +231,87 @@ html[data-theme='dark'] .bar .b { background: rgba(0,0,0,.08); }
 .split-l .li + .li::before { left: 10px; right: 10px; }
 .split-l .li:hover { background: var(--hover); }
 .split-l .li.sel { background: color-mix(in oklab, var(--fg) 7%, transparent); }
+
+/* ───────── Sidebar shapes (Settings › Preferences › Sidebar) ─────────
+   Default "panel" uses the rules above untouched. Selectors carry html[data-variant] so experience widths don't override them. */
+.sb-mark { display: grid; place-items: center; }
+
+/* Rail: a quiet column — logo tile, then workspaces as line icon + label. Muted until open;
+   the open workspace sits on a filled tile, its icon in the module colour with a light fill. One layer each. */
+html[data-variant='app'] .d-side.sb-rail { width: 268px; padding: 0; flex-direction: row; gap: 0; }
+.sb-railcol { width: 64px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0 12px; box-shadow: inset -1px 0 0 var(--line); }
+.sb-railcol .sb-mark, .sb-icons .sb-mark { height: 36px; margin-bottom: 6px; } /* logo stands on its own, no tile */
+html[data-variant='app'] .d-side .sb-mark img { height: 20px; display: block; }
+.sb-ws { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px; padding: 0; color: var(--muted); transition: transform 160ms var(--ease-out); }
+.sb-ws:active { transform: scale(.97); }
+.sb-ws-t { position: relative; width: 36px; height: 32px; border-radius: 10px; display: grid; place-items: center; transition: background 120ms, color 120ms; }
+.sb-ws-l { font-size: 10.5px; font-weight: 500; line-height: 1; letter-spacing: .01em; transition: color 120ms; }
+.sb-ws.on { color: var(--fg); }
+.sb-ws.on .sb-ws-t { background: color-mix(in oklab, var(--fg) 10%, transparent); color: var(--rc); }
+.sb-ws.on .sb-ws-t svg { fill: color-mix(in oklab, var(--rc) 22%, transparent); }
+.sb-ws.on .sb-ws-l { font-weight: 600; }
+html[data-theme='light']:not([data-style='ink']) .sb-ws.on .sb-ws-t { color: color-mix(in oklab, var(--rc) 72%, #000); }
+@media (hover: hover) and (pointer: fine) {
+  .sb-ws:not(.on):hover { color: var(--fg); }
+  .sb-ws:not(.on):hover .sb-ws-t { background: var(--hover); }
+}
+.sb-due { position: absolute; top: 4px; right: 6px; width: 7px; height: 7px; border-radius: 9px; background: var(--pink); box-shadow: 0 0 0 2px var(--bg); }
+.sb-railf { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sb-railf .av { margin-top: 4px; }
+.sb-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 14px 8px 10px; }
+.sb-ph { display: flex; align-items: center; justify-content: space-between; height: 36px; padding: 0 2px 0 10px; margin-bottom: 6px; }
+.sb-pt { font-weight: 650; font-size: 15px; letter-spacing: -0.01em; }
+.sb-pf { margin-top: auto; padding: 8px 10px 2px; color: var(--muted); font-size: 12px; }
+html[data-style='pop'] .sb-ws-t { border-radius: var(--pr); }
+
+/* Stacked: every workspace in one list; the open one shows its pages under a hairline guide */
+.sb-stack .tipw, .sb-icons .tipw { display: flex; }
+.sb-stack .d-nav { gap: 2px; }
+.sb-wsh { display: flex; align-items: center; gap: 10px; width: 100%; height: 34px; padding: 0 10px 0 6px; border-radius: 8px; font-weight: 600; color: var(--fg-2); text-align: left; transition: transform 160ms var(--ease-out); }
+.sb-wsh:hover { background: var(--hover); color: var(--fg); }
+.sb-ws-g.on .sb-wsh { color: var(--fg); }
+.sb-wsh .n { margin-left: auto; font-size: 11.5px; color: var(--muted); font-weight: 500; }
+.sb-ws-g + .sb-ws-g { margin-top: 2px; }
+.sb-sub { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 8px 18px; } /* trunk sits under the 24px workspace tile's centre */
+/* Stacked tree. The guide is an opaque mix (fg into bg) so joints never double up; 1px so it stays crisp.
+   One trunk from under the workspace icon, a soft elbow into each page; the current page's branch is a shade darker. */
+.sb-stack { --guide: color-mix(in oklab, var(--fg) 16%, var(--bg)); --guide-on: color-mix(in oklab, var(--fg) 58%, var(--bg)); }
+.sb-tree { display: flex; flex-direction: column; gap: 1px; padding-left: 14px; }
+/* Trunk (::after) and elbow (::before) are separate pieces. Unselected elbows stop 4px short of their row. */
+.sb-tree > .d-item::after { content: ''; position: absolute; left: -14px; top: -1px; bottom: -2px; border-left: 1px solid var(--guide); pointer-events: none; }
+.sb-tree > .d-item:first-child::after { top: -8px; }
+.sb-tree > .d-item:last-child::after { bottom: calc(50% + 6px); }
+.sb-tree > .d-item::before { content: ''; position: absolute; left: -14px; top: calc(50% - 7px); width: 10px; height: 7px; border-left: 1px solid var(--guide); border-bottom: 1px solid var(--guide); border-bottom-left-radius: 7px; pointer-events: none; }
+/* Selected page: the path lights up — trunk from the workspace icon, down to its elbow, into the row edge. */
+.sb-tree > .d-item:has(~ .d-item.on)::after { border-color: var(--guide-on); }
+.sb-tree > .d-item.on::before { z-index: 1; top: -1px; height: calc(50% + 1px); width: 14px; border-color: var(--guide-on); }
+.sb-tree > .d-item.on:first-child::before { top: -8px; height: calc(50% + 8px); }
+.sb-sub > .d-sec, .sb-sub > .d-pin { margin-left: 14px; width: calc(100% - 14px); }
+.sb-sub .d-sec { padding: 12px 10px 4px; }
+html[data-style='pop'] .sb-wsh { border-radius: var(--pr); }
+
+/* Icons: one 60px column — logo · workspaces · pages · pinned · controls. Labels in tooltips; a dot marks a live count. */
+.sb-hr { display: block; height: 1px; background: var(--line); margin: 8px 6px; flex: none; }
+.sb-wsrow { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.sb-av { display: grid; place-items: center; margin-top: 4px; }
+html[data-variant='app'] .d-side.sb-icons { width: 64px; padding: 14px 8px 12px; align-items: stretch; }
+.sb-icons .sb-mark { align-self: center; }
+.sb-icons .sb-railf { align-self: center; }
+@media (min-width: 961px) {
+  .sb-icons .d-lbl, .sb-icons .d-item .n { display: none; }
+  .sb-icons .d-item { justify-content: center; padding: 0; gap: 0; height: 36px; }
+  .sb-icons .d-item:has(.n)::after { content: ''; position: absolute; top: 7px; right: 7px; width: 5px; height: 5px; border-radius: 9px; background: var(--muted); }
+}
+.vw-chip { gap: 6px; margin-right: 4px; }
+.sb-tools { display: inline-flex; align-items: center; gap: 2px; }
+.sb-show { margin-left: -6px; margin-right: 2px; }
+
+/* Stacked workspace tiles: neutral grey tile, clean outline icon. Lucide is outline-only and CSS fills break on
+   open paths (wallet, handshake), so colour comes from the stroke: module colour when open, muted otherwise. */
+html[data-variant='app'] .sb-ws-g:not(.on) .sb-wsh .role-ic { background: color-mix(in oklab, var(--fg) 5%, transparent); color: var(--muted); }
+@media (hover: hover) and (pointer: fine) { html[data-variant='app'] .sb-ws-g:not(.on) .sb-wsh:hover .role-ic { color: var(--fg); } }
+
+/* Workspace switcher: one inset (--g) on every side of the 22px icon tile, and the outer corner is the
+   tile's radius + that inset, so the two curves run parallel (concentric). Optically even, not just numerically. */
+html[data-variant='app'] .d-side .d-role { --g: 6px; height: calc(22px + 2 * var(--g)); padding: 0 10px 0 var(--g); gap: 10px; }
+html[data-variant='app']:not([data-style='pop']) .d-side .d-role { border-radius: calc(6px + var(--g)); }

@@ -301,3 +301,4 @@ export { Plus }
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
 export const ALT = IS_MAC ? '⌥' : 'Alt+'
 export const MOD = IS_MAC ? '⌘' : 'Ctrl+'
+export const MOD_SHIFT = IS_MAC ? '⇧⌘' : 'Ctrl+Shift+'

@@ -7,6 +7,7 @@ import { trackerFor, monthly, MONTHS, me, fmt, TODAY, STAGE_FULL, bdMonthly } fr
 import { Ticker, ConfirmButton, Tip, EASE } from '../../shared/motion'
 import { Sparkline } from '../../shared/ui'
 import { Seg, Track, go, ClientLogo } from '../ui'
+import { view, canLeadApprove } from '../personas'
 
 const TONE = { link: 'g', invoice: 'v', stalled: 'y', pay: 'v', req: 'p', tally: 'p', inbound: 'y', pitch: 'g', nudge: 'y' }
 const ICON = { link: Link2, invoice: Receipt, stalled: Hourglass, pay: Banknote, req: FileSignature, tally: RefreshCcw, inbound: MailOpen, pitch: CalendarClock, nudge: Send }
@@ -24,7 +25,7 @@ export default function Home({ role }) {
         const n = trackerFor(c).filter((r) => r.status === 'review').length
         if (n) out.push({ id: 'l' + c.id, kind: 'link', title: `${n} links to review`, ctx: c.name, at: c.updated, act: { label: 'Review', to: `/pod/campaigns/${c.id}/tracker` } })
       })
-      s.invoices.filter((x) => x.stage === 'lead').forEach((x) => out.push({ id: 'i' + x.id, kind: 'invoice', title: x.vendor.name, ctx: x.campaign, amount: x.amount, at: x.submitted, approve: () => s.advanceInvoice(x.id) }))
+      if (canLeadApprove()) s.invoices.filter((x) => x.stage === 'lead').forEach((x) => out.push({ id: 'i' + x.id, kind: 'invoice', title: x.vendor.name, ctx: x.campaign, amount: x.amount, at: x.submitted, approve: () => s.advanceInvoice(x.id) }))
       s.campaigns.filter((c) => c.stage < 4 && (TODAY - c.updated) / 864e5 > 2).slice(0, 4).forEach((c) => out.push({ id: 's' + c.id, kind: 'stalled', title: `In ${STAGE_FULL[c.stage]}`, ctx: c.name, at: c.updated, act: { label: 'Open', to: `/pod/campaigns/${c.id}` } }))
     } else if (role === 'finance') {
       s.invoices.filter((x) => x.stage === 'finance').forEach((x) => out.push({ id: 'i' + x.id, kind: 'invoice', title: x.vendor.name, ctx: x.campaign, amount: x.amount, at: x.submitted, approve: () => s.advanceInvoice(x.id) }))
@@ -40,7 +41,7 @@ export default function Home({ role }) {
     // Decisions first (approve/pay/retry), then things to open.
     const weight = (x) => (x.approve || x.retry ? 0 : x.kind === 'pay' || x.kind === 'req' || x.kind === 'inbound' ? 1 : 2)
     return out.sort((a, b) => weight(a) - weight(b))
-  }, [role, s])
+  }, [role, s, view().id]) // eslint-disable-line
 
   const visible = items.filter((x) => !done.has(x.id))
   const kinds = [...new Set(items.map((x) => x.kind))]
@@ -52,7 +53,7 @@ export default function Home({ role }) {
       <div className="home-grid">
         <section>
           <div className="d-head">
-            <h1 className="d-h1 keep">Morning, {me.short}</h1>
+            <h1 className="d-h1 keep">Morning, {view().person.short}</h1>
           </div>
           <div style={{ marginBottom: 8 }}>
             <Seg id="home" value={filter} onChange={setFilter} options={[{ value: 'all', label: 'All', count: visible.length }, ...kinds.map((k) => ({ value: k, label: kindLabel[k], count: visible.filter((x) => x.kind === k).length }))]} />

@@ -157,3 +157,8 @@ html[data-motion='reduced'] :not(.spin, .shimmer, .mv-track > i) { animation-dur
   *, *::before, *::after { transition-property: opacity, color, background-color, border-color, box-shadow, visibility !important; }
   :not(.spin, .shimmer, .mv-track > i) { animation-duration: 0s !important; }
 }
+/* Profile › Access: chips preview that role (View as). Selected = ring, others a soft fill — one layer each. */
+.st-acc-b { cursor: pointer; transition: background 120ms, box-shadow 120ms, transform 160ms var(--ease-out); }
+.st-acc-b:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { .st-acc-b:hover { background: var(--hover); } }
+.st-acc-b.on { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fg); color: var(--fg); }

@@ -73,7 +73,7 @@ There are two independent axes. Both are switched from the Appearance menu (the 
   - **Pop is tunable** (`src/app/popTune.jsx`, `html[data-pop-tone|btn|font|corner]`): tone (sand/sage/haze/clay, each owns one logo colour as its CTA), buttons (lip/flat/soft/pill), type (plex/geist/manrope/bricolage), corners (4/6/10/14). Presets Sand/Sage/Haze/Clay = named combos; ⌥P cycles them; URL `?style=pop&tone=…&btn=…&font=…&corner=…`. In Pop CSS use `var(--pr|--pr-s|--pr-l)` for radii and `var(--hl)` for accents, never hard values.
 - **View engine** (`src/app/views.jsx`):
   - Five layouts: list, board (drag to change stage, pod or lead), table, timeline and grid.
-  - Display popover: grouping, ordering, show completed, timeline zoom, property chips. ⌘B flips list ⇄ board.
+  - Display popover: grouping, ordering, show completed, timeline zoom, property chips. ⇧⌘B flips list ⇄ board (⌘B collapses the sidebar; Settings › Preferences › Sidebar picks Panel · Rail · Icons · Stacked; Settings › Preferences › View as previews each role).
   - Each experience has its own defaults, persisted per experience.
   - Use this engine for any new record collection rather than writing bespoke lists.
 - A new component must look right in every experience × style combination.

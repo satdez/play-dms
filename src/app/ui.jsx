@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Check, ChevronDown, Megaphone, Wallet, Handshake } from 'lucide-react'
+import { Check, ChevronDown, Rocket, Wallet, Handshake } from 'lucide-react'
 import { SERVICES, STAGES, STAGE_FULL, MISC_CHAIN, LINK_CHAIN, CHAIN_LABEL, BRAND, ROLES } from './data'
 const ROLES_BY_ID = Object.fromEntries(ROLES.map((r) => [r.id, r]))
 import { Tip, EASE } from '../shared/motion'
@@ -77,7 +77,8 @@ export function ClientLogo({ name, industry, size }) {
 /** Popover anchored to its trigger, scaling from the trigger's corner.
     Portalled + fixed so scroll containers (tables, boards) never clip it.
     Flips upward when there isn't room below; origin follows the side. */
-export function Popover({ trigger, children, align = 'right', width, side: forced, className = '' }) {
+/** `match` sizes the popover to its trigger's width (e.g. the workspace switcher). */
+export function Popover({ trigger, children, align = 'right', width, match, side: forced, className = '' }) {
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState(null)
   const ref = useRef(null)
@@ -88,7 +89,8 @@ export function Popover({ trigger, children, align = 'right', width, side: force
     const p = { side }
     if (side === 'top') p.bottom = window.innerHeight - r.top + 6
     else p.top = r.bottom + 6
-    const w = Math.min(width || 0, window.innerWidth - 16)
+    if (match) p.w = r.width
+    const w = Math.min(p.w || width || 0, window.innerWidth - 16)
     if (align === 'left') p.left = Math.max(8, Math.min(r.left, window.innerWidth - 8 - w))
     else p.right = Math.max(8, Math.min(window.innerWidth - r.right, window.innerWidth - 8 - w))
     if (window.innerWidth <= 960) p.maxH = side === 'top' ? r.top - 14 : window.innerHeight - r.bottom - 14 // phones only
@@ -120,7 +122,7 @@ export function Popover({ trigger, children, align = 'right', width, side: force
         <AnimatePresence>
           {open && pos && (
             <motion.div ref={popRef} className={'pop ' + className} onClick={(e) => e.stopPropagation()}
-              style={{ position: 'fixed', top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right, width, maxWidth: 'calc(100vw - 16px)', maxHeight: pos.maxH, overflowY: pos.maxH ? 'auto' : undefined, transformOrigin: `${pos.side === 'top' ? 'bottom' : 'top'} ${align}` }}
+              style={{ position: 'fixed', top: pos.top, bottom: pos.bottom, left: pos.left, right: pos.right, width: pos.w || width, maxWidth: 'calc(100vw - 16px)', maxHeight: pos.maxH, overflowY: pos.maxH ? 'auto' : undefined, transformOrigin: `${pos.side === 'top' ? 'bottom' : 'top'} ${align}` }}
               initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.1 } }} transition={{ duration: 0.15, ease: EASE }}>
               {children(() => setOpen(false))}
             </motion.div>
@@ -161,7 +163,8 @@ export const Switch = ({ on, onChange, label }) => (
 export const ModuleDot = ({ color, size = 8 }) => <span style={{ width: size, height: size, borderRadius: 3, background: color, flex: 'none', display: 'inline-block' }} />
 
 /** Workspace mark: role-coloured glyph on a soft tile of the same colour. */
-const ROLE_ICON = { pod: Megaphone, finance: Wallet, bd: Handshake }
+/** Workspace icons. Pod is a Rocket (it launches campaigns) so it never repeats the Campaigns page's Megaphone. */
+export const ROLE_ICON = { pod: Rocket, finance: Wallet, bd: Handshake }
 export const RoleIcon = ({ role, size = 18 }) => {
   const r = ROLES_BY_ID[role]
   const I = ROLE_ICON[role]

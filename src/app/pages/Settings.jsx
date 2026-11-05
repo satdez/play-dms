@@ -8,11 +8,12 @@ import {
   Search, Plus, MoreHorizontal, Laptop, Smartphone, Check, Lock, LogOut, ArrowRight, Crown, PackageCheck, Archive, UserCog,
   Upload, Info, ChevronRight, Monitor, Sun, Moon, ChevronDown, ChevronsUpDown,
 } from 'lucide-react'
-import { Tip, ALT, MOD, EASE, ConfirmButton } from '../../shared/motion'
+import { Tip, ALT, MOD, MOD_SHIFT, EASE, ConfirmButton } from '../../shared/motion'
 import { BrandLogo } from '../../shared/brands'
 import { Seg, Tabs, Select, Switch, Popover, RoleIcon } from '../ui'
 import { team, me, PODS, BRAND, campaigns, fmt, TODAY } from '../data'
 import { PopTuner, THEMES, themeActive } from '../popTune'
+import { PERSONAS } from '../personas'
 
 /* ───────── sections ───────── */
 export const SETTINGS_SECTIONS = [
@@ -139,13 +140,14 @@ const SEED_MEMBERS = [...team.map((t) => [t.name, t.role, t.hue]), ...EXTRA.map(
 
 /* ═════════════════════ page ═════════════════════ */
 export default function Settings({ section, look }) {
-  const cur = SETTINGS_FLAT.find((s) => s.id === section) ? section : 'profile'
+  const sections = look.persona.id === 'admin' ? SETTINGS_SECTIONS : SETTINGS_SECTIONS.slice(0, 1) // Workspace settings are admin-only
+  const cur = sections.some((g) => g.items.some((s) => s.id === section)) ? section : 'profile'
   const [members, setMembers] = useStored('members-v1', null)
   const list = useMemo(() => (members || SEED_MEMBERS).map((m) => ({ ...m, seen: new Date(m.seen) })), [members])
   const setList = (fn) => setMembers(fn(list))
   const wide = ['members', 'access', 'notifications', 'audit'].includes(cur)
   const body = {
-    profile: <Profile members={list} />,
+    profile: <Profile members={list} look={look} />,
     preferences: <Preferences look={look} />,
     notifications: <Notifications />,
     shortcuts: <Shortcuts />,
@@ -165,7 +167,7 @@ export default function Settings({ section, look }) {
       <Popover align="left" width={Math.min(320, window.innerWidth - 32)} className="st-pick-pop" trigger={({ toggle }) => (
         <button className="st-pick press" onClick={toggle}><curItem.icon size={16} /><span className="grow">{curItem.label}</span><ChevronsUpDown size={14} className="mute" /></button>
       )}>
-        {(close) => SETTINGS_SECTIONS.map((g) => (
+        {(close) => sections.map((g) => (
           <div key={g.group}>
             <div className="pop-h">{g.group}</div>
             {g.items.map((s) => (
@@ -178,7 +180,7 @@ export default function Settings({ section, look }) {
       </Popover>
       </div>
       <nav className="st-nav" aria-label="Settings">
-        {SETTINGS_SECTIONS.map((g) => (
+        {sections.map((g) => (
           <div key={g.group} className="st-nav-g">
             <div className="st-nav-h">{g.group}</div>
             {g.items.map((s) => (
@@ -196,7 +198,10 @@ export default function Settings({ section, look }) {
 }
 
 /* ───────── Profile ───────── */
-function Profile({ members }) {
+/** Access chip → the View-as persona it previews. Procurement, Inventory and HR have no workspace here yet. */
+const ACCESS_VIEW = { admin: 'admin', pod: 'pod', finance: 'finance', bd: 'sales' }
+
+function Profile({ members, look }) {
   const m = members.find((x) => x.me) || members[0]
   const [p, setP] = useStored('profile', { name: me.name, display: me.short, phone: '+91 98450 21734', title: me.role })
   const commit = (k) => (v) => { setP({ ...p, [k]: v }); saved('Profile') }
@@ -221,7 +226,20 @@ function Profile({ members }) {
       </Group>
       <Group title="Team">
         <Row label="Pod" tip="Changed by HR"><span className="chip">{m.pod || '—'}</span></Row>
-        <Row label="Access" tip="Changed by HR"><span className="st-chips">{m.access.map((a) => <AccessChip key={a} id={a} />)}</span></Row>
+        <Row label="Access" tip="Changed by HR · click one to preview the DMS as that role">
+          <span className="st-chips">
+            {m.access.map((a) => {
+              const v = ACCESS_VIEW[a]
+              if (!v) return <AccessChip key={a} id={a} />
+              const on = look.prefs.viewAs === v
+              return (
+                <button key={a} className={'chip st-acc st-acc-b' + (on ? ' on' : '')} aria-pressed={on} onClick={() => look.setPrefs({ ...look.prefs, viewAs: v })}>
+                  {ACCESS_BY[a].module ? <RoleIcon role={a} size={14} /> : <Crown size={12} />}{ACCESS_BY[a].label}
+                </button>
+              )
+            })}
+          </span>
+        </Row>
         <Row label="Joined"><span className="fg2 num">12 Mar 2023</span></Row>
       </Group>
     </>
@@ -260,6 +278,7 @@ function FontSelect({ value, onChange }) {
   )
 }
 const MODES = [['light', 'Light', Sun], ['dark', 'Dark', Moon], ['system', 'System', Monitor]]
+const SIDEBARS = [{ value: 'panel', label: 'Panel' }, { value: 'rail', label: 'Rail' }, { value: 'icons', label: 'Icons' }, { value: 'stack', label: 'Stacked' }]
 const ACCENTS = ['#f2bd2f', '#2fa866', '#8e4fd0', '#d6395e', '#2f5fd0', '#e0621b', '#0e8a85', '#18181b']
 
 function Preferences({ look }) {
@@ -272,6 +291,10 @@ function Preferences({ look }) {
   }
   return (
     <>
+      <Group title="Preview">
+        <Row label="View as" tip="See the DMS the way each role sees it: their workspaces, pages and settings"><Select value={prefs.viewAs} onChange={set('viewAs')} options={PERSONAS} width={200} /></Row>
+      </Group>
+
       <Group title="Appearance">
         <Row label="Font" tip="Theme default follows the theme's own type"><FontSelect value={prefs.font} onChange={set('font')} /></Row>
         <Row label="Mode" stack>
@@ -282,6 +305,7 @@ function Preferences({ look }) {
           </div>
         </Row>
         <Row label="Experience" tip={'Shell and navigation model · ' + ALT + 'E'}><Seg id="st-exp" value={exp} onChange={setExp} options={exps.map((x) => ({ value: x.id, label: x.label }))} /></Row>
+        {exp !== 'vercel' && <Row label="Sidebar" tip="Panel · Rail: workspaces on a rail · Icons: collapsed · Stacked: every workspace in one list"><Seg id="st-sidebar" value={prefs.sidebar} onChange={set('sidebar')} options={SIDEBARS} /></Row>}
         <Row label="Density"><Seg id="st-density" value={prefs.density} onChange={set('density')} options={[{ value: 'comfortable', label: 'Comfortable' }, { value: 'compact', label: 'Compact' }]} /></Row>
         <Row label="Motion" tip="Reduced turns off slides, morphs and springs"><Seg id="st-motion" value={prefs.motion} onChange={set('motion')} options={[{ value: 'full', label: 'Full' }, { value: 'reduced', label: 'Reduced' }]} /></Row>
       </Group>
@@ -423,9 +447,9 @@ function Notifications() {
 const K = ({ k }) => <span className="st-keys">{k.split(' ').map((x, i) => <kbd key={i} className="k">{x}</kbd>)}</span>
 function Shortcuts() {
   const groups = [
-    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to Sales', ALT + '3']]],
+    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to Sales', ALT + '3']]],
     ['Look', [['Cycle experience', ALT + 'E'], ['Cycle style', ALT + 'S'], ['Cycle Pop presets', ALT + 'P']]],
-    ['Lists & boards', [['New campaign', 'C'], ['List ⇄ board', MOD + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
+    ['Lists & boards', [['New campaign', 'C'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
     ['Vercel experience', [['Find', 'F']]],
   ]
   return groups.map(([g, items]) => (
