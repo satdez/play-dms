@@ -1,0 +1,7 @@
+/* WLDD wordmark loader: traced letter faces, black outline, black down-right extrusion. */
+html[data-variant='app'] { --wl-ink: #141414; }
+html[data-variant='app'][data-theme='dark'] { --wl-ink: #000; }
+
+.wl { display: block; overflow: visible; flex: none; }
+.wl-ink { fill: var(--wl-ink); stroke: var(--wl-ink); }
+.wl-face { stroke: var(--wl-ink); }

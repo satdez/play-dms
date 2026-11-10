@@ -133,3 +133,162 @@ button.flag:active { transform: scale(.92); }
   .home-grid, .ov { grid-template-columns: 1fr; gap: 24px; } .home-side { padding-top: 0; }
   .board { grid-template-columns: repeat(2, 1fr); } .kv-grid { grid-template-columns: 1fr 1fr; } .funnels { grid-template-columns: 1fr; }
 }
+
+/* ───────── Home (hub): KPIs per workspace + chat ───────── */
+.d-hubnav { margin-bottom: 6px; }
+.hub-ic { color: var(--fg); }
+.sb-hub + .sb-ws-g { margin-top: 6px; }
+.d-page.hub { max-width: 960px; min-height: 100%; display: flex; flex-direction: column; padding-bottom: 0; }
+.hub-kpis { display: flex; flex-direction: column; gap: 22px; }
+.hub-mod-h { display: inline-flex; align-items: center; gap: 8px; height: 28px; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--fg); }
+.hub-go { color: var(--muted); opacity: 0; transition: opacity 120ms; }
+.hub-mod-h:hover .hub-go, .hub-mod-h:focus-visible .hub-go { opacity: 1; }
+.metrics.hub-m { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.metrics.hub-m > .hub-kw { position: relative; min-width: 0; }
+.metrics.hub-m > .hub-kw + .hub-kw .hub-k { box-shadow: -1px 0 0 var(--line); }
+.hub-k { width: 100%; height: 100%; text-align: left; padding: 14px 16px; cursor: pointer; transition: background 120ms; }
+.hub-k:hover { background: var(--hover); }
+.hub-k:active { background: color-mix(in oklab, var(--fg) 6%, transparent); }
+.hub-kv { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; color: var(--muted); }
+.hub-k .metric-v { font-size: 22px; color: var(--fg); }
+
+.hub-thread { flex: 1; display: flex; flex-direction: column; gap: 22px; padding: 32px 0 8px; }
+.hub-msg.me { align-self: flex-end; max-width: 72%; }
+.hub-me { padding: 8px 13px; border-radius: 14px; background: color-mix(in oklab, var(--fg) 6.5%, transparent); white-space: pre-wrap; overflow-wrap: anywhere; }
+.hub-a { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.hub-a > p { margin: 0; }
+.hub-a .hub-list { align-self: stretch; }
+.hub-src { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.hub-stat { display: flex; align-items: flex-end; gap: 18px; color: var(--muted); }
+.hub-stat .metric-v { color: var(--fg); }
+.hub-lock { display: inline-flex; align-items: center; gap: 7px; }
+.hub-lock svg { color: var(--muted); }
+.hub-more { gap: 4px; }
+.hub-sum { display: flex; flex-direction: column; align-self: stretch; }
+.hub-sum-r { display: flex; align-items: center; gap: 20px; min-height: 40px; }
+.hub-sum-r + .hub-sum-r { border-top: 1px solid var(--line); }
+.hub-sum-m { display: inline-flex; align-items: center; gap: 8px; width: 110px; font-weight: 600; flex: none; }
+.hub-sum-k b { font-weight: 600; }
+.hub-think { display: inline-flex; height: 26px; align-items: center; }
+.hub-dots { display: inline-flex; gap: 4px; height: 22px; align-items: center; }
+.hub-dots i { width: 5px; height: 5px; border-radius: 9px; background: var(--muted); animation: hub-dot 1s ease-in-out infinite; }
+.hub-dots i:nth-child(2) { animation-delay: .15s; } .hub-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes hub-dot { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+html[data-motion='reduced'] .hub-dots i { animation: none; opacity: .6; }
+
+.hub-dock { position: sticky; bottom: 0; padding: 12px 0 20px; background: linear-gradient(to bottom, transparent, var(--surface) 22px); z-index: 4; }
+.hub-sug { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.hub-sug.in { margin: 0; }
+/* Concentric: the icon tile sits in an even --g inset (top, bottom, left), so outer radius = inner radius + --g. */
+html[data-variant='app'] .hub-sug .hub-chip { --g: 6px; --ri: 4px; --t: 16px; height: calc(var(--t) + 2 * var(--g)); padding: 0 10px 0 var(--g); gap: 7px; border-radius: calc(var(--ri) + var(--g)); font-size: 12.5px; cursor: pointer; transition: background 120ms, color 120ms; }
+html[data-variant='app'][data-style='pop'] .hub-sug .hub-chip { --ri: max(2px, calc(var(--pr) - var(--g))); }
+html[data-variant='app'][data-style='pop'][data-pop-btn='pill'] .hub-sug .hub-chip { --ri: calc(var(--t) / 2); }
+html[data-variant='app'] .hub-sug .hub-chip .role-ic { width: var(--t) !important; height: var(--t) !important; border-radius: var(--ri); }
+.hub-chip:hover { color: var(--fg); background: color-mix(in oklab, var(--fg) 10%, transparent); }
+.hub-box { --g: 7px; --ro: 16px; display: flex; align-items: flex-end; gap: 8px; padding: var(--g) var(--g) var(--g) 14px; border-radius: var(--ro); background: var(--surface); box-shadow: 0 0 0 1px var(--line-2), 0 6px 20px -12px rgba(0,0,0,.25); transition: box-shadow 150ms var(--ease-out); cursor: text; }
+.hub-box:focus-within { box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 22%, transparent), 0 6px 20px -12px rgba(0,0,0,.25); }
+html[data-variant='app'] .hub-box textarea:focus-visible { outline: none; }
+.hub-box textarea { flex: 1; min-width: 0; border: 0; outline: 0; box-shadow: none; resize: none; background: none; color: var(--fg); font: inherit; line-height: 22px; padding: 5px 0; max-height: 160px; caret-color: var(--fg); }
+.hub-box textarea::placeholder { color: var(--muted); }
+html[data-variant='app'] .hub-box .hub-send { width: 32px; height: 32px; padding: 0; border-radius: calc(var(--ro) - var(--g)); flex: none; } /* concentric with the box */
+.hub-send:disabled { opacity: 1; cursor: default; background: color-mix(in oklab, var(--fg) 7%, transparent); color: var(--faint); box-shadow: none; }
+.d-hubnav .tipw { display: flex; }
+.sb-ws-g.sb-hub.on .sb-wsh { background: color-mix(in oklab, var(--fg) 7%, transparent); }
+
+/* Stacked: scrolling middle, shared Pinned, and the open workspace resting while on Home */
+.sb-stack .sb-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; margin: 0 -10px; padding: 0 10px; scrollbar-width: none; }
+.sb-stack .sb-scroll::-webkit-scrollbar { display: none; }
+.sb-stack .sb-pins { margin-top: auto; display: flex; flex-direction: column; gap: 1px; padding-top: 10px; padding-bottom: 10px; }
+.sb-stack .sb-pins .d-sec { padding: 12px 10px 4px; }
+.sb-stack .sb-pins .d-pin { gap: 10px; padding-left: 10px; }
+.sb-ws-g.on.rest .sb-wsh { color: var(--fg-2); }
+html[data-variant='app'] .sb-ws-g.on.rest .sb-wsh .role-ic { background: color-mix(in oklab, var(--fg) 5%, transparent); color: var(--muted); }
+.sb-ws-g.on.rest .sb-sub { --guide-on: var(--guide); }
+.sb-ws-g.on.rest .sb-tree .d-item { color: var(--muted); }
+.sb-ws-g.on.rest .sb-tree .d-item:hover { color: var(--fg); }
+
+/* ───────── Home chat: bar (title · New · History) and the history popover ───────── */
+.hub-bar { --bar-bg: var(--surface); position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 4px; min-height: 44px; padding: 6px 0; background: linear-gradient(to bottom, var(--bar-bg) calc(100% - 12px), transparent); }
+.l-dock .hub-bar { --bar-bg: color-mix(in oklab, var(--sunken) 35%, var(--surface)); margin-top: -14px; padding-top: 14px; }
+.l-split .hub-bar { margin-top: -16px; padding-top: 16px; }
+.hub-bar .b:disabled { opacity: .4; cursor: default; background: none; }
+.l-stack .hub-bar { margin-top: 28px; border-top: 1px solid var(--line); }
+.hub-bar-t { flex: 1; min-width: 0; font-weight: 600; font-size: 13px; color: var(--fg); }
+.hub-bar .b { gap: 6px; color: var(--fg-2); }
+.hub-bar .b .num { font-size: 11.5px; }
+.hub-bar + .hub-thread { padding-top: 18px; }
+.hub-hist { display: flex; flex-direction: column; max-height: min(440px, 70vh); }
+.hub-hist-f { margin: 6px; flex: none; }
+.hub-hist-l { overflow-y: auto; padding: 0 4px 4px; }
+.hub-hist-r { position: relative; display: flex; align-items: center; border-radius: 7px; }
+.hub-hist-r:hover, .hub-hist-r.on { background: var(--hover); }
+.pop .hub-hist-o { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; background: none; text-align: left; }
+.pop .hub-hist-o:hover { background: none; }
+.pop .hub-hist-x { flex: none; width: 26px; height: 26px; margin-right: 3px; opacity: 0; transition: opacity 120ms; }
+.hub-hist-r:hover .hub-hist-x, .pop .hub-hist-x:focus-visible { opacity: 1; }
+@media (hover: none) { .pop .hub-hist-x { opacity: 1; } }
+.hub-hist-e { padding: 24px 0; }
+
+/* ───────── Home layouts ───────── */
+/* Two-column layouts own the full height; each column scrolls on its own. */
+.hub.l-split, .hub.l-dock { height: 100%; display: grid; min-height: 0; }
+.hub.l-split { grid-template-columns: minmax(0, 1fr) 320px; }
+.hub.l-dock { grid-template-columns: minmax(0, 1fr) 400px; }
+.hub-col { min-height: 0; overflow-y: auto; }
+.hub-chatcol { display: flex; flex-direction: column; padding: 16px 32px 0; }
+.l-split .hub-chatcol { width: 100%; max-width: 820px; min-height: 100%; margin: 0 auto; }
+.hub-chatcol .hub-thread { flex: 1; }
+.hub-rail { border-left: 1px solid var(--line); padding: 20px 20px 32px; }
+.l-dock .hub-board { padding: 20px 32px 48px; }
+.l-dock .hub-chatcol { border-left: 1px solid var(--line); padding: 14px 20px 0; background: color-mix(in oklab, var(--sunken) 35%, var(--surface)); }
+.l-dock .hub-dock { background: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--sunken) 35%, var(--surface)) 22px); }
+.l-dock .hub-msg.me { max-width: 88%; }
+.hub-hello { flex: 1; display: flex; align-items: flex-end; padding-bottom: 16px; }
+.hub-hello-t { font-weight: 600; color: var(--muted); }
+
+/* rows: the slim KPI column */
+.hub-rows { display: flex; flex-direction: column; gap: 22px; }
+.hub-rows .hub-mod-h { margin-bottom: 2px; }
+.hub-row { min-height: 36px; gap: 10px; font-size: 13px; }
+.hub-row-s { color: var(--muted); display: inline-flex; }
+
+/* focus: chat first */
+.d-page.hub.l-focus { max-width: 760px; min-height: 100%; display: flex; flex-direction: column; padding-bottom: 24px; }
+.hub-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 0 0 14vh; }
+.hub-hero .d-h1 + .hub-dock { margin-top: 10px; }
+.hub-hero .d-h1 { text-align: center; font-size: 26px; letter-spacing: -0.03em; margin: 0; }
+.hub-hero .hub-dock { position: static; background: none; padding: 0; display: flex; flex-direction: column-reverse; gap: 12px; }
+.hub-hero .hub-sug { margin: 0; justify-content: center; }
+.hub-strip { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 8px; }
+.hub-sw { position: relative; min-width: 0; }
+.hub-sw > .tipw:first-child { display: block; }
+.hub-sw > .tipw:last-child { position: absolute; top: 0; right: 0; }
+.hub-sw:hover .hub-kgo { opacity: 1; }
+.hub-strip-top .hub-kgo { top: 5px; right: 5px; }
+.hub-st { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 12px; border-radius: 12px; text-align: left; box-shadow: inset 0 0 0 1px var(--line); transition: background 120ms; }
+.hub-st:hover { background: var(--hover); }
+.hub-st-l { display: inline-flex; align-items: center; gap: 6px; }
+.hub-st-v { font-family: var(--display); font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+/* .inp draws its own focus ring; the field inside must not add a second one. */
+html[data-variant='app'] .inp input:focus-visible, html[data-variant='app'] .inp textarea:focus-visible { outline: none; }
+
+/* Tile → preview: the shown tile stays filled; ↗ opens its page */
+.hub-kw.on .hub-k, .hub-st.on, .hub-row.on { background: color-mix(in oklab, var(--fg) 7%, transparent); }
+.hub-kw.on .metric-l, .hub-st.on .metric-l { color: var(--fg); }
+.hub-kgo { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; opacity: 0; transition: opacity 120ms; color: var(--muted); }
+.hub-kw > .tipw { position: absolute; top: 0; right: 0; }
+.hub-kw:hover .hub-kgo, .hub-kgo:focus-visible { opacity: 1; }
+@media (hover: none) { .hub-kgo { display: none; } }
+.hub-src .tipw { margin-left: auto; }
+.hub-src { align-self: stretch; }
+.hub-x { width: 24px; height: 24px; }
+.hub-strip-top { padding-bottom: 8px; }
+.hub-strip-top .hub-st { padding: 8px 10px; }
+.hub-strip-top .hub-st-v { font-size: 15px; }
+
+/* Focus: the KPIs are one panel split by hairlines, not loose cards; same width and radius as the box above. */
+.l-focus .hub-strip { gap: 1px; background: var(--line); border-radius: 16px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+.l-focus .hub-strip .hub-sw, .l-focus .hub-strip .hub-sw > .tipw:first-child { height: 100%; }
+.l-focus .hub-strip .hub-st { height: 100%; border-radius: 0; box-shadow: none; padding: 12px 14px; background: var(--surface); }
+.l-focus .hub-strip .hub-st:hover { background: color-mix(in oklab, var(--fg) 4%, var(--surface)); }
+.l-focus .hub-strip .hub-st.on { background: color-mix(in oklab, var(--fg) 7%, var(--surface)); }

@@ -1,0 +1,45 @@
+/* Orbs. Sized by --s (px) so blur and rings scale with the orb. */
+.orb { position: relative; display: inline-block; flex: none; --blur: calc(var(--s) * .13); }
+.orb-glass { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; isolation: isolate; transform: translateZ(0);
+  background: color-mix(in oklab, var(--fg) 7%, var(--surface)); }
+/* gloss + depth above the colour */
+.orb-glass::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; z-index: 3;
+  background: radial-gradient(circle at 32% 26%, rgba(255,255,255,.55), rgba(255,255,255,0) 40%);
+  box-shadow: inset 0 calc(var(--s) * -.08) calc(var(--s) * .16) rgba(0,0,0,.16), inset 0 0 0 1px rgba(255,255,255,.08); }
+
+.orb-done { position: absolute; display: grid; place-items: center; border-radius: 50%; z-index: 5; pointer-events: none; }
+.orb-done-bg { position: absolute; inset: 0; border-radius: 50%; background: #72CE85; box-shadow: inset 0 calc(var(--s) * -.06) calc(var(--s) * .12) rgba(0,0,0,.12); }
+.orb-done svg { position: relative; width: 62%; height: 62%; }
+
+@keyframes orb-spin { to { transform: rotate(360deg); } }
+@keyframes orb-spin-r { to { transform: rotate(-360deg); } }
+
+/* Aura */
+.orb-orbit { position: absolute; inset: 0; animation: orb-spin calc(2.6s + var(--i) * .55s) linear infinite; }
+.orb-orbit:nth-child(even) { animation-name: orb-spin-r; }
+.orb-blob { position: absolute; width: 68%; height: 68%; left: 16%; top: -6%; border-radius: 50%; filter: blur(var(--blur)); opacity: .95;
+  animation: orb-breathe calc(1.8s + var(--i) * .4s) ease-in-out infinite alternate; }
+@keyframes orb-breathe { from { transform: scale(.82) translateY(4%); } to { transform: scale(1.12) translateY(-4%); } }
+
+/* Swirl, and the Ripple seed */
+.orb-cone { position: absolute; inset: -20%; filter: blur(calc(var(--s) * .07));
+  background: conic-gradient(from 0deg, #72CE85, #D37AF4, #ED4C6F, #F2C92D, #72CE85); animation: orb-spin 2.2s linear infinite; }
+.orb-core { position: absolute; inset: 24%; border-radius: 50%; filter: blur(calc(var(--s) * .06));
+  background: radial-gradient(circle, rgba(255,255,255,.98) 30%, rgba(255,255,255,0) 72%); animation: orb-core 1.6s ease-in-out infinite alternate; }
+@keyframes orb-core { from { transform: scale(.72); opacity: .75; } to { transform: scale(1.12); opacity: 1; } }
+
+/* Ripple */
+.orb-seed { inset: 20%; animation: orb-beat .6s ease-in-out infinite alternate; }
+@keyframes orb-beat { from { transform: scale(.94); } to { transform: scale(1.03); } }
+.orb-rip { position: absolute; inset: 20%; border-radius: 50%; box-shadow: inset 0 0 0 max(1px, calc(var(--s) * .035)) var(--c); opacity: 0;
+  animation: orb-rip 2.4s cubic-bezier(.23,1,.32,1) infinite; animation-delay: calc(var(--i) * .6s); }
+@keyframes orb-rip { 0% { transform: scale(.95); opacity: .95; } 100% { transform: scale(1.66); opacity: 0; } }
+.orb-ripple.orb-fin .orb-rip { animation: none; opacity: 0; }
+
+/* Tide */
+.orb-level { position: absolute; inset: 0; display: block; }
+.orb-wave { position: absolute; left: 0; width: 200%; height: 140%; display: block; animation: orb-wave calc(1.5s + var(--k) * .45s) linear infinite; }
+.orb-wave:nth-child(even) { animation-direction: reverse; }
+.orb-wave svg { width: 100%; height: 100%; display: block; }
+.orb-wave path { transition: fill .3s; }
+@keyframes orb-wave { to { transform: translateX(-50%); } }

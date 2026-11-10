@@ -133,6 +133,8 @@ html[data-theme='light'] { color-scheme: light; }
 
 .roll { display: inline-flex; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .roll-d { display: inline-block; height: 1.2em; line-height: 1.2em; overflow: hidden; vertical-align: top; margin: -0.1em 0; }
+/* symbols (₹ . , L Cr %) share the digits' box, so the row lines up whatever the parent's line-height */
+.roll > span:not(.roll-d) { display: inline-block; height: 1.2em; line-height: 1.2em; margin: -0.1em 0; }
 .roll-s { display: flex; flex-direction: column; transition: transform 550ms var(--ease-out); }
 .roll-s > span { height: 1.2em; }
 

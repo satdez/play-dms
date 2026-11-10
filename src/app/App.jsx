@@ -3,7 +3,7 @@ import { Command } from 'cmdk'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import {
   Sun, Moon, Search, Bell, Plus, ChevronsUpDown, Check, Inbox, Megaphone, CheckCheck, BookOpen, LayoutGrid, Receipt, Banknote,
-  FileSignature, Store, BarChart3, Send, MailOpen, Pin, ChevronRight, Building2, Eye, X, PanelLeftClose, PanelLeftOpen,
+  FileSignature, Store, BarChart3, Send, MailOpen, Pin, ChevronRight, Building2, Eye, X, PanelLeftClose, PanelLeftOpen, House,
 } from 'lucide-react'
 import { useVariantRoot } from '../shared/ui'
 import { BrandLogo } from '../shared/brands'
@@ -14,6 +14,7 @@ import { kbTotal } from '../data'
 import { StoreProvider, useStore } from './store'
 import { go, Popover, RoleIcon, ROLE_ICON, ExpCtx } from './ui'
 import Home from './pages/Home'
+import Hub, { HOME_LAYOUTS } from './pages/Hub'
 import { CampaignList, CampaignPage, PodApprovals } from './pages/Pod'
 import { FinCampaigns, FinInvoices, Payments, Requests, Vendors } from './pages/Finance'
 import { BdDashboard, Outreach, Proposals, InboundPage } from './pages/Bd'
@@ -40,7 +41,10 @@ export const EXPERIENCES = [
   { id: 'linear', label: 'Linear' },
   { id: 'vercel', label: 'Vercel' },
   { id: 'attio', label: 'Attio' },
+  { id: 'velin', label: 'Velin' },
 ]
+/** Velin is Linear's structure with the main panel flush, not inset. Everything structural reads it as Linear. */
+const shellOf = (exp) => (exp === 'velin' ? 'linear' : exp)
 const swatch = { paper: ['#fafaf9', '#18181b'], ink: ['#08080a', '#5fcf86'], pop: ['#eeefe9', '#f2bd2f'] }
 const Swatch = ({ id, tune, on }) => {
   const dark = document.documentElement.dataset.theme === 'dark'
@@ -51,9 +55,20 @@ const Swatch = ({ id, tune, on }) => {
 const ExpGlyph = ({ id }) => (
   <svg width="22" height="16" viewBox="0 0 22 16" fill="none" style={{ flex: 'none' }} aria-hidden>
     <rect x=".5" y=".5" width="21" height="15" rx="3" stroke="currentColor" opacity=".45" />
+    {id === 'velin' && <><path d="M6.5 1v14" stroke="currentColor" opacity=".45" /><path d="M6.5 1h15v14h-15z" fill="currentColor" opacity=".18" /><path d="M9 5h9M9 7.5h9M9 10h6" stroke="currentColor" strokeLinecap="round" /></>}
     {id === 'linear' && <><path d="M6.5 1v14" stroke="currentColor" opacity=".45" /><rect x="8.5" y="3" width="11" height="10" rx="1.5" fill="currentColor" opacity=".18" /><path d="M10 6h8M10 8.5h8M10 11h6" stroke="currentColor" strokeLinecap="round" /></>}
     {id === 'vercel' && <><path d="M1 4.5h20" stroke="currentColor" opacity=".45" /><rect x="3" y="7" width="7.5" height="6" rx="1.2" stroke="currentColor" /><rect x="11.5" y="7" width="7.5" height="6" rx="1.2" stroke="currentColor" /></>}
     {id === 'attio' && <><path d="M6.5 1v14" stroke="currentColor" opacity=".45" /><path d="M6.5 5.5h15M6.5 8.5h15M6.5 11.5h15M11 5.5v10M16 5.5v10" stroke="currentColor" opacity=".8" /></>}
+  </svg>
+)
+/** Tiny wireframe of each Home layout, drawn like ExpGlyph: frame at .45, structure at full ink. */
+const HomeGlyph = ({ id }) => (
+  <svg width="22" height="16" viewBox="0 0 22 16" fill="none" style={{ flex: 'none' }} aria-hidden>
+    <rect x=".5" y=".5" width="21" height="15" rx="3" stroke="currentColor" opacity=".45" />
+    {id === 'stack' && <><rect x="3" y="3" width="4.5" height="3.5" rx=".8" fill="currentColor" opacity=".35" /><rect x="8.75" y="3" width="4.5" height="3.5" rx=".8" fill="currentColor" opacity=".35" /><rect x="14.5" y="3" width="4.5" height="3.5" rx=".8" fill="currentColor" opacity=".35" /><rect x="3.5" y="10" width="15" height="3" rx="1.5" stroke="currentColor" /></>}
+    {id === 'split' && <><path d="M15.5 1v14" stroke="currentColor" opacity=".45" /><path d="M17.5 4h2M17.5 6.5h2M17.5 9h2" stroke="currentColor" strokeLinecap="round" opacity=".6" /><rect x="3" y="10" width="10.5" height="3" rx="1.5" stroke="currentColor" /></>}
+    {id === 'focus' && <><path d="M8 4.5h6" stroke="currentColor" strokeLinecap="round" /><rect x="4.5" y="6.5" width="13" height="3" rx="1.5" stroke="currentColor" /><path d="M6 12h2.5M9.75 12h2.5M13.5 12h2.5" stroke="currentColor" strokeLinecap="round" opacity=".5" /></>}
+    {id === 'dock' && <><path d="M14 1v14" stroke="currentColor" opacity=".45" /><rect x="3" y="3" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="8" y="3" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="3" y="8.5" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="8" y="8.5" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="15.5" y="11" width="4.5" height="2" rx="1" stroke="currentColor" /></>}
   </svg>
 )
 const read = (k, d) => { try { return localStorage.getItem(k) || d } catch { return d } }
@@ -65,7 +80,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'panel', viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'panel', home: 'stack', viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -81,13 +96,13 @@ function navFor(role, s) {
   const sched = s.invoices.filter((x) => x.stage === 'scheduled').length
   return {
     pod: [
-      { to: '/home', label: 'Today', icon: Inbox },
+      { to: '/home', label: 'Inbox', icon: Inbox },
       { to: '/pod/campaigns', label: 'Campaigns', icon: Megaphone },
       { to: '/pod/approvals', label: 'Approvals', icon: CheckCheck, n: inLead },
       { to: '/pod/kb', label: 'Knowledge base', icon: BookOpen },
     ],
     finance: [
-      { to: '/home', label: 'Today', icon: Inbox },
+      { to: '/home', label: 'Inbox', icon: Inbox },
       { to: '/finance/campaigns', label: 'Campaigns', icon: LayoutGrid },
       { to: '/finance/invoices', label: 'Invoices', icon: Receipt, n: inFin },
       { to: '/finance/payments', label: 'Payments', icon: Banknote, n: sched },
@@ -95,7 +110,7 @@ function navFor(role, s) {
       { to: '/finance/vendors', label: 'Vendors', icon: Store },
     ],
     bd: [
-      { to: '/home', label: 'Today', icon: Inbox },
+      { to: '/home', label: 'Inbox', icon: Inbox },
       { to: '/bd/dashboard', label: 'Dashboard', icon: BarChart3 },
       { to: '/bd/outreach', label: 'Outreach', icon: Send },
       { to: '/bd/proposals', label: 'Proposals', icon: FileSignature },
@@ -170,10 +185,11 @@ function Shell({ path }) {
   }, [prefs.font, prefs.accent])
   useEffect(() => {
     document.documentElement.dataset.style = style
-    document.documentElement.dataset.exp = exp
+    document.documentElement.dataset.exp = shellOf(exp)
+    document.documentElement.dataset.shell = exp
     try { localStorage.setItem('wldd-theme', mode); localStorage.setItem(ROLE_KEY, role); localStorage.setItem('wldd-style', style); localStorage.setItem('wldd-exp', exp) } catch {}
   }, [mode, role, style, exp])
-  useEffect(() => () => { delete document.documentElement.dataset.style; delete document.documentElement.dataset.exp }, [])
+  useEffect(() => () => { delete document.documentElement.dataset.style; delete document.documentElement.dataset.exp; delete document.documentElement.dataset.shell }, [])
   const look = { persona: VIEW, exp, setExp, style, setStyle, theme, setTheme, mode, setMode, tune, setTune, prefs, setPrefs, styles: STYLES, exps: EXPERIENCES }
 
   const parts = path.split('/').filter(Boolean) // e.g. ['pod','campaigns','c1','plan']
@@ -198,7 +214,9 @@ function Shell({ path }) {
       // ⌘B / Ctrl+B collapses the sidebar (list ⇄ board moved to ⇧⌘B). Instant: keyboard actions never animate.
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b' && exp !== 'vercel') { e.preventDefault(); setPrefs({ ...prefs, collapsed: !prefs.collapsed }); return }
       if (typing || e.metaKey || e.ctrlKey) return
+      if (e.altKey && e.key === '0') { e.preventDefault(); go('/hub'); return }
       if (e.altKey && /^[1-3]$/.test(e.key)) { e.preventDefault(); const t = seen()[+e.key - 1]; if (t) switchRole(t.id); return }
+      if (e.altKey && e.code === 'KeyH') { e.preventDefault(); const i = HOME_LAYOUTS.findIndex((x) => x.value === prefs.home); setPrefs({ ...prefs, home: HOME_LAYOUTS[(i + 1) % HOME_LAYOUTS.length].value }); go('/hub'); return }
       if (e.altKey && e.code === 'KeyE') { e.preventDefault(); setExp((s) => EXPERIENCES[(EXPERIENCES.findIndex((x) => x.id === s) + 1) % EXPERIENCES.length].id); return }
       if (e.altKey && e.code === 'KeyS') { e.preventDefault(); setStyle((s) => STYLES[(STYLES.findIndex((x) => x.id === s) + 1) % STYLES.length].id); return }
       if (e.altKey && e.code === 'KeyP') { e.preventDefault(); const i = PRESETS.findIndex((p) => p.id === presetOf(tune)?.id); setTune(PRESETS[style === 'pop' ? (i + 1) % PRESETS.length : Math.max(i, 0)].v); return }
@@ -230,7 +248,8 @@ function Shell({ path }) {
   const switchRole = (r) => { if (r === role) return; setRole(r); go('/home') }
 
   let page = null
-  if (mod === 'home') page = <Home role={role} />
+  if (mod === 'hub') page = <Hub layout={prefs.home} />
+  else if (mod === 'home') page = <Home role={role} />
   else if (mod === 'pod') {
     if (parts[1] === 'campaigns' && parts[2]) page = <CampaignPage id={parts[2]} tab={parts[3] || 'overview'} />
     else if (parts[1] === 'approvals') page = <PodApprovals />
@@ -263,7 +282,7 @@ function Shell({ path }) {
     )
   }
   return (
-    <ExpCtx.Provider value={exp}>
+    <ExpCtx.Provider value={shellOf(exp)}>
       <div className={'d' + (prefs.collapsed && prefs.sidebar === 'icons' ? ' no-side' : '')}>
         <Sidebar role={role} switchRole={switchRole} path={path} look={look} open={navOpen} />
         {scrim}
@@ -287,6 +306,14 @@ function Appearance({ look, close }) {
         <button key={x.id} onClick={() => { setExp(x.id); close() }}>
           <ExpGlyph id={x.id} /> {x.label}
           <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{exp === x.id && <Check size={14} />}{i === 0 && <kbd className="k">{ALT}E</kbd>}</span>
+        </button>
+      ))}
+      <div className="pop-sep" />
+      <div className="pop-h">Home</div>
+      {HOME_LAYOUTS.map((x, i) => (
+        <button key={x.value} onClick={() => { look.setPrefs({ ...look.prefs, home: x.value }); go('/hub'); close() }}>
+          <HomeGlyph id={x.value} /> {x.label}
+          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{look.prefs.home === x.value && <Check size={14} />}{i === 0 && <kbd className="k">{ALT}H</kbd>}</span>
         </button>
       ))}
       <div className="pop-sep" />
@@ -334,6 +361,7 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
       </Popover>
       <button className="vx-find" onClick={() => setCmd(true)}><Search size={15} /><span>Find</span><kbd className="k">F</kbd></button>
       <nav className="vx-nav">
+        <a href="#/hub" className={'vx-item' + (onHub(path) ? ' on' : '')}><House size={16} strokeWidth={1.75} />Home</a>
         {nav.map((n) => (
           <a key={n.to} href={'#' + n.to} className={'vx-item' + (active(n.to) ? ' on' : '')}>
             <n.icon size={16} strokeWidth={1.75} />{n.label}
@@ -384,7 +412,7 @@ function VxBar({ parts, role, openNav, look }) {
       <div className="vx-bar-c ell">{meta.detail ? <span className={meta.plain ? '' : 'mono'}>{meta.detail}</span> : <>{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400, marginLeft: 8 }}>{meta.count}</span>}</>}</div>
       <div className="vx-bar-r">
         <ViewingAs look={look} />
-        {role === 'pod' && <button className="vx-create" onClick={openNewCampaign}><Plus size={15} /><span className="m-hide">Create New</span></button>}
+        {role === 'pod' && parts[0] !== 'hub' && <button className="vx-create" onClick={openNewCampaign}><Plus size={15} /><span className="m-hide">Create New</span></button>}
       </div>
     </header>
   )
@@ -542,14 +570,25 @@ function useSide(role, path) {
   }
 }
 
+/** Home sits beside the workspaces for everyone: KPIs from every workspace the person can open, plus chat. */
+const HUB = { id: 'hub', label: 'Home', color: 'var(--fg)', icon: House }
+const onHub = (path) => path === '/hub'
+const HubIcon = ({ size = 22 }) => <span className="role-ic hub-ic" style={{ width: size, height: size }}><House size={Math.round(size * 0.62)} strokeWidth={2.25} /></span>
+function HubItem({ path, tips }) {
+  const a = <a href="#/hub" className={'d-item d-hub' + (onHub(path) ? ' on' : '')} aria-label={tips ? 'Home' : undefined}><House size={16} strokeWidth={1.75} /> <span className="d-lbl">Home</span></a>
+  return <Tip label="Home" kbd={ALT + '0'} side="right">{a}</Tip>
+}
+
 function PanelSidebar({ role, switchRole, path, look, open }) {
   const { nav, r, idx, pinned, active } = useSide(role, path)
   return (
     <aside className={'d-side' + (open ? ' open' : '')}>
       <div className="d-brand">
-        <a href="#/home" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        <a href="#/hub" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
         <span className="sb-tools"><ThemeToggle look={look} /><CollapseBtn look={look} /></span>
       </div>
+
+      <nav className="d-nav d-hubnav"><HubItem path={path} /></nav>
 
       {seen().length > 1 ? (
         <Popover align="left" width={216} match trigger={({ toggle }) => (
@@ -582,9 +621,9 @@ function PanelSidebar({ role, switchRole, path, look, open }) {
 
 /** A workspace on the rail: line icon + short label; the open one sits on a filled tile in its module colour. */
 function WsButton({ x, i, on, due, onClick }) {
-  const I = ROLE_ICON[x.id]
+  const I = x.icon || ROLE_ICON[x.id]
   return (
-    <Tip label={x.label} kbd={ALT + (i + 1)} side="right">
+    <Tip label={x.label} kbd={ALT + i} side="right">
       <button className={'sb-ws' + (on ? ' on' : '')} style={{ '--rc': x.color }} onClick={onClick} aria-label={x.label} aria-current={on || undefined}>
         <span className="sb-ws-t"><I size={18} strokeWidth={on ? 2 : 1.75} />{due > 0 && !on && <i className="sb-due" />}</span>
         <span className="sb-ws-l">{x.label}</span>
@@ -599,11 +638,12 @@ function RailSidebar({ role, switchRole, path, look, open }) {
   return (
     <aside className={'d-side sb-rail' + (open ? ' open' : '')}>
       <div className="sb-railcol">
-        <a href="#/home" className="sb-mark" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        <a href="#/hub" className="sb-mark" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        <WsButton x={HUB} i={0} on={onHub(path)} onClick={() => go('/hub')} />
         {seen().map((x, i) => {
           const due = pendingOf(x.id, s)
           return (
-            <WsButton key={x.id} x={x} i={i} on={x.id === role} due={due} onClick={() => switchRole(x.id)} />
+            <WsButton key={x.id} x={x} i={i + 1} on={x.id === role && !onHub(path)} due={due} onClick={() => switchRole(x.id)} />
           )
         })}
         <div className="sb-railf">
@@ -633,12 +673,13 @@ function IconSidebar({ role, switchRole, path, look, open }) {
   const { s, nav, pinned, active } = useSide(role, path)
   return (
     <aside className={'d-side sb-icons' + (open ? ' open' : '')}>
-      <a href="#/home" className="sb-mark" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+      <a href="#/hub" className="sb-mark" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
       <div className="sb-wsrow">
+        <WsButton x={HUB} i={0} on={onHub(path)} onClick={() => go('/hub')} />
         {seen().map((x, i) => {
           const due = pendingOf(x.id, s)
           return (
-            <WsButton key={x.id} x={x} i={i} on={x.id === role} due={due} onClick={() => switchRole(x.id)} />
+            <WsButton key={x.id} x={x} i={i + 1} on={x.id === role && !onHub(path)} due={due} onClick={() => switchRole(x.id)} />
           )
         })}
       </div>
@@ -673,31 +714,37 @@ function StackSidebar({ role, switchRole, path, look, open }) {
   return (
     <aside className={'d-side sb-stack' + (open ? ' open' : '')}>
       <div className="d-brand">
-        <a href="#/home" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        <a href="#/hub" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
         <span className="sb-tools"><ThemeToggle look={look} /><CollapseBtn look={look} /></span>
       </div>
-      <nav className="d-nav">
-        {seen().map((x, i) => {
-          const on = x.id === role
-          const due = pendingOf(x.id, s)
-          return (
-            <div key={x.id} className={'sb-ws-g' + (on ? ' on' : '')} style={{ '--rc': x.color }}>
-              <Tip label={on ? x.label : 'Switch to ' + x.label} kbd={ALT + (i + 1)} side="right">
-                <button className="sb-wsh" onClick={() => switchRole(x.id)} aria-expanded={on}>
-                  <RoleIcon role={x.id} size={24} /> <span className="grow ell">{x.label}</span>
-                  {!on && due > 0 && <span className="n num">{due}</span>}
-                </button>
-              </Tip>
-              {on && (
-                <div className="sb-sub">
-                  <div className="sb-tree"><NavItems nav={nav} active={active} /></div>
-                  {role === 'pod' && <Pinned pinned={pinned} path={path} />}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </nav>
+      {/* Middle scrolls; brand and footer stay put. */}
+      <div className="sb-scroll">
+        <nav className="d-nav">
+          <div className={'sb-ws-g sb-hub' + (onHub(path) ? ' on' : '')} style={{ '--rc': 'var(--fg)' }}>
+            <Tip label="Home" kbd={ALT + '0'} side="right">
+              <a href="#/hub" className="sb-wsh" aria-current={onHub(path) || undefined}><HubIcon size={24} /> <span className="grow ell">Home</span></a>
+            </Tip>
+          </div>
+          {seen().map((x, i) => {
+            const on = x.id === role
+            const due = pendingOf(x.id, s)
+            return (
+              /* On Home the last workspace stays open (no jump) but steps back: one "you are here" at a time. */
+              <div key={x.id} className={'sb-ws-g' + (on ? ' on' : '') + (on && onHub(path) ? ' rest' : '')} style={{ '--rc': x.color }}>
+                <Tip label={on ? x.label : 'Switch to ' + x.label} kbd={ALT + (i + 1)} side="right">
+                  <button className="sb-wsh" onClick={() => switchRole(x.id)} aria-expanded={on}>
+                    <RoleIcon role={x.id} size={24} /> <span className="grow ell">{x.label}</span>
+                    {!on && due > 0 && <span className="n num">{due}</span>}
+                  </button>
+                </Tip>
+                {on && <div className="sb-sub"><div className="sb-tree"><NavItems nav={nav} active={active} /></div></div>}
+              </div>
+            )
+          })}
+        </nav>
+        {/* One shared Pinned list, outside any workspace: it stays put when you switch. */}
+        {VIEW.roles.includes('pod') && <div className="sb-pins"><Pinned pinned={pinned} path={path} /></div>}
+      </div>
       <div className="d-side-f">
         <Avatar />
         <span className="ell grow" style={{ fontWeight: 500 }}>{VIEW.person.name}</span>
@@ -712,7 +759,7 @@ function StackSidebar({ role, switchRole, path, look, open }) {
 const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
 
 /* ───────── Top bar ───────── */
-const LABEL = { home: 'Today', pod: 'Pod', finance: 'Finance', bd: 'Sales', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Outreach', proposals: 'Proposals', inbound: 'Inbound', dashboard: 'Dashboard' }
+const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'Sales', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Outreach', proposals: 'Proposals', inbound: 'Inbound', dashboard: 'Dashboard' }
 /** The page title lives here only — pages don't repeat it. Icon + live count make the space useful. */
 function usePageMeta(parts, role) {
   const s = useStore()
@@ -721,6 +768,7 @@ function usePageMeta(parts, role) {
     const sec = SETTINGS_FLAT.find((x) => x.id === parts[1]) || SETTINGS_FLAT[0]
     return { title: 'Settings', icon: Gear, to: '/settings', detail: sec.label, plain: true }
   }
+  if (parts[0] === 'hub') return { title: 'Home', icon: House, to: '/hub' }
   const home = !parts.length || parts[0] === 'home'
   const sec = home ? 'home' : parts[1] || (parts[0] === 'bd' ? 'dashboard' : 'campaigns')
   const to = home ? '/home' : `/${parts[0]}/${sec}`
@@ -763,7 +811,7 @@ function TopBar({ parts, role, setCmd, openNav, look }) {
         <ViewingAs look={look} />
         <Tip label="Search" kbd={MOD + 'K'}><button className="b ghost icon" onClick={() => setCmd(true)} aria-label="Search"><Search size={16} /></button></Tip>
         <Notifications />
-        {role === 'pod' && parts[0] !== 'settings' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={openNewCampaign} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
+        {role === 'pod' && parts[0] !== 'settings' && parts[0] !== 'hub' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={openNewCampaign} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
       </div>
     </header>
   )
@@ -783,6 +831,7 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         <Command.Empty>Nothing found</Command.Empty>
         {!q && (
           <Command.Group heading="Go to">
+            <Command.Item value="go home" onSelect={run(() => go('/hub'))}><House size={15} /> Home<kbd className="k" style={{ marginLeft: 'auto' }}>{ALT}0</kbd></Command.Item>
             {nav.map((n) => <Command.Item key={n.to} value={'go ' + n.label} onSelect={run(() => go(n.to))}><n.icon size={15} /> {n.label}</Command.Item>)}
           </Command.Group>
         )}
@@ -803,6 +852,9 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         </Command.Group>
         <Command.Group heading="Settings">
           {(VIEW.id === 'admin' ? SETTINGS_FLAT : SETTINGS_SECTIONS[0].items).map((x) => <Command.Item key={x.id} value={'settings ' + x.label} onSelect={run(() => go('/settings/' + x.id))}><x.icon size={15} /> {x.label}<span className="cmdk-meta">Settings</span></Command.Item>)}
+        </Command.Group>
+        <Command.Group heading="Home layout">
+          {HOME_LAYOUTS.map((x) => <Command.Item key={x.value} value={'home layout ' + x.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, home: x.value }); go('/hub') })}><HomeGlyph id={x.value} /> {x.label}{look.prefs.home === x.value && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
         <Command.Group heading="Experience">
           {EXPERIENCES.map((x) => <Command.Item key={x.id} value={'experience ' + x.label} onSelect={run(() => look.setExp(x.id))}><ExpGlyph id={x.id} /> {x.label}{look.exp === x.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}

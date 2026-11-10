@@ -14,6 +14,7 @@ import { Seg, Tabs, Select, Switch, Popover, RoleIcon } from '../ui'
 import { team, me, PODS, BRAND, campaigns, fmt, TODAY } from '../data'
 import { PopTuner, THEMES, themeActive } from '../popTune'
 import { PERSONAS } from '../personas'
+import { HOME_LAYOUTS } from './Hub'
 
 /* ───────── sections ───────── */
 export const SETTINGS_SECTIONS = [
@@ -305,6 +306,7 @@ function Preferences({ look }) {
           </div>
         </Row>
         <Row label="Experience" tip={'Shell and navigation model · ' + ALT + 'E'}><Seg id="st-exp" value={exp} onChange={setExp} options={exps.map((x) => ({ value: x.id, label: x.label }))} /></Row>
+        <Row label="Home" tip={'Stack: dashboard over chat · Split: chat with a KPI column · Focus: chat first · Dock: dashboard with a chat panel · ' + ALT + 'H'}><Seg id="st-home" value={prefs.home} onChange={set('home')} options={HOME_LAYOUTS} /></Row>
         {exp !== 'vercel' && <Row label="Sidebar" tip="Panel · Rail: workspaces on a rail · Icons: collapsed · Stacked: every workspace in one list"><Seg id="st-sidebar" value={prefs.sidebar} onChange={set('sidebar')} options={SIDEBARS} /></Row>}
         <Row label="Density"><Seg id="st-density" value={prefs.density} onChange={set('density')} options={[{ value: 'comfortable', label: 'Comfortable' }, { value: 'compact', label: 'Compact' }]} /></Row>
         <Row label="Motion" tip="Reduced turns off slides, morphs and springs"><Seg id="st-motion" value={prefs.motion} onChange={set('motion')} options={[{ value: 'full', label: 'Full' }, { value: 'reduced', label: 'Reduced' }]} /></Row>
@@ -447,8 +449,8 @@ function Notifications() {
 const K = ({ k }) => <span className="st-keys">{k.split(' ').map((x, i) => <kbd key={i} className="k">{x}</kbd>)}</span>
 function Shortcuts() {
   const groups = [
-    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to Sales', ALT + '3']]],
-    ['Look', [['Cycle experience', ALT + 'E'], ['Cycle style', ALT + 'S'], ['Cycle Pop presets', ALT + 'P']]],
+    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Home', ALT + '0'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to Sales', ALT + '3']]],
+    ['Look', [['Cycle Home layout', ALT + 'H'], ['Cycle experience', ALT + 'E'], ['Cycle style', ALT + 'S'], ['Cycle Pop presets', ALT + 'P']]],
     ['Lists & boards', [['New campaign', 'C'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
     ['Vercel experience', [['Find', 'F']]],
   ]

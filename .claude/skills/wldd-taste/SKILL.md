@@ -29,6 +29,8 @@ Design for **this product's workflows**. Take restraint, density and motion qual
 - One primary (ink) action per view at most.
 - Colour is meaning only. WLDD logo colours mark modules (Pod = green, Finance = violet, Sales = yellow, Creators = pink), statuses and charts. Chrome stays neutral.
 
+- **Home** (`#/hub`, `pages/Hub.jsx`, ⌥0) sits beside the workspaces in every sidebar shape, for everyone. It shows KPI tiles only for the workspaces the persona can open, plus a chat that answers from the same store data. A tile *shows*: clicking previews its answer where the chat lives (tile stays filled, Esc closes, nothing saved); ↗ on hover opens the page. Typing *talks*: a follow-up over a preview commits it as the chat's first answer, and unmatched follow-ups ("only Netflix") narrow the last answer's list. Questions about a workspace the persona can't open answer "Locked". New KPIs go in `KPIS` there, with their answer in `answerFor`. Four layouts (`prefs.home`, Settings › Preferences › Home, ⌥H): Stack, Split, Focus, Dock. Chat history is per persona in localStorage; saved answers are pointers re-resolved from live data, never stored values.
+
 ## 3. Motion (Emil Kowalski / Family)
 - **Never animate on page load.** No staggered fade-ups, no count-up numbers, no charts drawing in.
 - Animate **state changes** only: approve, move, switch, open, close.
@@ -67,6 +69,7 @@ Design for **this product's workflows**. Take restraint, density and motion qual
 There are two independent axes. Both are switched from the Appearance menu (the palette in the sidebar footer, or the avatar in Vercel), from ⌘K, or from the URL (`?exp=attio&style=ink`).
 - **Experience** (`html[data-exp]`, `src/app/exp.css`) changes *structure*. Switch it with ⌥E.
   - **linear**: inset panel, view tabs plus a Display button, full-bleed dense grouped rows, j/k/Enter.
+  - **velin**: Linear with the main panel flush (no inset card, one hairline to the sidebar). Structurally it *is* linear: `html[data-exp='linear']` plus `html[data-shell='velin']`, and `useExp()` returns `'linear'`. Only `data-shell` rules differ.
   - **vercel**: no sidebar; top scope switcher and tabs, a full-bleed title band, a search toolbar, cards.
   - **attio**: object header, a view bar (view ▾ · Sort · Filter · View settings), a spreadsheet grid with inline-editable cells, footer aggregates, bulk bar, and records that open in a peek panel.
 - **Style** (`html[data-style]`, `src/app/styles.css`) changes *paint*: paper (base), ink, or pop (warm sand/slate, 1px hairlines, a 2px pressable lip under controls; yellow only on the primary action, never on whole rows or the nav). Switch it with ⌥S.

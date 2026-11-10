@@ -221,3 +221,24 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
 }
 /* Collapse is a desktop idea — the drawer has its own open/close */
 @media (max-width: 960px) { .sb-col, .sb-show { display: none; } }
+
+/* Home (hub): KPI tiles two-up, chat full width */
+@media (max-width: 760px) {
+  .metrics.hub-m { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metrics.hub-m > .hub-kw:nth-child(3) .hub-k { box-shadow: 0 -1px 0 var(--line); }
+  .metrics.hub-m > .hub-kw:nth-child(4) .hub-k { box-shadow: -1px 0 0 var(--line), 0 -1px 0 var(--line); }
+  .hub-msg.me { max-width: 88%; }
+  .hub-sum-r { flex-wrap: wrap; gap: 4px 14px; padding: 8px 0; }
+  .hub-sum-m { width: 100%; }
+}
+
+/* Home split / dock: one column on tablets and phones */
+@media (max-width: 960px) {
+  .hub.l-split, .hub.l-dock { display: flex; flex-direction: column; height: auto; }
+  .hub-col { overflow: visible; }
+  .hub-chatcol { padding: 14px 16px 0; min-height: 70vh; }
+  .hub-rail, .l-dock .hub-chatcol { border-left: 0; border-top: 1px solid var(--line); }
+  .hub-rail { padding: 16px; }
+  .l-dock .hub-board { padding: 14px 16px 24px; }
+}
+@media (max-width: 760px) { .hub-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

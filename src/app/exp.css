@@ -305,3 +305,8 @@ html[data-exp='vercel'] .seg { border-radius: 7px; }
 
 /* Sidebar hidden (⌘B on the Icons shape): the inset panel keeps the same 8px gutter on its left as on its other edges */
 @media (min-width: 961px) { html[data-exp='linear'] .d.no-side .d-main { margin-left: 8px; } }
+
+/* ───────── Velin: Linear's shell, main panel flush ─────────
+   No inset card: the panel meets the window edges and the sidebar meets it on one hairline. */
+html[data-shell='velin'] .d-main { margin: 0; border: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: none; }
+html[data-shell='velin'] .d.no-side .d-main { margin-left: 0; border-left: 0; }
