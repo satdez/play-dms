@@ -9,6 +9,7 @@ import { Ticker, ConfirmButton, Tip, EASE } from '../../shared/motion'
 import { Sparkline } from '../../shared/ui'
 import { Track, ClientLogo, RoleIcon, Popover, go } from '../ui'
 import { view } from '../personas'
+import { WlddMark } from '../../shared/WlddMark'
 
 /* Home: one page for everyone. KPIs for each workspace the person can open, and a chat
    that answers from the same data.
@@ -259,7 +260,7 @@ export default function Hub({ layout = 'focus' }) {
   if (layout === 'split') return (
     <div className="hub l-split">
       {/* The scroller is the whole left cell, so the scrollbar sits on its edge; the chat is centred inside it. */}
-      <div className="hub-col hub-chatwrap"><div className="hub-chatcol">{bar}{thread.length || peek ? threadEl : <div className="hub-hello"><h1 className="d-h1 keep">{hello()}, {p.person.short}</h1></div>}{dock}</div></div>
+      <div className="hub-col hub-chatwrap"><div className="hub-chatcol">{bar}{thread.length || peek ? threadEl : <div className="hub-hello"><WlddMark className="hub-mark" /><h1 className="d-h1 keep">{hello()}, {p.person.short}</h1></div>}{dock}</div></div>
       <aside className="hub-col hub-rail">{kpis('rows')}</aside>
     </div>
   )
@@ -279,6 +280,8 @@ export default function Hub({ layout = 'focus' }) {
             {dock}
             {kpis('strip')}
           </div>
+          {/* quiet sign-off, pinned to the foot of the page; gone once you talk */}
+          <div className="hub-sign" aria-hidden><WlddMark height={44} /></div>
         </>
       )}
     </div>

@@ -243,7 +243,18 @@ html[data-variant='app'] .sb-ws-g.on.rest .sb-wsh .role-ic { background: color-m
 .l-dock .hub-chatcol { border-left: 1px solid var(--line); padding: 14px 20px 0; background: color-mix(in oklab, var(--sunken) 35%, var(--surface)); }
 .l-dock .hub-dock { background: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--sunken) 35%, var(--surface)) 22px); }
 .l-dock .hub-msg.me { max-width: 88%; }
-.hub-hello { flex: 1; display: flex; align-items: flex-end; padding-bottom: 16px; }
+.hub-hello { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; gap: 14px; padding-bottom: 16px; }
+/* the WLDD mark, quiet: one grey for faces, a slightly deeper grey for outline + extrusion */
+.wm { display: block; flex: none; overflow: visible; }
+.wm { --wm-face: color-mix(in oklab, var(--fg) 8%, var(--surface)); --wm-ink: color-mix(in oklab, var(--fg) 20%, var(--surface)); }
+html[data-theme='dark'] .wm { --wm-face: color-mix(in oklab, var(--fg) 22%, var(--surface)); --wm-ink: color-mix(in oklab, var(--fg) 8%, var(--surface)); }
+.wm-face { fill: var(--wm-face); stroke: var(--wm-ink); }
+.wm-ink { fill: var(--wm-ink); stroke: var(--wm-ink); }
+.wm-outline { --wm-l: color-mix(in oklab, var(--fg) 26%, var(--surface)); }
+.wm-line { fill: var(--wm-l); stroke: var(--wm-l); }
+.wm-bg { fill: var(--wm-bg, var(--surface)); stroke: var(--wm-bg, var(--surface)); }
+.hub-hero .hub-mark { align-self: center; margin-bottom: 2px; }
+.hub-sign { display: flex; justify-content: center; padding-top: 16px; }
 .hub-hello-t { font-weight: 600; color: var(--muted); }
 
 /* rows: the slim KPI column */

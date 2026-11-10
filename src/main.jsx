@@ -9,6 +9,7 @@ import { NewCampaignTray } from './shared/motion'
 const DmsApp = lazy(() => import('./app/App'))
 const Launcher = lazy(() => import('./Launcher'))
 const Loaders = lazy(() => import('./loaders/Loaders'))
+const Brand = lazy(() => import('./brand/Brand'))
 const variants = {
   v1: lazy(() => import('./variants/v1/V1')),
   v2: lazy(() => import('./variants/v2/V2')),
@@ -21,6 +22,7 @@ function App() {
   const path = useRoute()
   const first = path.split('/')[1]
   const Variant = variants[first]
+  if (window.location.pathname.replace(/\/$/, '') === '/brand' || first === 'brand') return <Suspense fallback={null}><Brand /></Suspense>
   if (window.location.pathname.replace(/\/$/, '') === '/loaders' || first === 'loaders') return <Suspense fallback={null}><Loaders /></Suspense>
   return (
     <>

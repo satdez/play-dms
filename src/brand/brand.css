@@ -1,0 +1,5 @@
+.br-plate + .br-plate { margin-top: 28px; }
+.br-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.br-head h2 { margin: 0; }
+.br-art { border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px var(--line), var(--shadow-1); }
+.br-art svg { display: block; width: 100%; height: auto; }
