@@ -221,7 +221,7 @@ function Shell({ path }) {
       if (e.altKey && e.code === 'KeyS') { e.preventDefault(); setStyle((s) => STYLES[(STYLES.findIndex((x) => x.id === s) + 1) % STYLES.length].id); return }
       if (e.altKey && e.code === 'KeyP') { e.preventDefault(); const i = PRESETS.findIndex((p) => p.id === presetOf(tune)?.id); setTune(PRESETS[style === 'pop' ? (i + 1) % PRESETS.length : Math.max(i, 0)].v); return }
       if (e.key === 'f' && exp === 'vercel' && !e.altKey) { e.preventDefault(); setCmd(true); return }
-      if (e.key === 'c' && role === 'pod' && !e.altKey) { e.preventDefault(); openNewCampaign() }
+      if (e.key === 'c' && role === 'pod' && !e.altKey) { e.preventDefault(); openNewCampaign('key') }
     }
     window.addEventListener('keydown', on, true)
     return () => window.removeEventListener('keydown', on, true)
@@ -412,7 +412,7 @@ function VxBar({ parts, role, openNav, look }) {
       <div className="vx-bar-c ell">{meta.detail ? <span className={meta.plain ? '' : 'mono'}>{meta.detail}</span> : <>{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400, marginLeft: 8 }}>{meta.count}</span>}</>}</div>
       <div className="vx-bar-r">
         <ViewingAs look={look} />
-        {role === 'pod' && parts[0] !== 'hub' && <button className="vx-create" onClick={openNewCampaign}><Plus size={15} /><span className="m-hide">Create New</span></button>}
+        {role === 'pod' && parts[0] !== 'hub' && <button className="vx-create" onClick={() => openNewCampaign()}><Plus size={15} /><span className="m-hide">Create New</span></button>}
       </div>
     </header>
   )
@@ -811,7 +811,7 @@ function TopBar({ parts, role, setCmd, openNav, look }) {
         <ViewingAs look={look} />
         <Tip label="Search" kbd={MOD + 'K'}><button className="b ghost icon" onClick={() => setCmd(true)} aria-label="Search"><Search size={16} /></button></Tip>
         <Notifications />
-        {role === 'pod' && parts[0] !== 'settings' && parts[0] !== 'hub' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={openNewCampaign} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
+        {role === 'pod' && parts[0] !== 'settings' && parts[0] !== 'hub' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={() => openNewCampaign()} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
       </div>
     </header>
   )
@@ -846,7 +846,7 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
           </Command.Group>
         )}
         <Command.Group heading="Actions">
-          <Command.Item onSelect={run(openNewCampaign)}><Plus size={15} /> New campaign</Command.Item>
+          <Command.Item onSelect={run(() => openNewCampaign('key'))}><Plus size={15} /> New campaign</Command.Item>
           {seen().filter((r) => r.id !== role).map((r) => <Command.Item key={r.id} value={'switch ' + r.label} onSelect={run(() => switchRole(r.id))}><RoleIcon role={r.id} size={20} /> Switch to {r.label}</Command.Item>)}
           <Command.Item onSelect={run(toggleTheme)}><Moon size={15} /> Toggle theme</Command.Item>
         </Command.Group>

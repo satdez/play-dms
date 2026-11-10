@@ -1,13 +1,11 @@
 import { useEffect, useId, useState } from 'react'
 import { motion } from 'motion/react'
 import { EASE } from '../shared/motion'
-import { GLYPHS } from './wlddGlyphs'
+import { GLYPHS, OUT, EX, EY } from './wlddGlyphs'
 import './wldd.css'
 
 /* All units are the logo's own (370 × 215). Letter faces are traced from the logo; the outline and
    the down-right extrusion are measured from it too, so the resting pose IS the logo. */
-const OUT = 7 // outline stroke (≈3.5 each side)
-const EX = 21, EY = 20 // extrusion
 const STEPS = 7
 const U = 113 // letter height
 const VB = '-6 -6 384 232'

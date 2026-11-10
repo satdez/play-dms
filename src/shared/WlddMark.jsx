@@ -1,10 +1,10 @@
-import { GLYPHS } from '../loaders/wlddGlyphs'
+import { GLYPHS, OUT, EX, EY } from '../loaders/wlddGlyphs'
 
 /* The WLDD mark, quiet. Static on purpose (no motion on load). `height` in px.
    filled  — greys for faces, outline and the 1x → 1x extrusion.
    outline — line drawing: the contour of each letter (with its ⅓x outline) and of its extrusion, nothing filled.
              Built by knocking out: a wider shape in the line colour, then the shape itself in the background colour. */
-const OUT = 7, EX = 21, EY = 20, STEPS = 7
+const STEPS = 7
 const step = (k) => `translate(${(EX * (k + 1)) / STEPS} ${(EY * (k + 1)) / STEPS})`
 
 export function WlddMark({ height = 64, variant = 'outline', className = '' }) {

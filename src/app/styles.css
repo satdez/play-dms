@@ -114,6 +114,9 @@ html[data-style='pop'] .inp { border-radius: var(--pr); background: var(--surfac
 html[data-style='pop'] .inp:focus-within { box-shadow: inset 0 0 0 1px var(--fg-2), 0 0 0 3px color-mix(in oklab, var(--hl) 28%, transparent); }
 html[data-style='pop'] .sw.on { background: var(--hl); }
 html[data-style='pop'] .pop, html[data-style='pop'] .sheet, html[data-style='pop'] .tray, html[data-style='pop'] .cmdk-content { border-radius: var(--pr-l); }
+html[data-style='pop'] .ncd { --ro: var(--pr-l); }
+html[data-style='pop'] .ncd-go { background: var(--cta); color: var(--cta-fg); box-shadow: 0 2px 0 var(--cta-lip); }
+html[data-style='pop'] .ncd-go:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
 html[data-style='pop'] .tray-cta { background: var(--cta); color: var(--cta-fg); box-shadow: 0 2px 0 var(--cta-lip); border-radius: var(--pr); }
 html[data-style='pop'] .tray-cta:active { transform: translateY(2px); box-shadow: none; }
 html[data-style='pop'] .bar { border-radius: var(--pr-l); }

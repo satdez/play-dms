@@ -4,6 +4,7 @@ import { Toaster } from 'sonner'
 import './shared/base.css'
 import { useRoute, VariantDock } from './shared/ui'
 import { NewCampaignTray } from './shared/motion'
+import { NewCampaignDialog } from './shared/NewCampaignDialog'
 
 // The product. Earlier explorations live under #/archive and #/v1…v5.
 const DmsApp = lazy(() => import('./app/App'))
@@ -30,7 +31,7 @@ function App() {
         {Variant ? <Variant path={path} key={first} /> : first === 'archive' ? <Launcher /> : <DmsApp path={path} />}
       </Suspense>
       {Variant && <VariantDock current={first} />}
-      {first !== 'archive' && <NewCampaignTray />}
+      {first !== 'archive' && <><NewCampaignTray /><NewCampaignDialog /></>}
       <Toaster position="bottom-right" offset={20} gap={8} visibleToasts={3} duration={3200} />
     </>
   )

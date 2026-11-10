@@ -187,7 +187,14 @@ export function Swap({ k, children, className, style }) {
 }
 
 /* ───────── New campaign tray (Family-style dynamic tray) ───────── */
-export const openNewCampaign = () => window.dispatchEvent(new Event('dms:new-campaign'))
+/** Open the new-campaign flow. Pass 'key' when a shortcut opened it, so it appears instantly.
+    Desktop gets NewCampaignDialog (centred, keyboard-first); phones get this tray. */
+export const openNewCampaign = (via) => {
+  const fire = () => window.dispatchEvent(new CustomEvent('dms:new-campaign', { detail: { key: via === 'key' } }))
+  // from a shortcut, open after the keystroke finishes so its letter never lands in the new field
+  via === 'key' ? setTimeout(fire, 0) : fire()
+}
+export const isPhone = () => window.matchMedia('(max-width: 760px)').matches
 
 const typeIcon = { 'Meme marketing': '◎', Influencer: '◉', UGC: '◐', 'Music promotion': '♪', 'Product launch': '▲', 'Always-on': '∞', Event: '✦' }
 export function NewCampaignTray() {
@@ -199,7 +206,7 @@ export function NewCampaignTray() {
   const [done, setDone] = useState(false)
   const reset = () => { setStep(0); setClient(null); setType(null); setBudget(1000000); setDone(false) }
   useEffect(() => {
-    const on = () => { reset(); setOpen(true) }
+    const on = () => { if (!isPhone()) return; reset(); setOpen(true) }
     window.addEventListener('dms:new-campaign', on)
     return () => window.removeEventListener('dms:new-campaign', on)
   }, [])

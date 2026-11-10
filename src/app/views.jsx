@@ -234,7 +234,7 @@ export function CampaignViews({ exp }) {
             <span className="grow" />
             <div className="inp at-q"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" /></div>
             {display}
-            <button className="b sm ink" onClick={openNewCampaign}><Plus size={14} /> New campaign</button>
+            <button className="b sm ink" onClick={() => openNewCampaign()}><Plus size={14} /> New campaign</button>
           </div>
         </>
       )}

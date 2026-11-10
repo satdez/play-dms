@@ -2,17 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { Sun, Moon, Download } from 'lucide-react'
 import { Seg } from '../app/ui'
 import { Tip } from '../shared/motion'
-import { GLYPHS, X, R, RI } from '../loaders/wlddGlyphs'
+import { GLYPHS, X, R, RI, OUT, EX, EY, CAP, ux } from '../loaders/wlddGlyphs'
 import '../app/app.css'
 import '../app/pages.css'
 import '../loaders/loaders.css'
 import './brand.css'
 
-/* The geometric master (loaders/wlddGlyphs.js), in the logo's 370 × 215 space.
-   x = stem width ≈ 20.5u. Cap 5.5x · outline ⅓x · extrusion 1x → 1x ↓ (≈44°) · gaps ½x · D corners r 1½x. */
-const OUT = 7
-const EX = 21, EY = 20
-const LEAN = Math.round((Math.atan2(27, 111) * 180) / Math.PI)
+/* The geometric master (loaders/wlddGlyphs.js). Everything is built from x, and every label here is computed from the geometry. */
+const [WN] = GLYPHS[0].nodes
+const LEAN = Math.round((Math.atan2(WN[12][0] - WN[0][0], WN[12][1] - WN[0][1]) * 180) / Math.PI)
 const ANGLE = Math.round((Math.atan2(EY, EX) * 180) / Math.PI)
 const [W, L, D1, D2] = GLYPHS
 
@@ -30,7 +28,7 @@ function Style({ p }) {
       .ghost{stroke:${p.ghost};stroke-width:.9;stroke-dasharray:3 2.5;fill:none} .circ{stroke:${p.ink};stroke-width:.8;stroke-dasharray:2.5 2;fill:none}
       .dim{stroke:${p.note};stroke-width:1.6} .dimt{stroke:${p.note};stroke-width:.8} .lab{fill:${p.note};font:500 7px 'Geist Mono',ui-monospace,monospace;letter-spacing:.02em}
       .lab-ink{fill:${p.ink};font:600 7.5px 'Geist Mono',ui-monospace,monospace;letter-spacing:.04em} .hatch{stroke:${p.hatch};stroke-width:.9}
-      .xsq{fill:${p.guide};opacity:.22;stroke:${p.guide};stroke-width:.7} .solid{fill:${p.mark};stroke:${p.mark}} .mface{stroke:${p.mark};stroke-linejoin:round}
+      .band{stroke:${p.guide};opacity:.35;fill:none} .xsq{fill:${p.guide};opacity:.22;stroke:${p.guide};stroke-width:.7} .solid{fill:${p.mark};stroke:${p.mark}} .mface{stroke:${p.mark};stroke-linejoin:round}
       .lab-lg{fill:${p.note};font:500 15px 'Geist Mono',ui-monospace,monospace} .lab-lg-ink{fill:${p.ink};font:600 16px 'Geist Mono',ui-monospace,monospace;letter-spacing:.04em}
     `}</style>
   )
@@ -80,43 +78,61 @@ const Bowl = ({ g, inner = true }) => g.arcs.filter((a) => inner || a[2] === R).
 /* ─────────── Plates ─────────── */
 
 function Construction({ mode, p, id }) {
-  const xs = [...new Set(GLYPHS.flatMap((g) => [g.box[0], g.box[2]]))]
+  // every line below sits on real geometry; every label is computed from it
+  const lStem = L.box[0] + X // right edge of L's stem
+  const xs = [...new Set([...GLYPHS.flatMap((g) => [g.box[0], g.box[2]]), lStem])]
   const ys = [...new Set(GLYPHS.flatMap((g) => [g.box[1], g.box[3]]))]
+  const V = { x: -116, y: -74, w: 562, h: 320 }
+  const rowA = D1.box[1] - 2.6 * X, rowB = D1.box[1] - 1.5 * X
+  const chain = D2.box[2] + EX + 2.4 * X
+  const [cx, cy, r] = D1.arcs[0]
+  const rp = [cx + r * Math.SQRT1_2, cy - r * Math.SQRT1_2] // the arc at 45 degrees
+  const ex = [D2.box[0], D2.box[3]] // bottom-left corner of the second D, and its extruded twin
+  const stem = (g, x0) => <HDim key={g.ch + x0} x1={x0} x2={x0 + X} y={g.box[1] - 0.55 * X} label={ux(X)} />
   return (
-    <svg viewBox="-74 -46 520 300" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox={`${V.x} ${V.y} ${V.w} ${V.h}`} xmlns="http://www.w3.org/2000/svg">
       <Style p={p} /><Defs id={id} p={p} />
-      <rect x="-74" y="-46" width="520" height="300" className="bg" />
-      {xs.map((x) => <line key={'v' + x} x1={x} x2={x} y1="-46" y2="254" className="guide" opacity=".55" />)}
-      {ys.map((y) => <line key={'h' + y} y1={y} y2={y} x1="-74" x2="446" className="guide" opacity=".55" />)}
-      <Diag x={W.box[0]} y={W.box[1]} />
-      <Diag x={D1.box[2]} y={D1.box[1]} />
-      <Diag x={D2.box[0]} y={D2.box[3]} />
-      {/* extrusion, as a ghost of each face pushed 1x → 1x ↓ */}
+      <rect x={V.x} y={V.y} width={V.w} height={V.h} className="bg" />
+      {xs.map((x) => <line key={'v' + x} x1={x} x2={x} y1={V.y} y2={V.y + V.h} className="guide" opacity=".5" />)}
+      {ys.map((y) => <line key={'h' + y} y1={y} y2={y} x1={V.x} x2={V.x + V.w} className="guide" opacity=".5" />)}
+      {/* 45-degree extrusion lines, each through a real corner and its extruded twin */}
+      <Diag x={W.nodes[0][0][0]} y={W.nodes[0][0][1]} />
+      <Diag x={D1.box[0]} y={D1.box[1]} />
+      <Diag x={ex[0]} y={ex[1]} />
       {GLYPHS.map((g, i) => <path key={'e' + i} d={g.d} className="ghost" transform={`translate(${EX} ${EY})`} />)}
+      {/* the outline band: a 1/3x stroke centred on the edge */}
+      {GLYPHS.map((g, i) => <path key={'o' + i} d={g.d} className="band" strokeWidth={OUT} strokeLinejoin="round" />)}
       {GLYPHS.map((g, i) => <path key={i} d={g.d} fill={fillOf(g, mode, id)} fillRule="evenodd" className="face" />)}
       <Bowl g={D1} inner={false} /><Bowl g={D2} inner={false} />
       {GLYPHS.map((_, i) => <Nodes key={'n' + i} i={i} />)}
-      {/* stems are all 1x */}
-      <HDim x1={9} x2={29.5} y={8} label="1x" />
-      <HDim x1={159} x2={179.5} y={46} label="1x" />
-      <HDim x1={203} x2={223.5} y={-10} label="1x" />
-      <HDim x1={278} x2={298.5} y={66} label="1x" />
-      {/* cap height, gaps, extrusion */}
-      <VDim x={-12} y1={W.box[1]} y2={W.box[3]} label="5.5x" />
-      <HDim x1={W.box[2]} x2={L.box[0]} y={146} label="½x" below />
-      <HDim x1={D1.box[2]} x2={D2.box[0]} y={128} label="½x" below />
-      <g>
-        <line x1={D2.box[2]} y1={D2.box[3] - 24} x2={D2.box[2] + EX} y2={D2.box[3] - 24 + EY} className="dim" />
-        <text x={D2.box[2] + EX + 6} y={D2.box[3] - 24 + EY + 3} className="lab">1x → 1x ↓ · {ANGLE}°</text>
-      </g>
-      <g>
-        <line x1={D1.box[2] - R} y1={D1.box[1] + R} x2={D1.box[2] + 26} y2={D1.box[1] - 16} className="dimt" />
-        <text x={D1.box[2] + 29} y={D1.box[1] - 16} className="lab">r 1½x</text>
-      </g>
-      <g>
-        <line x1={W.box[0]} y1={W.box[3] - 10} x2={-28} y2={W.box[3] + 30} className="dimt" />
-        <text x={-30} y={W.box[3] + 39} textAnchor="middle" className="lab">outline ⅓x</text>
-      </g>
+
+      {/* stems */}
+      {stem(W, W.box[0])}{stem(L, L.box[0])}{stem(D1, D1.box[0])}{stem(D2, D2.box[0])}
+      {/* widths and spacing, between the guides */}
+      <HDim x1={W.box[0]} x2={W.box[2]} y={rowA} label={ux(W.box[2] - W.box[0])} />
+      <HDim x1={W.box[2]} x2={L.box[0]} y={rowA} label={ux(L.box[0] - W.box[2])} />
+      <HDim x1={L.box[0]} x2={L.box[2]} y={rowA} label={ux(L.box[2] - L.box[0])} />
+      <HDim x1={lStem} x2={D1.box[0]} y={rowB} label={ux(D1.box[0] - lStem)} />
+      <HDim x1={D1.box[0]} x2={D1.box[2]} y={rowB} label={ux(D1.box[2] - D1.box[0])} />
+      <HDim x1={D1.box[2]} x2={D2.box[0]} y={rowB} label={ux(D2.box[0] - D1.box[2])} />
+      <HDim x1={D2.box[0]} x2={D2.box[2]} y={rowB} label={ux(D2.box[2] - D2.box[0])} />
+      {/* heights: cap on the left, the stagger chain on the right */}
+      <VDim x={W.box[0] - 1.3 * X} y1={W.box[1]} y2={W.box[3]} label={ux(W.box[3] - W.box[1])} />
+      {[[D1.box[1], W.box[1]], [W.box[1], L.box[1]], [L.box[1], D2.box[1]], [D2.box[1], D2.box[3]]].map(([a, b]) => (
+        <VDim key={a} x={chain} y1={a} y2={b} label={ux(b - a)} right />
+      ))}
+      {/* extrusion: a real corner to its twin */}
+      <line x1={ex[0]} y1={ex[1]} x2={ex[0] + EX} y2={ex[1] + EY} className="dim" />
+      <circle cx={ex[0]} cy={ex[1]} r="2.2" className="node-o" />
+      <text x={ex[0] + EX + 6} y={ex[1] + EY + 9} className="lab">{ux(EX)} → {ux(EY)} ↓ · {ANGLE}°</text>
+      {/* bowl radius: centre to arc */}
+      <circle cx={cx} cy={cy} r="1.8" className="node" />
+      <line x1={cx} y1={cy} x2={rp[0]} y2={rp[1]} className="dim" />
+      <line x1={rp[0]} y1={rp[1]} x2={rp[0] + 0.55 * X} y2={rp[1] - 0.55 * X} className="dimt" />
+      <text x={rp[0] + 0.6 * X} y={rp[1] - 0.6 * X} className="lab">r {ux(r)}</text>
+      {/* outline band */}
+      <line x1={W.box[0] - OUT * 0.35} y1={W.box[1] - OUT * 0.35} x2={W.box[0] - 1.1 * X} y2={W.box[1] - 1.1 * X} className="dimt" />
+      <text x={W.box[0] - 1.15 * X} y={W.box[1] - 1.2 * X} textAnchor="end" className="lab">outline {ux(OUT)}, centred</text>
     </svg>
   )
 }
@@ -147,7 +163,7 @@ function Anatomy({ mode, p, id }) {
             </g>
           ))}
           <text x="0" y="244" className="lab-lg-ink">{String(si + 1).padStart(2, '0')}  {s.k.toUpperCase()}</text>
-          <text x="0" y="264" className="lab-lg">{['1x system', 'stroke ⅓x, outside', `1x → 1x ↓ · ${ANGLE}°`, 'face + outline + extrusion'][si]}</text>
+          <text x="0" y="264" className="lab-lg">{[`built on x · cap ${ux(CAP)}`, `stroke ${ux(OUT)}, centred`, `${ux(EX)} → ${ux(EY)} ↓ · ${ANGLE}°`, 'face + outline + extrusion'][si]}</text>
         </g>
       ))}
     </svg>
@@ -181,16 +197,16 @@ function Letters({ mode, p, id }) {
                 <path d={g.d} fill={fillOf(g, mode, id)} fillRule="evenodd" className="face" vectorEffect="non-scaling-stroke" />
                 {g.ch === 'D' && <g style={{ vectorEffect: 'non-scaling-stroke' }}><Bowl g={g} /></g>}
                 {g.ch === 'W' && <>
-                  <line x1={9} y1={19} x2={36} y2={130} className="guide" vectorEffect="non-scaling-stroke" />
-                  <line x1={9} y1={19} x2={9} y2={130} className="guide" vectorEffect="non-scaling-stroke" strokeDasharray="2 2" />
-                  <line x1={78} y1={0} x2={78} y2={150} className="guide" vectorEffect="non-scaling-stroke" strokeDasharray="4 3" />
+                  <line x1={WN[0][0]} y1={WN[0][1]} x2={WN[12][0]} y2={WN[12][1]} className="guide" vectorEffect="non-scaling-stroke" />
+                  <line x1={WN[0][0]} y1={WN[0][1]} x2={WN[0][0]} y2={WN[12][1]} className="guide" vectorEffect="non-scaling-stroke" strokeDasharray="2 2" />
+                  <line x1={(x0 + x1) / 2} y1={y0 - X} x2={(x0 + x1) / 2} y2={y1 + X} className="guide" vectorEffect="non-scaling-stroke" strokeDasharray="4 3" />
                 </>}
                 <Nodes i={i} size={4.2 / s * 1.6} />
               </g>
             </g>
             <text x={i * cell + 12} y={cell - 12} className="lab-ink">{g.ch}{i === 3 ? '²' : ''}</text>
             <text x={i * cell + cell - 12} y={cell - 12} textAnchor="end" className="lab">
-              {[`stroke 1x · lean ${LEAN}° · mirrored`, 'stem 1x · foot 1x', `stem 1x · r 1½x · counter r ${RI}`, `stem 1x · r 1½x · counter r ${RI}`][i]}
+              {[`tops ${ux(WN[1][0] - WN[0][0])} · feet ${ux(WN[11][0] - WN[12][0])} · lean ${LEAN}° · mirrored`, `stem ${ux(X)} · foot ${ux(X)} · ${ux(L.box[2] - L.box[0])} wide`, `stem ${ux(X)} · r ${ux(R)} · counter ${ux(X)}, r ${ux(RI)}`, `stem ${ux(X)} · r ${ux(R)} · counter ${ux(X)}, r ${ux(RI)}`][i]}
             </text>
           </g>
         )
@@ -218,10 +234,10 @@ function ClearSpace({ mode, p, id }) {
           <path d={g.d} fill={mode === 'colour' ? g.c : `url(#${id}h)`} fillRule="evenodd" className="mface" strokeWidth={OUT} paintOrder="stroke" />
         </g>
       ))}
-      <HDim x1={o[0]} x2={b[0]} y={(b[1] + b[3]) / 2} label="2x" />
-      <HDim x1={b[2]} x2={o[2]} y={(b[1] + b[3]) / 2} label="2x" />
-      <VDim x={(b[0] + b[2]) / 2} y1={o[1]} y2={b[1]} label="2x" right />
-      <VDim x={(b[0] + b[2]) / 2} y1={b[3]} y2={o[3]} label="2x" right />
+      <HDim x1={o[0]} x2={b[0]} y={(b[1] + b[3]) / 2} label={ux(m)} />
+      <HDim x1={b[2]} x2={o[2]} y={(b[1] + b[3]) / 2} label={ux(m)} />
+      <VDim x={(b[0] + b[2]) / 2} y1={o[1]} y2={b[1]} label={ux(m)} right />
+      <VDim x={(b[0] + b[2]) / 2} y1={b[3]} y2={o[3]} label={ux(m)} right />
     </svg>
   )
 }
