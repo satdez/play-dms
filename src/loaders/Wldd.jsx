@@ -192,7 +192,7 @@ function Letter({ g, press, i }) {
  * WLDD wordmark loader. `size` ≈ the logo's height in px.
  * mode: press · dance · drop · flip · build · deal · swatch · cycle. Done settles every letter into the logo.
  */
-export function Wldd({ size = 48, done = false, mode = 'press', tight = false }) {
+export function Wldd({ size = 48, done = false, mode = 'press', tight = false, label = 'Loading' }) {
   const n = useTick(mode === 'cycle' ? 620 : 520, (mode === 'dance' || mode === 'cycle') && !done)
   const uid = useId().replace(/:/g, '')
   const wide = mode === 'portal' || mode === 'travel'
@@ -202,7 +202,7 @@ export function Wldd({ size = 48, done = false, mode = 'press', tight = false })
   const vb = crop ? VB_CYCLE : mode === 'travel' ? VB_TRAVEL : mode === 'portal' ? VB_PORTAL : VB
   const ratio = crop ? 1 : mode === 'travel' ? 760 / 244 : mode === 'portal' ? 562 / 244 : 384 / 232
   return (
-    <svg className={'wl wl-' + mode} viewBox={vb} height={h} width={h * ratio} fill="none" aria-label="Loading" role="img">
+    <svg className={'wl wl-' + mode} viewBox={vb} height={h} width={h * ratio} fill="none" aria-label={label} role="img">
       {mode === 'portal' && <Portal done={done} id={'wlp' + uid} />}
       {mode === 'travel' && <>
         <Portal done={done} id={'wla' + uid} life={LIFE_IN} />

@@ -15,6 +15,7 @@ import { StoreProvider, useStore } from './store'
 import { go, Popover, RoleIcon, ROLE_ICON, ExpCtx } from './ui'
 import Home from './pages/Home'
 import Hub, { HOME_LAYOUTS } from './pages/Hub'
+import { Wldd } from '../loaders/Wldd'
 import { CampaignList, CampaignPage, PodApprovals } from './pages/Pod'
 import { FinCampaigns, FinInvoices, Payments, Requests, Vendors } from './pages/Finance'
 import { BdDashboard, Outreach, Proposals, InboundPage } from './pages/Bd'
@@ -347,7 +348,7 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
     <aside className={'vx-side' + (open ? ' open' : '')}>
       <Popover align="left" width={232} trigger={({ toggle }) => (
         <button className="vx-scope" onClick={toggle}>
-          <img src="/wldd-logo.svg" alt="WLDD" />
+          <Mark />
           <span className="vx-badge"><RoleIcon role={r.id} size={16} /><TextMorph>{r.label}</TextMorph></span>
           <ChevronsUpDown size={14} className="mute" style={{ marginLeft: 'auto' }} />
         </button>
@@ -584,7 +585,7 @@ function PanelSidebar({ role, switchRole, path, look, open }) {
   return (
     <aside className={'d-side' + (open ? ' open' : '')}>
       <div className="d-brand">
-        <a href="#/hub" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        <a href="#/hub" aria-label="WLDD home"><Mark /></a>
         <span className="sb-tools"><ThemeToggle look={look} /><CollapseBtn look={look} /></span>
       </div>
 
@@ -638,7 +639,7 @@ function RailSidebar({ role, switchRole, path, look, open }) {
   return (
     <aside className={'d-side sb-rail' + (open ? ' open' : '')}>
       <div className="sb-railcol">
-        <a href="#/hub" className="sb-mark" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        <a href="#/hub" className="sb-mark" aria-label="WLDD home"><Mark /></a>
         <WsButton x={HUB} i={0} on={onHub(path)} onClick={() => go('/hub')} />
         {seen().map((x, i) => {
           const due = pendingOf(x.id, s)
@@ -673,7 +674,7 @@ function IconSidebar({ role, switchRole, path, look, open }) {
   const { s, nav, pinned, active } = useSide(role, path)
   return (
     <aside className={'d-side sb-icons' + (open ? ' open' : '')}>
-      <a href="#/hub" className="sb-mark" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+      <a href="#/hub" className="sb-mark" aria-label="WLDD home"><Mark /></a>
       <div className="sb-wsrow">
         <WsButton x={HUB} i={0} on={onHub(path)} onClick={() => go('/hub')} />
         {seen().map((x, i) => {
@@ -709,12 +710,18 @@ function IconSidebar({ role, switchRole, path, look, open }) {
 }
 
 /** Every workspace at once: handoffs are visible without switching. Opening another workspace switches to it. */
+/** The WLDD wordmark, drawn in code. At rest it is the logo; on hover the letters press into their shadows. */
+function Mark() {
+  const [on, setOn] = useState(false)
+  return <span className="wl-logo" onMouseEnter={() => setOn(true)} onMouseLeave={() => setOn(false)}><Wldd mode="press" done={!on} size={30} label="WLDD" /></span>
+}
+
 function StackSidebar({ role, switchRole, path, look, open }) {
   const { s, nav, pinned, active } = useSide(role, path)
   return (
     <aside className={'d-side sb-stack' + (open ? ' open' : '')}>
       <div className="d-brand">
-        <a href="#/hub" aria-label="WLDD home"><img src="/wldd-logo.svg" alt="WLDD" /></a>
+        <a href="#/hub" aria-label="WLDD home"><Mark /></a>
         <span className="sb-tools"><ThemeToggle look={look} /><CollapseBtn look={look} /></span>
       </div>
       {/* Middle scrolls; brand and footer stay put. */}

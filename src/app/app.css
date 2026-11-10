@@ -38,7 +38,8 @@ html[data-variant='app'][data-theme='dark'] {
 /* ───────── Sidebar ───────── */
 .d-side { width: 236px; flex: none; display: flex; flex-direction: column; padding: 14px 10px 10px; gap: 2px; }
 .d-brand { display: flex; align-items: center; justify-content: space-between; padding: 0 6px 14px; }
-.d-brand img { height: 30px; display: block; }
+.d-brand img, .d-brand .wl { height: 30px; width: auto; display: block; }
+.wl-logo { display: block; }
 .d-role { position: relative; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 8px 0 10px; margin: 0 0 10px; border-radius: 10px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-1); font-weight: 600; width: 100%; text-align: left; }
 .d-role:hover { box-shadow: 0 0 0 1px var(--line-2), var(--shadow-1); }
 /* Workspace icon: neutral grey tile, module colour only in the outline stroke (Lucide is outline-only; no fills, no ring) */
@@ -241,7 +242,7 @@ html[data-theme='dark'] .bar .b { background: rgba(0,0,0,.08); }
 html[data-variant='app'] .d-side.sb-rail { width: 268px; padding: 0; flex-direction: row; gap: 0; }
 .sb-railcol { width: 64px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0 12px; box-shadow: inset -1px 0 0 var(--line); }
 .sb-railcol .sb-mark, .sb-icons .sb-mark { height: 36px; margin-bottom: 6px; } /* logo stands on its own, no tile */
-html[data-variant='app'] .d-side .sb-mark img { height: 20px; display: block; }
+html[data-variant='app'] .d-side .sb-mark img, html[data-variant='app'] .d-side .sb-mark .wl { height: 20px; width: auto; display: block; }
 .sb-ws { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 56px; padding: 0; color: var(--muted); transition: transform 160ms var(--ease-out); }
 .sb-ws:active { transform: scale(.97); }
 .sb-ws-t { position: relative; width: 36px; height: 32px; border-radius: 10px; display: grid; place-items: center; transition: background 120ms, color 120ms; }

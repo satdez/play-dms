@@ -138,7 +138,7 @@
 
 /* ═════════ LINEAR — inset panel, full-bleed dense rows, view tabs + Display ═════════ */
 html[data-exp='linear'] .d-side { width: 224px; padding: 12px 8px 10px; }
-html[data-exp='linear'] .d-brand img { height: 26px; }
+html[data-exp='linear'] .d-brand img, html[data-exp='linear'] .d-brand .wl { height: 26px; }
 html[data-exp='linear'] .d-role { height: 30px; margin-bottom: 8px; }
 html[data-exp='linear'] .d-item { height: 28px; gap: 9px; font-size: 13px; }
 html[data-exp='linear'] .d-main { margin: 8px 8px 8px 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow-1); }
@@ -187,7 +187,7 @@ html[data-exp='vercel'] .card, html[data-exp='vercel'] .metrics { box-shadow: 0 
 .vx-side { width: 244px; flex: none; display: flex; flex-direction: column; gap: 2px; padding: 10px 8px; border-right: 1px solid var(--line); background: var(--bg); }
 .vx-scope { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 8px; border-radius: 6px; margin-bottom: 4px; }
 .vx-scope:hover { background: var(--hover); }
-.vx-scope img { height: 20px; display: block; }
+.vx-scope img, .vx-scope .wl { height: 20px; width: auto; display: block; }
 .vx-badge { display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 7px; border-radius: 99px; font-size: 12px; font-weight: 500; background: var(--sunken); color: var(--fg-2); }
 .vx-find { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 6px 0 10px; margin-bottom: 8px; border-radius: 6px; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line-2); background: var(--surface); }
 .vx-find span { margin-right: auto; }
@@ -261,7 +261,7 @@ a.vx-u:hover, .vx-panel .vx-u:hover { background: var(--hover); }
 
 /* ═════════ ATTIO — records: object header, view bar, spreadsheet grid, peek panel ═════════ */
 html[data-exp='attio'] .d-side { width: 232px; padding: 12px 8px 10px; background: var(--bg); }
-html[data-exp='attio'] .d-brand img { height: 26px; }
+html[data-exp='attio'] .d-brand img, html[data-exp='attio'] .d-brand .wl { height: 26px; }
 html[data-exp='attio'] .d-role { height: 32px; border-radius: 8px; }
 html[data-exp='attio'] .d-item { height: 30px; border-radius: 6px; font-size: 13px; }
 html[data-exp='attio'] .d-sec { text-transform: none; padding-top: 16px; }
