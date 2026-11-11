@@ -81,7 +81,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'panel', home: 'focus', viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -151,7 +151,7 @@ function Shell({ path }) {
   const [navOpen, setNavOpen] = useState(false) // phone drawer
   const qs = new URLSearchParams(location.search)
   const [style, setStyle] = useState(() => { const v = qs.get('style') || read('wldd-style', 'paper'); return swatch[v] ? v : 'paper' })
-  const [exp, setExp] = useState(() => { const v = qs.get('exp') || read('wldd-exp', 'linear'); return EXPERIENCES.some((x) => x.id === v) ? v : 'linear' })
+  const [exp, setExp] = useState(() => { const v = qs.get('exp') || read('wldd-exp', 'velin'); return EXPERIENCES.some((x) => x.id === v) ? v : 'velin' })
   const [tune, setTuneRaw] = useState(() => {
     let saved = {}
     try { saved = JSON.parse(read('wldd-pop', '{}')) } catch {}
@@ -446,10 +446,10 @@ function Notifications() {
 
 /* ───────── Sidebar ─────────
    Four shapes, picked in Settings › Preferences (prefs.sidebar). Same nav data, same footer controls.
-   panel   — logo, workspace switcher, pages (default)
+   panel   — logo, workspace switcher, pages
    rail    — workspace rail on the left, the workspace's pages beside it
    icons   — 56px column, labels in tooltips (full labels again in the phone drawer)
-   stack   — every workspace in one list; the current one open, the others show their pending total
+   stack   — every workspace in one list; the current one open, the others show their pending total (default)
    Navigation itself never animates: the active item is an instant fill. */
 function CollapseBtn({ look, side }) {
   const c = look.prefs.collapsed

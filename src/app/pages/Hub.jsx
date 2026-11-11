@@ -140,7 +140,7 @@ export const HOME_LAYOUTS = [
   { value: 'dock', label: 'Dock' },
 ]
 
-export default function Hub({ layout = 'focus' }) {
+export default function Hub({ layout = 'stack' }) {
   const s = useStore()
   const p = view()
   const mods = ROLES.filter((r) => p.roles.includes(r.id)).map((r) => r.id)
