@@ -2,7 +2,7 @@
    Neutral paper + ink. The four logo colours are reserved for module identity & meaning. */
 html[data-variant='app'] {
   --bg: #fafaf9; --surface: #ffffff; --sunken: #f4f4f2; --hover: rgba(24, 24, 27, .045); --press: rgba(24,24,27,.07);
-  --line: #ececea; --line-2: #e2e2df; --fg: #18181b; --fg-2: #46464c; --muted: #8b8b92; --faint: #b8b8bd;
+  --line: #ececea; --line-2: #e2e2df; --fg: #18181b; --fg-2: #46464c; --muted: #6e6e75; --faint: #b8b8bd;
   --ink: #18181b; --ink-fg: #ffffff;
   --green: #2fa866; --violet: #a24fe0; --pink: #e23d63; --yellow: #d99b12;
   --green-soft: #e9f7ef; --violet-soft: #f5ecfd; --pink-soft: #fdecf0; --yellow-soft: #fdf5e1;
@@ -14,7 +14,7 @@ html[data-variant='app'] {
 }
 html[data-variant='app'][data-theme='dark'] {
   --bg: #0f0f10; --surface: #151516; --sunken: #121213; --hover: rgba(255,255,255,.045); --press: rgba(255,255,255,.08);
-  --line: #232325; --line-2: #2c2c2f; --fg: #ececee; --fg-2: #b4b4ba; --muted: #7d7d85; --faint: #4a4a50;
+  --line: #232325; --line-2: #2c2c2f; --fg: #ececee; --fg-2: #b4b4ba; --muted: #7f7f87; --faint: #4a4a50;
   --ink: #ececee; --ink-fg: #111;
   --green: #5fcf86; --violet: #c88af5; --pink: #f26b88; --yellow: #f2bd2f;
   --green-soft: rgba(95,207,134,.12); --violet-soft: rgba(200,138,245,.12); --pink-soft: rgba(242,107,136,.12); --yellow-soft: rgba(242,189,47,.12);
