@@ -47,7 +47,6 @@ html[data-variant='app'][data-style='pop'][data-theme] {
   --lip: #bfc1b7; --cta: #f2bd2f; --cta-fg: #151515; --cta-lip: #c4920c;
   --pop: #fdfdf8; --overlay: rgba(21,21,21,.28); --shadow-1: none;
   --shadow-pop: 0 0 0 1px #bfc1b7, 0 10px 28px -10px rgba(40,38,30,.22);
-  --font: 'IBM Plex Sans', 'Inter', system-ui, sans-serif; --display: 'IBM Plex Sans', 'Inter', sans-serif;
   color-scheme: light;
 }
 html[data-variant='app'][data-style='pop'][data-theme='dark'] {
@@ -62,12 +61,10 @@ html[data-variant='app'][data-style='pop'][data-theme='dark'] {
   color-scheme: dark;
 }
 html[data-style='pop'] .d-main { border-left: 1px solid var(--line); }
-html[data-style='pop'] .d-h1 { font-weight: 700; letter-spacing: -0.02em; }
-html[data-style='pop'] .metric-v { font-weight: 700; letter-spacing: -0.02em; }
 
 /* controls: hairline + lip, press flattens it */
 html[data-style='pop'] .b, html[data-style='pop'] .d-role {
-  border-radius: var(--pr); font-weight: 600; background: var(--surface);
+  background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line-2), 0 2px 0 var(--lip);
   transition: transform 100ms var(--ease-out), box-shadow 100ms var(--ease-out), background 120ms, color 120ms;
 }
@@ -82,55 +79,62 @@ html[data-style='pop'] .b.ink:active { box-shadow: inset 0 0 0 1px var(--cta-lip
 html[data-style='pop'] .b.ink kbd.k { background: rgba(0,0,0,.08); color: inherit; }
 
 /* nav: calm. Active = raised surface tile, not a yellow slab */
-html[data-style='pop'] .d-item { border-radius: var(--pr); }
-html[data-style='pop'] .d-item.on { background: var(--surface); color: var(--fg); font-weight: 600; box-shadow: inset 0 0 0 1px var(--line-2), 0 2px 0 var(--lip); }
+html[data-pop-corner] .b, html[data-pop-corner] .d-role { border-radius: var(--pr); }
+html[data-pop-corner] .d-item { border-radius: var(--pr); }
+html[data-style='pop'] .d-item.on { background: var(--surface); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line-2), 0 2px 0 var(--lip); }
 html[data-style='pop'] .d-item.on > svg { color: var(--fg); }
 html[data-style='pop'] .d-item.on .n { color: var(--fg-2); }
 
 /* segmented: sunken track, raised pill */
-html[data-style='pop'] .seg { background: var(--sunken); border-radius: var(--pr); padding: 2px; }
-html[data-style='pop'] .seg button, html[data-style='pop'] .seg-bg { border-radius: var(--pr-s); }
+html[data-style='pop'] .seg { background: var(--sunken); padding: 2px; }
+html[data-pop-corner] .seg { border-radius: var(--pr); }
+html[data-pop-corner] .seg button, html[data-pop-corner] .seg-bg { border-radius: var(--pr-s); }
 html[data-style='pop'] .seg-bg { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2), 0 2px 0 var(--lip); }
-html[data-style='pop'] .seg button.on { color: var(--fg); font-weight: 600; }
+html[data-style='pop'] .seg button.on { color: var(--fg); }
 html[data-style='pop'] .tabs-u { background: var(--hl); height: 2px; }
 
 /* containers: hairline only */
 html[data-style='pop'] .card, html[data-style='pop'] .metrics, html[data-style='pop'] .pcard, html[data-style='pop'] .kcard, html[data-style='pop'] .vcard, html[data-style='pop'] .vx-card, html[data-style='pop'] .plan-bar {
-  border-radius: var(--pr); box-shadow: 0 0 0 1px var(--line-2);
+  box-shadow: 0 0 0 1px var(--line-2);
 }
+html[data-pop-corner] .card, html[data-pop-corner] .metrics, html[data-pop-corner] .pcard, html[data-pop-corner] .kcard, html[data-pop-corner] .vcard, html[data-pop-corner] .vx-card, html[data-pop-corner] .plan-bar { border-radius: var(--pr); }
 html[data-style='pop'] .kcard:hover, html[data-style='pop'] .vcard:hover, html[data-style='pop'] .vx-card:hover { box-shadow: 0 0 0 1px var(--faint), 0 2px 0 var(--lip); }
-html[data-style='pop'] .kb-col { border-radius: var(--pr-l); background: color-mix(in oklab, var(--sunken) 60%, transparent); }
+html[data-pop-corner] .kb-col { border-radius: var(--pr-l); }
+html[data-style='pop'] .kb-col { background: color-mix(in oklab, var(--sunken) 60%, transparent); }
 
 /* chips: soft fills, no outlines */
-html[data-style='pop'] .chip { border-radius: var(--pr-s); font-weight: 600; }
+html[data-pop-corner] .chip { border-radius: var(--pr-s); }
 html[data-style='pop'] .chip.g { background: var(--green-soft); color: var(--green); }
 html[data-style='pop'] .chip.v { background: var(--violet-soft); color: var(--violet); }
 html[data-style='pop'] .chip.p { background: var(--pink-soft); color: var(--pink); }
 html[data-style='pop'] .chip.y { background: var(--yellow-soft); color: color-mix(in oklab, var(--yellow) 75%, var(--fg)); }
-html[data-style='pop'] .svc-c { border-radius: var(--pr-s); }
+html[data-pop-corner] .svc-c { border-radius: var(--pr-s); }
 
 /* inputs, switches, overlays */
-html[data-style='pop'] .inp { border-radius: var(--pr); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
+html[data-pop-corner] .inp { border-radius: var(--pr); }
+html[data-style='pop'] .inp { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
 html[data-style='pop'] .inp:focus-within { box-shadow: inset 0 0 0 1px var(--fg-2), 0 0 0 3px color-mix(in oklab, var(--hl) 28%, transparent); }
 html[data-style='pop'] .sw.on { background: var(--hl); }
-html[data-style='pop'] .pop, html[data-style='pop'] .sheet, html[data-style='pop'] .tray, html[data-style='pop'] .cmdk-content { border-radius: var(--pr-l); }
-html[data-style='pop'] .ncd { --ro: var(--pr-l); }
+html[data-pop-corner] .pop, html[data-pop-corner] .sheet, html[data-pop-corner] .tray, html[data-pop-corner] .cmdk-content { border-radius: var(--pr-l); }
+html[data-pop-corner] .ncd { --ro: var(--pr-l); }
 html[data-style='pop'] .ncd-go { background: var(--cta); color: var(--cta-fg); box-shadow: 0 2px 0 var(--cta-lip); }
 html[data-style='pop'] .ncd-go:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
-html[data-style='pop'] .tray-cta { background: var(--cta); color: var(--cta-fg); box-shadow: 0 2px 0 var(--cta-lip); border-radius: var(--pr); }
+html[data-style='pop'] .tray-cta { background: var(--cta); color: var(--cta-fg); box-shadow: 0 2px 0 var(--cta-lip); }
+html[data-pop-corner] .tray-cta { border-radius: var(--pr); }
 html[data-style='pop'] .tray-cta:active { transform: translateY(2px); box-shadow: none; }
-html[data-style='pop'] .bar { border-radius: var(--pr-l); }
-html[data-style='pop'] .logo, html[data-style='pop'] .brand-logo { border-radius: var(--pr) !important; }
+html[data-pop-corner] .bar { border-radius: var(--pr-l); }
+html[data-pop-corner] .logo, html[data-pop-corner] .brand-logo { border-radius: var(--pr) !important; }
 html[data-style='pop'] .track i.cur, html[data-style='pop'] .step.cur .step-bar i { background: var(--green); }
 html[data-style='pop'] .tbl td, html[data-style='pop'] .tbl th { border-color: var(--line); }
 
 /* ═════════ POP TUNER — four axes, mixed freely (src/app/popTune.jsx) ═════════
-   tone → surfaces + CTA colour · btn → control depth · font → type · corner → radii.
+   tone → surfaces + CTA colour (colour only). Corners and type are personal preferences in every style.
    Tone selectors carry [data-theme] so they outrank the Sand base block above. */
-html[data-style='pop'] { --pr: 6px; --pr-s: 5px; --pr-l: 8px; --hl: var(--cta); }
-html[data-style='pop'][data-pop-corner='4']  { --pr: 4px;  --pr-s: 3px;  --pr-l: 6px; }
-html[data-style='pop'][data-pop-corner='10'] { --pr: 10px; --pr-s: 7px;  --pr-l: 12px; }
-html[data-style='pop'][data-pop-corner='14'] { --pr: 14px; --pr-s: 10px; --pr-l: 16px; }
+html[data-style='pop'] { --hl: var(--cta); }
+html[data-pop-corner='6']  { --pr: 6px;  --pr-s: 5px;  --pr-l: 8px; }
+html[data-pop-corner='4']  { --pr: 4px;  --pr-s: 3px;  --pr-l: 6px; }
+html[data-pop-corner='10'] { --pr: 10px; --pr-s: 7px;  --pr-l: 12px; }
+html[data-pop-corner='14'] { --pr: 14px; --pr-s: 10px; --pr-l: 16px; }
 
 /* ── Tone: Sage — cool moss paper, deep green CTA ── */
 html[data-variant='app'][data-style='pop'][data-pop-tone='sage'][data-theme] {
@@ -193,57 +197,20 @@ html[data-variant='app'][data-style='pop'][data-pop-tone='clay'][data-theme='dar
 }
 
 /* ── Type ── */
-html[data-variant='app'][data-style='pop'][data-pop-font='geist'][data-theme] { --font: 'Geist', 'Inter', system-ui, sans-serif; --display: 'Geist', 'Inter', sans-serif; }
-html[data-variant='app'][data-style='pop'][data-pop-font='manrope'][data-theme] { --font: 'Manrope', 'Inter', system-ui, sans-serif; --display: 'Manrope', 'Inter', sans-serif; }
-html[data-variant='app'][data-style='pop'][data-pop-font='bricolage'][data-theme] { --font: 'Inter', system-ui, sans-serif; --display: 'Bricolage Grotesque', 'Inter', sans-serif; }
-html[data-style='pop'][data-pop-font='geist'] .d-h1 { font-weight: 600; letter-spacing: -0.035em; }
-html[data-style='pop'][data-pop-font='manrope'] .d-h1, html[data-style='pop'][data-pop-font='manrope'] .metric-v { font-weight: 800; letter-spacing: -0.03em; }
-html[data-style='pop'][data-pop-font='bricolage'] .d-h1, html[data-style='pop'][data-pop-font='bricolage'] .metric-v { font-weight: 700; letter-spacing: -0.02em; }
-html[data-style='pop'][data-pop-font='bricolage'] .b, html[data-style='pop'][data-pop-font='bricolage'] .d-item.on { font-weight: 550; }
+html[data-variant='app'][data-pop-font='plex'][data-theme] { --font: 'IBM Plex Sans', 'Inter', system-ui, sans-serif; --display: 'IBM Plex Sans', 'Inter', sans-serif; }
+html[data-variant='app'][data-pop-font='geist'][data-theme] { --font: 'Geist', 'Inter', system-ui, sans-serif; --display: 'Geist', 'Inter', sans-serif; }
+html[data-variant='app'][data-pop-font='manrope'][data-theme] { --font: 'Manrope', 'Inter', system-ui, sans-serif; --display: 'Manrope', 'Inter', sans-serif; }
+html[data-variant='app'][data-pop-font='bricolage'][data-theme] { --font: 'Inter', system-ui, sans-serif; --display: 'Bricolage Grotesque', 'Inter', sans-serif; }
+html[data-pop-font='geist'] .d-h1 { font-weight: 600; letter-spacing: -0.035em; }
+html[data-pop-font='manrope'] .d-h1, html[data-pop-font='manrope'] .metric-v { font-weight: 800; letter-spacing: -0.03em; }
+html[data-pop-font='bricolage'] .d-h1, html[data-pop-font='bricolage'] .metric-v { font-weight: 700; letter-spacing: -0.02em; }
+html[data-pop-font='bricolage'] .b, html[data-pop-font='bricolage'] .d-item.on { font-weight: 550; }
 
 /* ── Buttons: Flat — hairline only, no lip; press scales ── */
-html[data-style='pop'][data-pop-btn='flat'] .b, html[data-style='pop'][data-pop-btn='flat'] .d-role { box-shadow: inset 0 0 0 1px var(--line-2); font-weight: 500; }
-html[data-style='pop'][data-pop-btn='flat'] .b:active, html[data-style='pop'][data-pop-btn='flat'] .d-role:active { transform: scale(.97); box-shadow: inset 0 0 0 1px var(--line-2); }
-html[data-style='pop'][data-pop-btn='flat'] .b.ghost { box-shadow: none; }
-html[data-style='pop'][data-pop-btn='flat'] .b.ink { box-shadow: none; }
-html[data-style='pop'][data-pop-btn='flat'] .b.ink:hover { background: color-mix(in oklab, var(--cta) 88%, var(--fg)); }
-html[data-style='pop'][data-pop-btn='flat'] .b.ink:active { box-shadow: none; }
-html[data-style='pop'][data-pop-btn='flat'] .d-item.on { box-shadow: inset 0 0 0 1px var(--line-2); font-weight: 500; }
-html[data-style='pop'][data-pop-btn='flat'] .seg-bg { box-shadow: inset 0 0 0 1px var(--line-2); }
-html[data-style='pop'][data-pop-btn='flat'] .tray-cta { box-shadow: none; }
-html[data-style='pop'][data-pop-btn='flat'] .tray-cta:active { transform: scale(.97); }
-html[data-style='pop'][data-pop-btn='flat'] .kcard:hover, html[data-style='pop'][data-pop-btn='flat'] .vcard:hover, html[data-style='pop'][data-pop-btn='flat'] .vx-card:hover { box-shadow: 0 0 0 1px var(--faint); }
 
 /* ── Buttons: Soft — tinted fills, no outlines; CTA gets a glossy top edge ── */
-html[data-style='pop'][data-pop-btn='soft'] .b, html[data-style='pop'][data-pop-btn='soft'] .d-role { background: var(--sunken); box-shadow: none; font-weight: 500; }
-html[data-style='pop'][data-pop-btn='soft'] .b:hover { background: color-mix(in oklab, var(--sunken) 86%, var(--fg)); }
-html[data-style='pop'][data-pop-btn='soft'] .b:active, html[data-style='pop'][data-pop-btn='soft'] .d-role:active { transform: scale(.97); box-shadow: none; }
-html[data-style='pop'][data-pop-btn='soft'] .b.ghost { background: transparent; }
-html[data-style='pop'][data-pop-btn='soft'] .b.ghost:hover { background: var(--hover); }
-html[data-style='pop'][data-pop-btn='soft'] .b.ink { background: var(--cta); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 1px 2px color-mix(in oklab, var(--cta-lip) 50%, transparent), 0 4px 12px -4px color-mix(in oklab, var(--cta) 55%, transparent); }
-html[data-style='pop'][data-pop-btn='soft'] .b.ink:hover { background: color-mix(in oklab, var(--cta) 90%, #fff); }
-html[data-style='pop'][data-pop-btn='soft'] .b.ink:active { box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
-html[data-style='pop'][data-pop-btn='soft'] .d-item.on { background: var(--press); box-shadow: none; }
-html[data-style='pop'][data-pop-btn='soft'] .seg-bg { box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.05); }
-html[data-style='pop'][data-pop-btn='soft'] .inp { background: var(--sunken); box-shadow: none; }
-html[data-style='pop'][data-pop-btn='soft'] .tray-cta { box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 4px 12px -4px color-mix(in oklab, var(--cta) 55%, transparent); }
-html[data-style='pop'][data-pop-btn='soft'] .tray-cta:active { transform: scale(.97); }
-html[data-style='pop'][data-pop-btn='soft'] .card, html[data-style='pop'][data-pop-btn='soft'] .metrics, html[data-style='pop'][data-pop-btn='soft'] .pcard, html[data-style='pop'][data-pop-btn='soft'] .kcard, html[data-style='pop'][data-pop-btn='soft'] .vcard, html[data-style='pop'][data-pop-btn='soft'] .vx-card { box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0,0,0,.04); }
-html[data-style='pop'][data-pop-btn='soft'] .kcard:hover, html[data-style='pop'][data-pop-btn='soft'] .vcard:hover, html[data-style='pop'][data-pop-btn='soft'] .vx-card:hover { box-shadow: 0 0 0 1px var(--line-2), 0 4px 14px -6px rgba(0,0,0,.14); }
 
 /* ── Buttons: Pill — round controls, 1px lip ── */
-html[data-style='pop'][data-pop-btn='pill'] .b, html[data-style='pop'][data-pop-btn='pill'] .seg, html[data-style='pop'][data-pop-btn='pill'] .seg button, html[data-style='pop'][data-pop-btn='pill'] .seg-bg,
-html[data-style='pop'][data-pop-btn='pill'] .chip, html[data-style='pop'][data-pop-btn='pill'] .vtab, html[data-style='pop'][data-pop-btn='pill'] .inp, html[data-style='pop'][data-pop-btn='pill'] .tray-cta { border-radius: 99px; }
-html[data-style='pop'][data-pop-btn='pill'] .b, html[data-style='pop'][data-pop-btn='pill'] .d-role { box-shadow: inset 0 0 0 1px var(--line-2), 0 1px 0 var(--lip); font-weight: 500; }
-html[data-style='pop'][data-pop-btn='pill'] .b:not(.icon) { padding: 0 14px; }
-html[data-style='pop'][data-pop-btn='pill'] .b.sm:not(.icon) { padding: 0 11px; }
-html[data-style='pop'][data-pop-btn='pill'] .b:active, html[data-style='pop'][data-pop-btn='pill'] .d-role:active { transform: translateY(1px); box-shadow: inset 0 0 0 1px var(--line-2); }
-html[data-style='pop'][data-pop-btn='pill'] .b.ghost { box-shadow: none; }
-html[data-style='pop'][data-pop-btn='pill'] .b.ink { box-shadow: 0 1px 0 var(--cta-lip); }
-html[data-style='pop'][data-pop-btn='pill'] .b.ink:active { box-shadow: none; }
-html[data-style='pop'][data-pop-btn='pill'] .d-item.on { box-shadow: inset 0 0 0 1px var(--line-2); }
-html[data-style='pop'][data-pop-btn='pill'] .seg-bg { box-shadow: inset 0 0 0 1px var(--line-2), 0 1px 0 var(--lip); }
-html[data-style='pop'][data-pop-btn='pill'] .tray-cta { box-shadow: 0 1px 0 var(--cta-lip); }
 
 /* ── Colour orb (shared) ── */
 .orb { display: inline-block; flex: none; border-radius: 99px; background: linear-gradient(135deg, var(--a) 0 52%, var(--b) 52% 100%);
@@ -368,7 +335,7 @@ html[data-style='pop'][data-pop-tone='jam'] .vx-side {
 /* Flush layouts drop the seam; Linear's inset panel keeps its full outline */
 html[data-style='pop'][data-pop-tone='jam']:not([data-exp='linear']) .d-main { border-left-color: transparent; }
 html[data-style='pop'][data-pop-tone='jam'] .d-side .d-item.on,
-html[data-style='pop'][data-pop-tone='jam'] .vx-side .vx-item.on { background: var(--side-hi); color: #fff; box-shadow: 0 2px 0 var(--lip); font-weight: 600; }
+html[data-style='pop'][data-pop-tone='jam'] .vx-side .vx-item.on { background: var(--side-hi); color: #fff; box-shadow: 0 2px 0 var(--lip); }
 html[data-style='pop'][data-pop-tone='jam'] .d-side .d-item.on .n { color: var(--cta); }
 html[data-style='pop'][data-pop-tone='jam'] .d-side kbd.k, html[data-style='pop'][data-pop-tone='jam'] .vx-side kbd.k { background: rgba(255,255,255,.08); box-shadow: none; }
 

@@ -155,14 +155,17 @@ function Shell({ path }) {
   const [tune, setTuneRaw] = useState(() => {
     let saved = {}
     try { saved = JSON.parse(read('wldd-pop', '{}')) } catch {}
+    // Saves from before v2 held the font and corners presets used to force; they weren't choices.
+    if (saved.v !== 2) { delete saved.font; delete saved.corner }
     const fromUrl = Object.fromEntries(TUNE_AXES.map((a) => [a.id, qs.get(a.id)]).filter(([, v]) => v))
     return normTune({ ...saved, ...fromUrl })
   })
-  const setTune = (t) => { setTuneRaw(normTune(t)); setStyle('pop') }
+  // Picking a colour tone switches to Pop; changing type or corners never changes the style.
+  const setTune = (t, toPop = true) => { setTuneRaw(normTune(t)); if (toPop) setStyle('pop') }
   useVariantRoot('app', theme)
   useEffect(() => {
     applyTune(tune)
-    try { localStorage.setItem('wldd-pop', JSON.stringify(tune)) } catch {}
+    try { localStorage.setItem('wldd-pop', JSON.stringify({ ...tune, v: 2 })) } catch {}
   }, [tune])
   useEffect(() => () => clearTune(), [])
   baseFmt.intl = prefs.numbers === 'intl' // read at render by fmt.inr
@@ -220,7 +223,7 @@ function Shell({ path }) {
       if (e.altKey && e.code === 'KeyH') { e.preventDefault(); const i = HOME_LAYOUTS.findIndex((x) => x.value === prefs.home); setPrefs({ ...prefs, home: HOME_LAYOUTS[(i + 1) % HOME_LAYOUTS.length].value }); go('/hub'); return }
       if (e.altKey && e.code === 'KeyE') { e.preventDefault(); setExp((s) => EXPERIENCES[(EXPERIENCES.findIndex((x) => x.id === s) + 1) % EXPERIENCES.length].id); return }
       if (e.altKey && e.code === 'KeyS') { e.preventDefault(); setStyle((s) => STYLES[(STYLES.findIndex((x) => x.id === s) + 1) % STYLES.length].id); return }
-      if (e.altKey && e.code === 'KeyP') { e.preventDefault(); const i = PRESETS.findIndex((p) => p.id === presetOf(tune)?.id); setTune(PRESETS[style === 'pop' ? (i + 1) % PRESETS.length : Math.max(i, 0)].v); return }
+      if (e.altKey && e.code === 'KeyP') { e.preventDefault(); const i = PRESETS.findIndex((p) => p.id === presetOf(tune)?.id); setTune({ ...tune, ...PRESETS[style === 'pop' ? (i + 1) % PRESETS.length : Math.max(i, 0)].v }); return }
       if (e.key === 'f' && exp === 'vercel' && !e.altKey) { e.preventDefault(); setCmd(true); return }
       if (e.key === 'c' && role === 'pod' && !e.altKey) { e.preventDefault(); openNewCampaign('key') }
     }
@@ -325,7 +328,7 @@ function Appearance({ look, close }) {
           <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{style === x.id && <Check size={14} />}{i === 0 && <kbd className="k">{ALT}S</kbd>}{x.id === 'pop' && <kbd className="k">{ALT}P</kbd>}</span>
         </button>
       ))}
-      {style === 'pop' && <PopTuner tune={tune} setTune={setTune} />}
+      {style === 'pop' ? <PopTuner tune={tune} setTune={setTune} /> : <PopTuner tune={tune} setTune={setTune} axes={['font', 'corner']} presets={false} />}
       <div className="pop-sep" />
       <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
         {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />} {theme === 'light' ? 'Dark' : 'Light'} mode
@@ -868,7 +871,7 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         </Command.Group>
         <Command.Group heading="Style">
           {STYLES.map((x) => <Command.Item key={x.id} value={'style ' + x.label} onSelect={run(() => look.setStyle(x.id))}><Swatch id={x.id} tune={look.tune} /> {x.label}</Command.Item>)}
-          {PRESETS.map((p) => <Command.Item key={p.id} value={'pop ' + p.label} onSelect={run(() => look.setTune(p.v))}><Swatch id="pop" tune={p.v} /> Pop · {p.label}{look.style === 'pop' && presetOf(look.tune)?.id === p.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
+          {PRESETS.map((p) => <Command.Item key={p.id} value={'pop ' + p.label} onSelect={run(() => look.setTune({ ...look.tune, ...p.v }))}><Swatch id="pop" tune={p.v} /> Pop · {p.label}{look.style === 'pop' && presetOf(look.tune)?.id === p.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
       </Command.List>
     </Command.Dialog>

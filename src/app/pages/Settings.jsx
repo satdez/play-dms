@@ -351,7 +351,7 @@ function Preferences({ look }) {
                 {prefs.accent && <button className="b ghost sm" onClick={() => set('accent')(null)}>Reset</button>}
               </span>
             </Row>
-            <Row label="Mixer" tip="Tone, buttons, type and corners. Uses the Pop style." stack>
+            <Row label="Mixer" tip="A colour tone (switches to Pop), plus type and corners, which work in every style." stack>
               <PopTuner tune={tune} setTune={setTune} />
             </Row>
           </div>
