@@ -3,7 +3,7 @@
   measurement on the construction sheets is exact. Traced original kept in wlddTraced.js.
 
   Letter      width 3x (W 7x) · height 5½x · stems 1x
-  W           tops 1x wide at 0–1x, 3–4x, 6–7x · feet 1¼x wide · valleys at 3½x · peak at 2½x · mirrored
+  W           tops 1x wide at 0–1x, 3–4x, 6–7x · feet 1¼x wide · every stroke edge parallel (lean 1:4), so stems stay 1x · valleys at 4x · peak at 2x · mirrored
   L           stem 1x · foot 1x · width 3x
   D           width 3x · bowl corners r 1½x · counter 1x wide, ends r ½x (fully round)
   Spacing     W ½x L · D starts 1x after L's stem (overlaps the foot) · D ½x D
@@ -35,7 +35,7 @@ const L0 = [LEFT + 7.5 * X, TOP + 3 * X]
 const D10 = [L0[0] + 2 * X, TOP]
 const D20 = [D10[0] + 3.5 * X, TOP + 4 * X]
 
-const W_UV = [[0, 0], [1, 0], [2, 3.5], [3, 0], [4, 0], [5, 3.5], [6, 0], [7, 0], [5.75, 5.5], [4.5, 5.5], [3.5, 2.5], [2.5, 5.5], [1.25, 5.5]]
+const W_UV = [[0, 0], [1, 0], [2, 4], [3, 0], [4, 0], [5, 4], [6, 0], [7, 0], [5.625, 5.5], [4.375, 5.5], [3.5, 2], [2.625, 5.5], [1.375, 5.5]]
 const L_UV = [[0, 0], [1, 0], [1, 4.5], [3, 4.5], [3, 5.5], [0, 5.5]]
 
 function dGlyph([x0, y0], c) {
