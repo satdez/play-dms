@@ -436,7 +436,7 @@ function Notifications() {
         <div style={{ padding: 4 }}>
           {[[team[1], 'shared a report', 'Netflix India × Diwali Drop', '12m'], [team[6], 'flagged GST mismatch', 'INV/26-27/0515', '1h'], [team[3], 'mentioned you', 'District × S5 Launch', '3h'], [team[8], 'converted a proposal', 'Licious', '1d']].map(([u, t, c, a], i) => (
             <div key={i} className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '8px 8px' }}>
-              <span className="av" style={{ width: 22, height: 22, fontSize: 9, background: `oklch(0.62 0.13 ${u.hue})` }}>{u.name.split(' ').map((p) => p[0]).join('')}</span>
+              <span className="av" style={{ width: 22, height: 22, fontSize: 9, background: `oklch(0.52 0.12 ${u.hue})` }}>{u.name.split(' ').map((p) => p[0]).join('')}</span>
               <div className="grow"><div><b style={{ fontWeight: 600 }}>{u.short}</b> <span className="fg2">{t}</span></div><div className="mute xs ell">{c}</div></div>
               <span className="mute xs">{a}</span>
             </div>
@@ -497,7 +497,7 @@ function RoleMenu({ role, switchRole, close }) {
 }
 
 const initials = (n) => n.split(' ').map((p) => p[0]).join('').slice(0, 2)
-const Avatar = ({ size = 24 }) => <span className="av" style={{ width: size, height: size, fontSize: size > 22 ? 10 : 9, background: `oklch(0.62 0.13 ${VIEW.person.hue})` }}>{initials(VIEW.person.name)}</span>
+const Avatar = ({ size = 24 }) => <span className="av" style={{ width: size, height: size, fontSize: size > 22 ? 10 : 9, background: `oklch(0.52 0.12 ${VIEW.person.hue})` }}>{initials(VIEW.person.name)}</span>
 
 function AppearanceBtn({ look, side = 'top' }) {
   return (

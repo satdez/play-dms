@@ -68,7 +68,7 @@ export function Avatar({ user, size = 20, ring, className = '' }) {
       title={user.name || user.handle}
       style={{
         width: size, height: size, fontSize: Math.max(8, size * 0.42),
-        background: `oklch(0.62 0.13 ${hue})`,
+        background: `oklch(0.52 0.12 ${hue})`,
         boxShadow: ring ? `0 0 0 2px ${ring}` : undefined,
       }}
     >

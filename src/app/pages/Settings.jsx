@@ -81,7 +81,7 @@ const Ck = ({ on, onChange, locked, label }) => (
   </button>
 )
 const Av = ({ u, size = 24 }) => (
-  <span className="av" style={{ width: size, height: size, fontSize: Math.round(size * 0.4), background: `oklch(0.62 0.13 ${u.hue})` }}>
+  <span className="av" style={{ width: size, height: size, fontSize: Math.round(size * 0.4), background: `oklch(0.52 0.12 ${u.hue})` }}>
     {u.name.split(' ').map((p) => p[0]).slice(0, 2).join('')}
   </span>
 )
@@ -210,7 +210,7 @@ function Profile({ members, look }) {
     <>
       <Group>
         <div className="st-hero">
-          <span className="av" style={{ width: 56, height: 56, fontSize: 20, background: `oklch(0.62 0.13 ${me.hue})` }}>SH</span>
+          <span className="av" style={{ width: 56, height: 56, fontSize: 20, background: `oklch(0.52 0.12 ${me.hue})` }}>SH</span>
           <div className="grow">
             <div className="st-hero-n">{p.name}</div>
             <div className="mute">{p.title}</div>
