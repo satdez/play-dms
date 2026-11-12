@@ -3,6 +3,7 @@ import { Sun, Moon, Download } from 'lucide-react'
 import { Seg } from '../app/ui'
 import { Tip } from '../shared/motion'
 import { GLYPHS, X, R, RI, OUT, EX, EY, CAP, ux } from '../loaders/wlddGlyphs'
+import Making from './Making'
 import '../app/app.css'
 import '../app/pages.css'
 import '../loaders/loaders.css'
@@ -291,6 +292,7 @@ export default function Brand() {
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button></Tip>
       </header>
+      <Making p={PAL[theme]} id="brmk" />
       {PLATES.map((x) => <Plate key={x.id} x={x} mode={mode} theme={theme} />)}
     </div>
   )
