@@ -104,10 +104,10 @@ html[data-style='pop'] .kb-col { background: color-mix(in oklab, var(--sunken) 6
 
 /* chips: soft fills, no outlines */
 html[data-pop-corner] .chip { border-radius: var(--pr-s); }
-html[data-style='pop'] .chip.g { background: var(--green-soft); color: var(--green); }
-html[data-style='pop'] .chip.v { background: var(--violet-soft); color: var(--violet); }
-html[data-style='pop'] .chip.p { background: var(--pink-soft); color: var(--pink); }
-html[data-style='pop'] .chip.y { background: var(--yellow-soft); color: color-mix(in oklab, var(--yellow) 75%, var(--fg)); }
+html[data-style='pop'] .chip.g { background: var(--green-soft); }
+html[data-style='pop'] .chip.v { background: var(--violet-soft); }
+html[data-style='pop'] .chip.p { background: var(--pink-soft); }
+html[data-style='pop'] .chip.y { background: var(--yellow-soft); }
 html[data-pop-corner] .svc-c { border-radius: var(--pr-s); }
 
 /* inputs, switches, overlays */
