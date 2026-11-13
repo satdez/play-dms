@@ -77,7 +77,7 @@ export function ProofUsed({ ids, src = 'AI · Case Library' }) {
 /* ───────── Staged generator ───────── */
 const prefersReduced = () => document.documentElement.dataset.motion === 'reduced' || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
 /** Runs steps one after another (simulated latency), then calls onDone. */
-export function useGen(n, onDone, ms = 650) {
+export function useGen(n, onDone, ms = 380) {
   const [i, setI] = useState(-1)
   const t = useRef([])
   useEffect(() => () => t.current.forEach(clearTimeout), [])
@@ -167,7 +167,7 @@ export function AskDialog() {
     const id = Math.random().toString(36).slice(2)
     setThread((l) => [...l, { id, q: t, busy: true }])
     setQ('')
-    setTimeout(() => setThread((l) => l.map((x) => (x.id === id ? { ...x, busy: false } : x))), prefersReduced() ? 150 : 650)
+    setTimeout(() => setThread((l) => l.map((x) => (x.id === id ? { ...x, busy: false } : x))), prefersReduced() ? 120 : 420)
   }
   useEffect(() => {
     const on = (e) => { setOpen(true); if (e.detail?.q) ask(e.detail.q) }
@@ -370,8 +370,8 @@ export function dueOf(st) {
   const soon = now().getTime() + 864e5
   const rem = st.deals.flatMap((d) => d.reminders.filter((r) => !r.done && r.at.getTime() <= soon).map((r) => ({ id: d.id + r.id, kind: 'reminder', text: r.text, ctx: d.brand + ' · ' + fmt.ago(r.at), to: '/bd/pipeline/' + d.id, deal: d, at: r.at })))
   const fol = st.deals.filter((d) => d.owner === 'u1' && d.stage === 'new' && d.outreach?.sentAt && !d.outreach.reply && now() - d.outreach.sentAt > 3 * 864e5)
-    .map((d) => ({ id: 'f' + d.id, kind: 'follow', text: 'Follow up · ' + d.brand, ctx: 'No reply in ' + Math.floor((now() - d.outreach.sentAt) / 864e5) + ' days', to: '/bd/pipeline/' + d.id + '/outreach', deal: d, at: d.outreach.sentAt }))
-  return [...rem, ...fol]
+    .map((d) => ({ id: 'f' + d.id, kind: 'follow', text: 'Follow up', ctx: 'No reply in ' + Math.floor((now() - d.outreach.sentAt) / 864e5) + ' days', to: '/bd/pipeline/' + d.id + '/outreach', deal: d, at: d.outreach.sentAt }))
+  return [...rem, ...fol.filter((f) => !rem.some((r) => r.deal.id === f.deal.id))] // a deal with a reminder already shows once
 }
 export function SalesBell() {
   const s = useStore()

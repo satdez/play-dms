@@ -282,15 +282,19 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .sl-dside { position: static; }
 }
 @media (max-width: 760px) {
-  .sl-board { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .sl-board > * { scroll-snap-align: start; }
-  .sl-board::-webkit-scrollbar { display: none; }
+  .sl-board2, .sl-board2.lost-open { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -16px; padding: 4px 16px 8px; scroll-padding: 0 16px; }
+  .sl-board2 > * { scroll-snap-align: start; }
+  .sl-board2 > .sl-lostlane { grid-auto-columns: auto; width: 48px; }
+  .sl-board2::-webkit-scrollbar { display: none; }
+  .sl-colb { max-height: none; overflow: visible; }
+  html.sl-dragging .sl-board2 { scroll-snap-type: none; }
   .metrics.sl-m4, .metrics.sl-m4:has(> :nth-child(3):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metrics.sl-m4 .metric:nth-child(3), .metrics.sl-m4 .metric:nth-child(4) { box-shadow: 0 -1px 0 var(--line); }
   .metrics.sl-m4 .metric:nth-child(4) { box-shadow: -1px 0 0 var(--line), 0 -1px 0 var(--line); }
   .sl-facts.c2, .sl-grid2 { grid-template-columns: minmax(0, 1fr); }
-  .sl-fact, .sl-ans .sl-fact { grid-template-columns: 96px minmax(0, 1fr); }
-  .sl-fact > .tipw { grid-column: 2; justify-self: start; }
+  .sl-fact, .sl-ans .sl-fact { grid-template-columns: 96px minmax(0, 1fr) auto; }
+  .sl-fact .sl-src { font-size: 0; gap: 0; padding: 0 5px; height: 20px; } /* icon only; tap for the source */
+  .sl-fact .sl-src svg { width: 12px; height: 12px; }
   .sl-sig { gap: 10px; }
   .sl-sig > .brand-logo, .sl-sig > .logo { width: 28px !important; height: 28px !important; }
   .sl-sig-d, .sl-brief > div, .sl-notes > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }

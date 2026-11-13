@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, ChevronDown, Rocket, Wallet, Handshake } from 'lucide-react'
@@ -10,13 +10,39 @@ import { BrandLogo } from '../shared/brands'
 
 export const go = (p) => { if (window.location.hash.slice(1) !== p) window.location.hash = p }
 
-/** Segmented control. Mouse changes glide; the pill is shared via layoutId. */
+/** Glides the active marker (pill or underline) from the old option to the new one.
+    Plain Web Animations on one element: motion's shared layoutId re-measured the whole page whenever a control mounted. */
+export function useGlide(value, sel) {
+  const ref = useRef(null)
+  const prev = useRef(null) // marker edges, measured at click time (never on mount, which would force a layout)
+  useLayoutEffect(() => {
+    const p = prev.current; prev.current = null
+    const m = p && ref.current?.querySelector(sel)
+    if (!m) return
+    const r = m.getBoundingClientRect()
+    const dl = p.left - r.left, dr = r.right - p.right
+    if (Math.abs(dl) < 1 && Math.abs(dr) < 1) return
+    const cs = getComputedStyle(m)
+    const l0 = parseFloat(cs.left) || 0, r0 = parseFloat(cs.right) || 0
+    m.animate([{ left: l0 + dl + 'px', right: r0 + dr + 'px' }, { left: l0 + 'px', right: r0 + 'px' }], { duration: 260, easing: 'cubic-bezier(.23,1,.32,1)' })
+  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Pointer clicks glide; keyboard (detail 0) and reduced motion switch instantly.
+  const pick = (e) => {
+    const reduced = document.documentElement.dataset.motion === 'reduced' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const m = !reduced && e.detail !== 0 && ref.current?.querySelector(sel)
+    prev.current = m ? (({ left, right }) => ({ left, right }))(m.getBoundingClientRect()) : null
+  }
+  return { ref, pick }
+}
+
+/** Segmented control. Pointer changes glide the pill; keyboard changes are instant. */
 export function Seg({ id, value, onChange, options }) {
+  const g = useGlide(value, '.seg-bg')
   return (
-    <div className="seg" role="tablist">
+    <div className="seg" role="tablist" ref={g.ref}>
       {options.map((o) => (
-        <button key={o.value} role="tab" aria-selected={value === o.value} className={value === o.value ? 'on' : ''} onClick={() => onChange(o.value)}>
-          {value === o.value && <motion.span layoutId={'seg-' + id} className="seg-bg" transition={{ type: 'spring', duration: 0.28, bounce: 0 }} />}
+        <button key={o.value} role="tab" aria-selected={value === o.value} className={value === o.value ? 'on' : ''} onClick={(e) => { g.pick(e); onChange(o.value) }}>
+          {value === o.value && <span className="seg-bg" />}
           <span>{o.label}{o.count != null && <span className="c num">{o.count}</span>}</span>
         </button>
       ))}
@@ -25,12 +51,13 @@ export function Seg({ id, value, onChange, options }) {
 }
 
 export function Tabs({ id, value, onChange, options }) {
+  const g = useGlide(value, '.tabs-u')
   return (
-    <div className="tabs" role="tablist">
+    <div className="tabs" role="tablist" ref={g.ref}>
       {options.map((o) => (
-        <button key={o.value} className={value === o.value ? 'on' : ''} onClick={() => onChange(o.value)}>
+        <button key={o.value} className={value === o.value ? 'on' : ''} onClick={(e) => { g.pick(e); onChange(o.value) }}>
           {o.label}{o.count != null && <span className="mute num xs">{o.count}</span>}
-          {value === o.value && <motion.span layoutId={'tabs-' + id} className="tabs-u" transition={{ type: 'spring', duration: 0.3, bounce: 0 }} />}
+          {value === o.value && <span className="tabs-u" />}
         </button>
       ))}
     </div>

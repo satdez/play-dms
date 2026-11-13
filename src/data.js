@@ -314,6 +314,9 @@ export const notifications = [
 ]
 
 /* ───────────── Formatting helpers ───────────── */
+const NUM_IN = new Intl.NumberFormat('en-IN'), NUM_US = new Intl.NumberFormat('en-US')
+const DATE_FMT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
+const DATE_LONG_FMT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 export const fmt = {
   compact(n) {
     if (n >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B'
@@ -321,22 +324,23 @@ export const fmt = {
     if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K'
     return String(n)
   },
-  num: (n) => n.toLocaleString('en-IN'),
+  num: (n) => NUM_IN.format(n),
   intl: false, // Settings > Preferences > Amounts
   inr(n) {
     if (fmt.intl) {
       if (n >= 1e9) return '₹' + (n / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B'
       if (n >= 1e6) return '₹' + (n / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M'
       if (n >= 1e4) return '₹' + (n / 1e3).toFixed(0) + 'K'
-      return '₹' + n.toLocaleString('en-US')
+      return '₹' + NUM_US.format(n)
     }
+    if (n >= 1e10) return '₹' + NUM_IN.format(Math.round(n / 1e7)) + 'Cr' // ₹45,000Cr, not ₹45000Cr
     if (n >= 1e7) return '₹' + (n / 1e7).toFixed(2).replace(/\.?0+$/, '') + 'Cr'
     if (n >= 1e5) return '₹' + (n / 1e5).toFixed(1).replace(/\.0$/, '') + 'L'
-    return '₹' + n.toLocaleString('en-IN')
+    return '₹' + NUM_IN.format(n)
   },
-  inrFull: (n) => '₹' + n.toLocaleString(fmt.intl ? 'en-US' : 'en-IN'),
-  date: (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-  dateLong: (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+  inrFull: (n) => '₹' + (fmt.intl ? NUM_US : NUM_IN).format(n),
+  date: (d) => DATE_FMT.format(d), // shared formatters: toLocaleDateString builds a new one on every call
+  dateLong: (d) => DATE_LONG_FMT.format(d),
   ago(d) {
     const s = (TODAY - d) / 1000
     if (s < 0) { const days = Math.ceil(-s / 86400); return `in ${days}d` }

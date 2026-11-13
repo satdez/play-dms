@@ -16,6 +16,7 @@ import { Sheet } from '../pages/Finance'
 import { brands, brandById, brandOf, budgetOf, repOf, REPS, cases, caseById, DEAL_STAGES, SIGNAL_KIND, now, ago } from './data'
 import { relOf, factsFor, parseNotes, isOpen, isStale, staleDays, stageLabel, RELL } from './state'
 import { Src, Rel, Val, Facts, CaseChip, openAddLead, dueOf, DeckViewer, credsDeck } from './ui'
+import { Board } from './Board'
 
 const mine = (x) => x.owner === me.id
 const SrcRow = ({ children }) => <span className="sl-srcrow">{children}</span>
@@ -60,7 +61,7 @@ export function Feed() {
       <div className="sl-sigs">
         <AnimatePresence initial={false}>
           {list.map((g) => (
-            <motion.article key={g.id} layout="position" className="sl-sig" exit={{ opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, transition: { duration: 0.22, ease: EASE } }}>
+            <motion.article key={g.id} className="sl-sig" exit={{ opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, transition: { duration: 0.22, ease: EASE } }}>
               <BrandLogo name={g.brand} size={36} />
               <div className="grow sl-sig-b">
                 <div className="row sl-sig-h">
@@ -230,7 +231,7 @@ function Person({ p, open, onOpen }) {
   const reveal = () => {
     if (st.credits < 1) return toast('Out of credits')
     setBusy(true)
-    setTimeout(() => { st.set((x) => ({ revealed: [...x.revealed, p.id], credits: x.credits - 1 })); setBusy(false); toast('Contact revealed', { description: p.name + ' · 1 Apollo credit' }) }, 700)
+    setTimeout(() => { st.set((x) => ({ revealed: [...x.revealed, p.id], credits: x.credits - 1 })); setBusy(false); toast('Contact revealed', { description: p.name + ' · 1 Apollo credit' }) }, 420)
   }
   return (
     <div className={'sl-person' + (open ? ' open' : '')}>
@@ -287,7 +288,7 @@ export function Inbound() {
         <div className="list">
           <AnimatePresence initial={false}>
             {list.map((r) => (
-              <motion.button key={r.id} layout="position" className={'li inv-li' + (r.id === cur?.id ? ' sel' : '')} onClick={() => setSel(r.id)} exit={{ opacity: 0, height: 0, minHeight: 0, transition: { duration: 0.2, ease: EASE } }}>
+              <motion.button key={r.id} className={'li inv-li' + (r.id === cur?.id ? ' sel' : '')} onClick={() => setSel(r.id)} exit={{ opacity: 0, height: 0, minHeight: 0, transition: { duration: 0.2, ease: EASE } }}>
                 <div className="grow">
                   <div className="row"><BrandLogo name={r.company} size={20} /><span className="li-t ell grow">{r.company}</span>{r.owner ? <Tip label={'Owned by ' + repOf(r.owner).short}><span><Avatar user={repOf(r.owner)} size={18} /></span></Tip> : <span className="chip y">Unclaimed</span>}<span className="mute xs">{fmt.agoShort(r.at)}</span></div>
                   <div className="li-s ell">{r.summary}</div>
@@ -433,7 +434,7 @@ export function Contacts() {
       const p = parseNotes(paste)
       setForm({ name: p.name, title: p.title, brand: p.brand, email: p.email, source: p.source || 'Event', value: p.value, note: paste.split('\n').map((l) => l.replace(/^\[[^\]]+\]\s*\w+:\s*/, '')).join(' ').slice(0, 160) })
       setBusy(false)
-    }, 600)
+    }, 380)
   }
   const save = (toPipe) => {
     const c = { id: 'ct' + Date.now(), name: form.name, title: form.title, brand: form.brand, email: form.email, source: form.source, note: form.note, at: now() }
@@ -482,7 +483,7 @@ export function Contacts() {
       <div className="list" style={{ marginTop: 16 }}>
         <AnimatePresence initial={false}>
           {list.map((c) => (
-            <motion.div key={c.id} layout="position" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: EASE }} className="li sl-ct">
+            <motion.div key={c.id} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: EASE }} className="li sl-ct">
               <Avatar user={{ name: c.name, hue: c.name.length * 41 }} size={28} />
               <div className="grow" style={{ padding: '10px 0', minWidth: 0 }}>
                 <div className="row"><span className="li-t ell">{c.name}</span><span className="mute ell">{c.title}</span></div>
@@ -507,8 +508,8 @@ export function Pipeline() {
   const [who, setWho] = useState('all')
   const [stale, setStale] = useState(false)
   const [q, setQ] = useState('')
-  const [drag, setDrag] = useState(null)
-  const [over, setOver] = useState(null)
+  const [sort, setSort] = useState(() => { try { return localStorage.getItem('wldd-pipe-sort') || 'manual' } catch { return 'manual' } })
+  const setS = (v) => { setSort(v); try { localStorage.setItem('wldd-pipe-sort', v) } catch {} }
   const setV = (v) => { setView(v); try { localStorage.setItem('wldd-pipe-view', v) } catch {} }
   const deals = st.deals.filter((d) => (who === 'all' || (who === 'mine' ? d.owner === me.id : d.owner === who)) && (!stale || isStale(d)) && (!q || (d.brand + ' ' + (d.contact?.name || '')).toLowerCase().includes(q.toLowerCase())))
   const mineAll = st.deals.filter((d) => d.owner === me.id)
@@ -517,7 +518,6 @@ export function Pipeline() {
   const reply = sent.length ? Math.round((replied.length / sent.length) * 100) : 0
   const close = won + lost ? Math.round((won / (won + lost)) * 100) : 0
   const open = st.deals.filter(isOpen)
-  const drop = (stage) => { if (drag) { const d = st.deals.find((x) => x.id === drag); if (d && d.stage !== stage) { st.moveDeal(drag, stage); toast(d.brand + ' → ' + stageLabel(stage), stage === 'lost' ? { action: { label: 'Add reason', onClick: () => go('/bd/pipeline/' + drag + '/lost') } } : undefined) } } setDrag(null); setOver(null) }
   return (
     <div className="d-page wide sl-pipe">
       <div className="d-head">
@@ -529,32 +529,17 @@ export function Pipeline() {
         <div className="metric"><span className="metric-l">Open</span><span className="metric-v num"><Ticker value={open.reduce((t, d) => t + d.value, 0)} format={(n) => fmt.inr(Math.round(n))} /></span></div>
         <div className="metric"><Tip label={`Your intro emails with a reply · ${replied.length} of ${sent.length}`}><span className="metric-l">Reply rate</span></Tip><span className="metric-v num"><Ticker value={reply} format={(n) => Math.round(n) + '%'} /></span></div>
         <div className="metric"><Tip label={`Your closed deals that were won · ${won} of ${won + lost}`}><span className="metric-l">Close rate</span></Tip><span className="metric-v num"><Ticker value={close} format={(n) => Math.round(n) + '%'} /></span></div>
-        <div className="metric"><span className="metric-l">Stale</span><span className="metric-v num"><Ticker value={open.filter(isStale).length} /></span></div>
+        <button className={'metric sl-mbtn' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><span className="metric-l">Stale</span><span className="metric-v num"><Ticker value={open.filter(isStale).length} /></span></button>
       </div>
       <div className="sl-filters" style={{ marginTop: 16 }}>
         <Seg id="pview" value={view} onChange={setV} options={[{ value: 'board', label: <span className="row" style={{ gap: 5 }}><LayoutGrid size={13} />Board</span> }, { value: 'list', label: <span className="row" style={{ gap: 5 }}><ListIcon size={13} />List</span> }]} />
         <Select align="left" value={who} onChange={setWho} options={[{ id: 'all', label: 'Everyone' }, { id: 'mine', label: 'Mine' }, ...REPS.slice(1).map((u) => ({ id: u.id, label: u.short }))]} />
         <button className={'b sm' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><Hourglass size={13} />Stale only</button>
+        {view === 'board' && <><span className="grow" /><Select value={sort} onChange={setS} width={170} options={[{ id: 'manual', label: 'Manual order' }, { id: 'value', label: 'Highest value' }, { id: 'due', label: 'Due soonest' }, { id: 'updated', label: 'Recently updated' }]} /></>}
       </div>
       <SlidePanel k={view} index={view === 'board' ? 0 : 1} style={{ marginTop: 14 }}>
         {view === 'board' ? (
-          <div className="sl-board">
-            {DEAL_STAGES.map((sg) => {
-              const col = deals.filter((d) => d.stage === sg.id)
-              return (
-                <div key={sg.id} className={'board-col' + (over === sg.id ? ' over' : '') + (sg.id === 'lost' ? ' sl-lostcol' : '')} onDragOver={(e) => { e.preventDefault(); setOver(sg.id) }} onDragLeave={() => setOver(null)} onDrop={() => drop(sg.id)}>
-                  <div className="board-h">{sg.n > 0 && <span className="sl-sn">{sg.n}</span>}{sg.label}<span className="mute num">{col.length}</span><span className="grow" /><span className="mute num xs">{fmt.inr(col.reduce((t, d) => t + d.value, 0))}</span></div>
-                  <AnimatePresence initial={false}>
-                    {col.map((d) => (
-                      <motion.div key={d.id} layout layoutId={'deal-' + d.id} transition={{ duration: 0.25, ease: EASE }}>
-                        <DealCard d={d} dragging={drag === d.id} onDragStart={() => setDrag(d.id)} onDragEnd={() => { setDrag(null); setOver(null) }} />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              )
-            })}
-          </div>
+          <Board st={st} deals={deals} sort={sort} />
         ) : (
           <table className="tbl sl-tbl">
             <thead><tr><th>Brand</th><th>Stage</th><th className="r">Value</th><th>Owner</th><th>Next step</th><th>Due</th><th>Updated</th></tr></thead>
@@ -581,19 +566,6 @@ export function StageTag({ id }) {
   const sg = DEAL_STAGES.find((x) => x.id === id)
   return <span className={'sl-stag s-' + id}><i />{sg.label}</span>
 }
-function DealCard({ d, dragging, onDragStart, onDragEnd }) {
-  const stale = isStale(d)
-  return (
-    <div className={'pcard sl-card' + (dragging ? ' dragging' : '')} draggable onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={() => go('/bd/pipeline/' + d.id)} role="link" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') go('/bd/pipeline/' + d.id) }}>
-      <div className="row"><BrandLogo name={d.brand} size={22} /><b className="grow ell" style={{ fontWeight: 600 }}>{d.brand}</b><Tip label={repOf(d.owner).name}><span><Avatar user={repOf(d.owner)} size={18} /></span></Tip></div>
-      <div className="row" style={{ justifyContent: 'space-between' }}><Svc list={d.services.slice(0, 3)} /><span className="num fg2">{fmt.inr(d.value)}</span></div>
-      {d.stage === 'lost' ? <div className="mute xs ell">{d.lost?.reason || 'No reason yet'}</div>
-        : d.stage === 'won' ? <div className="xs row fg2" style={{ gap: 5 }}><Check size={12} />{d.won?.pod ? 'With ' + d.won.pod : 'Hand off to a pod'}</div>
-        : <div className="xs row fg2 sl-next" style={{ gap: 5 }}><ArrowRight size={12} className="mute" /><span className="ell grow">{d.next}</span>{stale && <Tip label={'No activity in ' + staleDays(d) + ' days'}><span className="chip y sl-stale"><Hourglass size={11} />{staleDays(d)}d</span></Tip>}</div>}
-    </div>
-  )
-}
-
 /* ═════════ Case Library ═════════ */
 export function Cases({ id }) {
   const s = useStore(); const st = s.sales

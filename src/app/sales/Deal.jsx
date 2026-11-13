@@ -1,5 +1,5 @@
 // Deal page: #/bd/pipeline/<id>/<tab>. Tabs appear as the deal moves forward.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Check, Mail, Send, Network, CalendarDays, Video, NotebookPen, Wand2, Presentation, Plus, Copy, ArrowUpRight, RotateCcw, Clock, Link2, Download, FileText,
@@ -11,7 +11,7 @@ import { fmt, SERVICES, me, team, STAGE_FULL } from '../data'
 import { ConfirmButton, Tip, AutoHeight, SlidePanel, EASE, TextMorph } from '../../shared/motion'
 import { Avatar } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
-import { Seg, Svc, Track, go } from '../ui'
+import { Seg, Svc, Track, go, useGlide } from '../ui'
 import { brandOf, repOf, caseById, stageIx, DEAL_STAGES, LOST_REASONS, PODS, now, ahead } from './data'
 import { relOf, factsFor, isStale, staleDays, stageLabel } from './state'
 import { Src, Rel, Val, Facts, CaseChip, ProofUsed, Generated, Decision, DeckViewer, deckFor } from './ui'
@@ -28,10 +28,18 @@ export function DealPage({ id, tab }) {
   const s = useStore(); const st = s.sales
   const d = st.deals.find((x) => x.id === id)
   if (!d) return <div className="d-page"><div className="empty"><b>Not found</b><a className="b sm" href="#/bd/pipeline">Pipeline</a></div></div>
+  return <DealView key={d.id} d={d} tab={tab} st={st} />
+}
+function DealView({ d, tab, st }) {
   const r = reachOf(d)
   const tabs = ['overview', 'outreach', r >= 1 && 'brief', r >= 2 && 'proposal', r >= 3 && 'pitch', d.stage === 'won' && 'handoff', d.stage === 'lost' && 'lost'].filter(Boolean)
   const cur = tabs.includes(tab) ? tab : TAB_OF[d.stage]
   const to = (t) => go(`/bd/pipeline/${d.id}/${t}`)
+  // Tabs that open as the deal moves forward fade in once (CSS); the underline glides between tabs.
+  const glide = useGlide(cur, '.tabs-u')
+  const seen = useRef(null)
+  if (!seen.current) seen.current = new Set(tabs)
+  useEffect(() => { tabs.forEach((t) => seen.current.add(t)) })
   const move = (stage, why) => { st.moveDeal(d.id, stage, why); to(TAB_OF[stage]) }
   const b = brandOf(d.brand)
   return (
@@ -50,16 +58,13 @@ export function DealPage({ id, tab }) {
         <Stepper d={d} />
       </header>
 
-      <div className="tabs sl-tabs" role="tablist">
-        <AnimatePresence initial={false}>
-          {tabs.map((t) => (
-            <motion.button key={t} role="tab" aria-selected={cur === t} className={cur === t ? 'on' : ''} onClick={() => to(t)}
-              initial={{ opacity: 0, x: -6, filter: 'blur(2px)' }} animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }} exit={{ opacity: 0 }} transition={{ duration: 0.24, ease: EASE }}>
-              {TAB_LABEL[t]}
-              {cur === t && <motion.span layoutId="tabs-deal" className="tabs-u" transition={{ type: 'spring', duration: 0.3, bounce: 0 }} />}
-            </motion.button>
-          ))}
-        </AnimatePresence>
+      <div className="tabs sl-tabs" role="tablist" ref={glide.ref}>
+        {tabs.map((t) => (
+          <button key={t} role="tab" aria-selected={cur === t} className={(cur === t ? 'on' : '') + (seen.current.has(t) ? '' : ' sl-tabnew')} onClick={(e) => { glide.pick(e); to(t) }}>
+            {TAB_LABEL[t]}
+            {cur === t && <span className="tabs-u" />}
+          </button>
+        ))}
       </div>
 
       <div className="sl-dgrid">
@@ -196,7 +201,7 @@ function Outreach({ d, move }) {
   const [v, setV] = useState(0)
   const [m, setM] = useState(() => draft(d, 0))
   const [busy, setBusy] = useState(false)
-  const redraft = () => { setBusy(true); setTimeout(() => { setM(draft(d, v + 1)); setV(v + 1); setBusy(false) }, 500) }
+  const redraft = () => { setBusy(true); setTimeout(() => { setM(draft(d, v + 1)); setV(v + 1); setBusy(false) }, 350) }
   const send = () => {
     st.patchDeal(d.id, (x) => ({ outreach: { subject: m.subject, body: m.body, sentAt: now(), reply: null, callBooked: false }, next: 'Wait for a reply', history: [...x.history, { at: now(), text: 'Intro email sent from Gmail', kind: 'mail', by: me.id }] }))
     toast('Sent from your Gmail', { description: 'To ' + (d.contact?.email || d.brand) })
