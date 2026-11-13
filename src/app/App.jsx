@@ -4,15 +4,16 @@ import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import {
   Sun, Moon, Search, Bell, Plus, ChevronsUpDown, Check, Inbox, Megaphone, CheckCheck, BookOpen, LayoutGrid, Receipt, Banknote,
   FileSignature, Store, BarChart3, Send, MailOpen, Pin, ChevronRight, Building2, Eye, X, PanelLeftClose, PanelLeftOpen, House,
+  ChevronDown, Users, MoreHorizontal, MessageCircle, PanelRight,
 } from 'lucide-react'
 import { useVariantRoot } from '../shared/ui'
 import { BrandLogo } from '../shared/brands'
 import { Tip, TextMorph, Ticker, SlidePanel, openNewCampaign, EASE, ALT, MOD } from '../shared/motion'
-import { ROLES, clients, team, me, fmt } from './data'
+import { ROLES, PODS, clients, team, me, fmt } from './data'
 import { PERSONAS, personaOf, setView } from './personas'
 import { kbTotal } from '../data'
 import { StoreProvider, useStore } from './store'
-import { go, Popover, RoleIcon, ROLE_ICON, ExpCtx } from './ui'
+import { go, Popover, RoleIcon, ROLE_ICON, ExpCtx, DockCtx, useDock } from './ui'
 import Home from './pages/Home'
 import Hub, { HOME_LAYOUTS } from './pages/Hub'
 import { Wldd } from '../loaders/Wldd'
@@ -28,14 +29,17 @@ import './styles.css'
 import './exp.css'
 import './settings.css'
 import './media.css'
+import './noir.css'
 import './mobile.css'
 import { Palette, Settings as Gear, Menu as MenuIcon } from 'lucide-react'
 import { PopTuner, PRESETS, TUNE_AXES, normTune, presetOf, applyTune, clearTune, toneSwatch, Orb } from './popTune'
+import { NoirTuner, NOIR_AXES, NOIR_DEFAULTS, DESK_ON, DESK_OFF, deskIsOn, DeskPreset, DockPanel, useAssistant, applyNoir, clearNoir, noirSwatch, toastDesk } from './noir'
 
 export const STYLES = [
   { id: 'paper', label: 'Khadi' },
   { id: 'ink', label: 'Kajal' },
   { id: 'pop', label: 'Pop' },
+  { id: 'noir', label: 'Noir' },
 ]
 /* Experiences change structure (shell, navigation, default layouts, how records open). Styles only change paint. */
 export const EXPERIENCES = [
@@ -46,10 +50,10 @@ export const EXPERIENCES = [
 ]
 /** Velin is Linear's structure with the main panel flush, not inset. Everything structural reads it as Linear. */
 const shellOf = (exp) => (exp === 'velin' ? 'linear' : exp)
-const swatch = { paper: ['#fafaf9', '#18181b'], ink: ['#08080a', '#5fcf86'], pop: ['#eeefe9', '#f2bd2f'] }
-const Swatch = ({ id, tune, on }) => {
+const swatch = { paper: ['#fafaf9', '#18181b'], ink: ['#08080a', '#5fcf86'], pop: ['#eeefe9', '#f2bd2f'], noir: ['#000000', '#7c8cff'] }
+const Swatch = ({ id, tune, on, prefs }) => {
   const dark = document.documentElement.dataset.theme === 'dark'
-  const sw = id === 'pop' && tune ? toneSwatch(tune, dark) : swatch[id]
+  const sw = id === 'pop' && tune ? toneSwatch(tune, dark) : id === 'noir' && prefs ? noirSwatch(prefs) : swatch[id]
   return <Orb sw={sw} size={16} on={on} />
 }
 /** Tiny wireframe of each experience's shell. */
@@ -69,6 +73,7 @@ const HomeGlyph = ({ id }) => (
     {id === 'stack' && <><rect x="3" y="3" width="4.5" height="3.5" rx=".8" fill="currentColor" opacity=".35" /><rect x="8.75" y="3" width="4.5" height="3.5" rx=".8" fill="currentColor" opacity=".35" /><rect x="14.5" y="3" width="4.5" height="3.5" rx=".8" fill="currentColor" opacity=".35" /><rect x="3.5" y="10" width="15" height="3" rx="1.5" stroke="currentColor" /></>}
     {id === 'split' && <><path d="M15.5 1v14" stroke="currentColor" opacity=".45" /><path d="M17.5 4h2M17.5 6.5h2M17.5 9h2" stroke="currentColor" strokeLinecap="round" opacity=".6" /><rect x="3" y="10" width="10.5" height="3" rx="1.5" stroke="currentColor" /></>}
     {id === 'focus' && <><path d="M8 4.5h6" stroke="currentColor" strokeLinecap="round" /><rect x="4.5" y="6.5" width="13" height="3" rx="1.5" stroke="currentColor" /><path d="M6 12h2.5M9.75 12h2.5M13.5 12h2.5" stroke="currentColor" strokeLinecap="round" opacity=".5" /></>}
+    {id === 'brief' && <><rect x="3" y="2.5" width="16" height="4" rx="1" fill="currentColor" opacity=".35" /><path d="M3.5 8.5h4M9 8.5h4M14.5 8.5h4" stroke="currentColor" strokeLinecap="round" opacity=".6" /><rect x="3" y="10.5" width="16" height="3" rx="1" stroke="currentColor" /></>}
     {id === 'dock' && <><path d="M14 1v14" stroke="currentColor" opacity=".45" /><rect x="3" y="3" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="8" y="3" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="3" y="8.5" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="8" y="8.5" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="15.5" y="11" width="4.5" height="2" rx="1" stroke="currentColor" /></>}
   </svg>
 )
@@ -81,7 +86,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -162,7 +167,12 @@ function Shell({ path }) {
   })
   // Picking a colour tone switches to Pop; changing type or corners never changes the style.
   const setTune = (t, toPop = true) => { setTuneRaw(normTune(t)); if (toPop) setStyle('pop') }
-  useVariantRoot('app', theme)
+  useVariantRoot('app', style === 'noir' ? 'dark' : theme) // Noir is dark-only, like Kajal
+  useEffect(() => { applyNoir(prefs) }, [prefs.noirHl, prefs.noirCanvas, prefs.noirGrid]) // eslint-disable-line
+  useEffect(() => () => clearNoir(), [])
+  // Right-hand dock: a record (Preferences › Record peek › Docked) or the assistant. One slot.
+  const [dock, setDock] = useState(null)
+  const chat = useAssistant()
   useEffect(() => {
     applyTune(tune)
     try { localStorage.setItem('wldd-pop', JSON.stringify({ ...tune, v: 2 })) } catch {}
@@ -194,7 +204,22 @@ function Shell({ path }) {
     try { localStorage.setItem('wldd-theme', mode); localStorage.setItem(ROLE_KEY, role); localStorage.setItem('wldd-style', style); localStorage.setItem('wldd-exp', exp) } catch {}
   }, [mode, role, style, exp])
   useEffect(() => () => { delete document.documentElement.dataset.style; delete document.documentElement.dataset.exp; delete document.documentElement.dataset.shell }, [])
-  const look = { persona: VIEW, exp, setExp, style, setStyle, theme, setTheme, mode, setMode, tune, setTune, prefs, setPrefs, styles: STYLES, exps: EXPERIENCES }
+  /** Noir desk preset: every piece on at once, or every piece back to today's defaults (Velin · Khadi · Stacked · Stack).
+      It also flips the campaign view to Table (the grid the docked peek is made for) and puts the old layout back after. */
+  const setDesk = (on) => {
+    setPrefs({ ...prefs, ...(on ? DESK_ON : DESK_OFF), ...(on && { accent: null, collapsed: false }) })
+    setStyle(on ? 'noir' : 'paper'); setExp('velin')
+    if (!on) setDock(null)
+    try {
+      const k = 'wldd-display-linear', snap = 'wldd-desk-layout'
+      const d = JSON.parse(localStorage.getItem(k) || '{}')
+      if (on && localStorage.getItem(snap) === null) { localStorage.setItem(snap, d.layout || ''); d.layout = 'table' }
+      if (!on && localStorage.getItem(snap) !== null) { d.layout = localStorage.getItem(snap) || undefined; localStorage.removeItem(snap) }
+      localStorage.setItem(k, JSON.stringify(d))
+    } catch {}
+    toastDesk(on)
+  }
+  const look = { persona: VIEW, exp, setExp, style, setStyle, theme, setTheme, mode, setMode, tune, setTune, prefs, setPrefs, styles: STYLES, exps: EXPERIENCES, setDesk }
 
   const parts = path.split('/').filter(Boolean) // e.g. ['pod','campaigns','c1','plan']
   const mod = parts[0] || 'home'
@@ -215,6 +240,7 @@ function Shell({ path }) {
       const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setCmd((o) => !o); return }
       if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); go('/settings'); return }
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'j' && prefs.assistant === 'docked') { e.preventDefault(); setDock((d) => (d?.kind === 'assistant' ? null : { kind: 'assistant' })); return }
       // ⌘B / Ctrl+B collapses the sidebar (list ⇄ board moved to ⇧⌘B). Instant: keyboard actions never animate.
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'b' && exp !== 'vercel') { e.preventDefault(); setPrefs({ ...prefs, collapsed: !prefs.collapsed }); return }
       if (typing || e.metaKey || e.ctrlKey) return
@@ -232,6 +258,11 @@ function Shell({ path }) {
   }) // re-bind each render; cheap and keeps role fresh
 
   useEffect(() => { setNavOpen(false) }, [path])
+  // A docked record belongs to the page it was opened from; the assistant stays.
+  useEffect(() => { setDock((d) => (d?.kind === 'record' ? null : d)) }, [mod, parts[1], parts[2]]) // eslint-disable-line
+  useEffect(() => {
+    setDock((d) => (d?.kind === 'record' && prefs.peek !== 'docked') || (d?.kind === 'assistant' && prefs.assistant !== 'docked') ? null : d)
+  }, [prefs.peek, prefs.assistant])
   useEffect(() => {
     if (!navOpen) return
     const k = (e) => { if (e.key === 'Escape') setNavOpen(false) }
@@ -268,11 +299,17 @@ function Shell({ path }) {
   }
 
   const cmdk = <AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />
-  const body = <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}><div className="d-scroll" key={mod === 'settings' ? 'settings' : mod + '/' + (parts[1] || '') + '/' + (parts[2] || '')}>{page}</div></MotionConfig>
+  const scroll = <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}><div className="d-scroll" key={mod === 'settings' ? 'settings' : mod + '/' + (parts[1] || '') + '/' + (parts[2] || '')}>{page}</div></MotionConfig>
+  // Docking is opt-in: without it the page tree is exactly what it was.
+  const reduced = prefs.motion === 'reduced' || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+  const body = prefs.peek === 'docked' || prefs.assistant === 'docked'
+    ? <div className={'nd-body' + (dock ? ' has-dock' : '')}>{scroll}<DockPanel dock={dock} setDock={setDock} chat={chat} reduced={reduced} /></div>
+    : scroll
+  const dockCtx = { dock, setDock, peek: prefs.peek, assistant: prefs.assistant }
 
   if (exp === 'vercel') {
     return (
-      <ExpCtx.Provider value={exp}>
+      <DockCtx.Provider value={dockCtx}><ExpCtx.Provider value={exp}>
         <div className="d vx">
           <VxSidebar role={role} switchRole={switchRole} path={path} setCmd={setCmd} look={look} open={navOpen} />
           {scrim}
@@ -282,11 +319,11 @@ function Shell({ path }) {
           </main>
           {cmdk}
         </div>
-      </ExpCtx.Provider>
+      </ExpCtx.Provider></DockCtx.Provider>
     )
   }
   return (
-    <ExpCtx.Provider value={shellOf(exp)}>
+    <DockCtx.Provider value={dockCtx}><ExpCtx.Provider value={shellOf(exp)}>
       <div className={'d' + (prefs.collapsed && prefs.sidebar === 'icons' ? ' no-side' : '')}>
         <Sidebar role={role} switchRole={switchRole} path={path} look={look} open={navOpen} />
         {scrim}
@@ -296,7 +333,7 @@ function Shell({ path }) {
         </main>
         {cmdk}
       </div>
-    </ExpCtx.Provider>
+    </ExpCtx.Provider></DockCtx.Provider>
   )
 }
 
@@ -324,11 +361,15 @@ function Appearance({ look, close }) {
       <div className="pop-h">Style</div>
       {STYLES.map((x, i) => (
         <button key={x.id} onClick={() => setStyle(x.id)}>
-          <Swatch id={x.id} tune={tune} /> {x.label}
+          <Swatch id={x.id} tune={tune} prefs={look.prefs} /> {x.label}
           <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{style === x.id && <Check size={14} />}{i === 0 && <kbd className="k">{ALT}S</kbd>}{x.id === 'pop' && <kbd className="k">{ALT}P</kbd>}</span>
         </button>
       ))}
-      {style === 'pop' ? <PopTuner tune={tune} setTune={setTune} /> : <PopTuner tune={tune} setTune={setTune} axes={['font', 'corner']} presets={false} />}
+      {style === 'pop' ? <PopTuner tune={tune} setTune={setTune} /> : style === 'noir' ? <NoirTuner prefs={look.prefs} setPrefs={look.setPrefs} /> : <PopTuner tune={tune} setTune={setTune} axes={['font', 'corner']} presets={false} />}
+      <div className="pop-sep" />
+      <div className="pop-h">Desk</div>
+      <DeskPreset look={look} compact />
+      <DeskToggles look={look} />
       <div className="pop-sep" />
       <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
         {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />} {theme === 'light' ? 'Dark' : 'Light'} mode
@@ -337,6 +378,35 @@ function Appearance({ look, close }) {
         <Gear size={15} /> All preferences<kbd className="k" style={{ marginLeft: 'auto' }}>{MOD},</kbd>
       </button>
     </>
+  )
+}
+
+/** The desk pieces one by one, as switches. Sections needs a sidebar, so Vercel hides it. */
+function DeskToggles({ look }) {
+  const { prefs, setPrefs, exp } = look
+  const rows = [
+    exp !== 'vercel' && ['Sections sidebar', prefs.sidebar === 'sections', (v) => setPrefs({ ...prefs, sidebar: v ? 'sections' : 'stack', collapsed: false })],
+    ['Docked peek', prefs.peek === 'docked', (v) => setPrefs({ ...prefs, peek: v ? 'docked' : 'overlay' })],
+    ['Assistant', prefs.assistant === 'docked', (v) => setPrefs({ ...prefs, assistant: v ? 'docked' : 'off' })],
+  ].filter(Boolean)
+  return rows.map(([l, on, set]) => (
+    <button key={l} role="switch" aria-checked={on} onClick={() => set(!on)}>
+      {l}<span className={'sw' + (on ? ' on' : '')} style={{ marginLeft: 'auto' }} aria-hidden><i /></span>
+    </button>
+  ))
+}
+
+/** Top-bar pill that opens the assistant dock. Only there when Preferences › Assistant is Docked. */
+function AskPill() {
+  const dk = useDock()
+  if (dk.assistant !== 'docked') return null
+  const on = dk.dock?.kind === 'assistant'
+  return (
+    <Tip label="Ask WLDD" kbd={MOD + 'J'}>
+      <button className={'b sm nd-ask' + (on ? ' on' : '')} aria-pressed={on} onClick={() => dk.setDock(on ? null : { kind: 'assistant' })} aria-label="Ask WLDD">
+        <MessageCircle size={14} /><span className="m-hide">Ask WLDD</span>
+      </button>
+    </Tip>
   )
 }
 
@@ -386,7 +456,7 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
       <div className="vx-foot">
         <Avatar size={22} />
         <span className="ell grow">{VIEW.person.name}</span>
-        <Popover align="left" width={264} trigger={({ toggle }) => (
+        <Popover align="left" width={264} className="appear" trigger={({ toggle }) => (
           <Tip label="Appearance" kbd={ALT + 'E'} side="top"><button className="b ghost icon sm" onClick={toggle} aria-label="Appearance"><Palette size={15} /></button></Tip>
         )}>
           {(close) => <Appearance look={look} close={close} />}
@@ -416,6 +486,7 @@ function VxBar({ parts, role, openNav, look }) {
       <div className="vx-bar-c ell">{meta.detail ? <span className={meta.plain ? '' : 'mono'}>{meta.detail}</span> : <>{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400, marginLeft: 8 }}>{meta.count}</span>}</>}</div>
       <div className="vx-bar-r">
         <ViewingAs look={look} />
+        <AskPill />
         {role === 'pod' && parts[0] !== 'hub' && <button className="vx-create" onClick={() => openNewCampaign()}><Plus size={15} /><span className="m-hide">Create New</span></button>}
       </div>
     </header>
@@ -501,7 +572,7 @@ const Avatar = ({ size = 24 }) => <span className="av" style={{ width: size, hei
 
 function AppearanceBtn({ look, side = 'top' }) {
   return (
-    <Popover align="left" width={264} trigger={({ toggle }) => (
+    <Popover align="left" width={264} className="appear" trigger={({ toggle }) => (
       <Tip label="Appearance" kbd={ALT + 'E'} side={side}><button className="b ghost icon sm" onClick={toggle} aria-label="Appearance"><Palette size={15} /></button></Tip>
     )}>
       {(close) => <Appearance look={look} close={close} />}
@@ -559,6 +630,7 @@ function Sidebar(props) {
   if (kind === 'rail') return <RailSidebar {...props} />
   if (kind === 'icons') return <IconSidebar {...props} />
   if (kind === 'stack') return <StackSidebar {...props} />
+  if (kind === 'sections') return <SectionsSidebar {...props} />
   return <PanelSidebar {...props} />
 }
 
@@ -765,6 +837,71 @@ function StackSidebar({ role, switchRole, path, look, open }) {
   )
 }
 
+/** Flat sections: a workspace pill on top, then Work · Company · Your pods as plain lists under small labels.
+    Pods list their pinned campaigns as indented rows (no tree lines). Same nav data as every other shape. */
+function SectionsSidebar({ role, switchRole, path, look, open }) {
+  const { s, nav, r, active } = useSide(role, path)
+  const work = nav.filter((n) => !n.to.endsWith('/kb'))
+  const company = [
+    ...nav.filter((n) => n.to.endsWith('/kb')),
+    VIEW.id === 'admin' && { to: '/settings/members', label: 'Members', icon: Users },
+    { to: '/settings', label: 'Settings', icon: Gear },
+  ].filter(Boolean)
+  const onCompany = (to) => (to === '/settings' ? path.startsWith('/settings') && !path.startsWith('/settings/members') : path.startsWith(to))
+  const pods = VIEW.roles.includes('pod') ? PODS : []
+  return (
+    <aside className={'d-side sb-sec' + (open ? ' open' : '')}>
+      <div className="sbs-top">
+        {seen().length > 1 ? (
+          <Popover align="left" width={216} trigger={({ toggle }) => (
+            <button className="sbs-ws press" onClick={toggle} aria-label="Switch workspace">
+              <RoleIcon role={r.id} size={18} /><TextMorph>{r.label}</TextMorph><ChevronDown size={13} className="mute" />
+            </button>
+          )}>
+            {(close) => <RoleMenu role={role} switchRole={switchRole} close={close} />}
+          </Popover>
+        ) : <span className="sbs-ws"><RoleIcon role={r.id} size={18} />{r.label}</span>}
+        <span className="sb-tools"><Notifications /><CollapseBtn look={look} /></span>
+      </div>
+      <div className="sb-scroll">
+        <div className="sbs-h">Work</div>
+        <nav className="d-nav"><HubItem path={path} /><NavItems nav={work} active={active} /></nav>
+        <div className="sbs-h">Company</div>
+        <nav className="d-nav">
+          {company.map((n) => (
+            <a key={n.to} href={'#' + n.to} className={'d-item' + (onCompany(n.to) ? ' on' : '')}><n.icon size={16} strokeWidth={1.75} /> <span className="d-lbl">{n.label}</span></a>
+          ))}
+        </nav>
+        {pods.length > 0 && (
+          <>
+            <div className="sbs-h">Your pods</div>
+            <nav className="d-nav">
+              {pods.map((p) => {
+                const views = s.campaigns.filter((c) => c.pinned && c.pod === p)
+                const live = s.campaigns.filter((c) => c.pod === p && c.stage >= 4 && c.stage < 6).length
+                return (
+                  <div key={p} className="sbs-pod">
+                    <a href="#/pod/campaigns" className="d-item sbs-podh"><span className="sbs-av" data-pod={p}>{p[0]}</span><span className="d-lbl">{p}</span>{live > 0 && <span className="n num">{live}</span>}</a>
+                    {views.map((c) => (
+                      <a key={c.id} href={`#/pod/campaigns/${c.id}`} className={'d-item sbs-view' + (path.includes('/' + c.id) ? ' on' : '')}><span className="ell d-lbl">{c.name}</span></a>
+                    ))}
+                    {!views.length && <span className="sbs-empty">Nothing pinned</span>}
+                  </div>
+                )
+              })}
+              <a href="#/pod/campaigns" className="d-item sbs-view sbs-more"><MoreHorizontal size={15} /> <span className="d-lbl">More</span></a>
+            </nav>
+          </>
+        )}
+      </div>
+      <div className="d-side-f sbs-foot">
+        <a href="#/settings/profile" className="sbs-me"><Avatar size={22} /><span className="ell">{VIEW.person.name}</span><ChevronRight size={13} className="mute" /></a>
+        <AppearanceBtn look={look} />
+      </div>
+    </aside>
+  )
+}
+
 /** Sum of a workspace's live counts (approvals, invoices, payments, inbound…). */
 const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
 
@@ -820,7 +957,8 @@ function TopBar({ parts, role, setCmd, openNav, look }) {
       <div className="d-top-r">
         <ViewingAs look={look} />
         <Tip label="Search" kbd={MOD + 'K'}><button className="b ghost icon" onClick={() => setCmd(true)} aria-label="Search"><Search size={16} /></button></Tip>
-        <Notifications />
+        {look.prefs.sidebar !== 'sections' && <Notifications /> /* Sections keeps the bell in the sidebar */}
+        <AskPill />
         {role === 'pod' && parts[0] !== 'settings' && parts[0] !== 'hub' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={() => openNewCampaign()} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
       </div>
     </header>
@@ -866,11 +1004,19 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         <Command.Group heading="Home layout">
           {HOME_LAYOUTS.map((x) => <Command.Item key={x.value} value={'home layout ' + x.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, home: x.value }); go('/hub') })}><HomeGlyph id={x.value} /> {x.label}{look.prefs.home === x.value && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
+        <Command.Group heading="Desk">
+          <Command.Item value="noir desk preset" onSelect={run(() => look.setDesk(true))}><Swatch id="noir" prefs={look.prefs} /> Noir desk{deskIsOn(look) && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>
+          <Command.Item value="back to default look" onSelect={run(() => look.setDesk(false))}><Swatch id="paper" /> Back to default</Command.Item>
+          {look.exp !== 'vercel' && <Command.Item value="sidebar sections" onSelect={run(() => look.setPrefs({ ...look.prefs, sidebar: look.prefs.sidebar === 'sections' ? 'stack' : 'sections', collapsed: false }))}><PanelLeftOpen size={15} /> Sections sidebar{look.prefs.sidebar === 'sections' && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>}
+          <Command.Item value="record peek docked" onSelect={run(() => look.setPrefs({ ...look.prefs, peek: look.prefs.peek === 'docked' ? 'overlay' : 'docked' }))}><PanelRight size={15} /> Docked peek{look.prefs.peek === 'docked' && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>
+          <Command.Item value="assistant docked ask wldd" onSelect={run(() => look.setPrefs({ ...look.prefs, assistant: look.prefs.assistant === 'docked' ? 'off' : 'docked' }))}><MessageCircle size={15} /> Assistant{look.prefs.assistant === 'docked' && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>
+        </Command.Group>
         <Command.Group heading="Experience">
           {EXPERIENCES.map((x) => <Command.Item key={x.id} value={'experience ' + x.label} onSelect={run(() => look.setExp(x.id))}><ExpGlyph id={x.id} /> {x.label}{look.exp === x.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
         <Command.Group heading="Style">
-          {STYLES.map((x) => <Command.Item key={x.id} value={'style ' + x.label} onSelect={run(() => look.setStyle(x.id))}><Swatch id={x.id} tune={look.tune} /> {x.label}</Command.Item>)}
+          {STYLES.map((x) => <Command.Item key={x.id} value={'style ' + x.label} onSelect={run(() => look.setStyle(x.id))}><Swatch id={x.id} tune={look.tune} prefs={look.prefs} /> {x.label}</Command.Item>)}
+          {NOIR_AXES[0].opts.map((o) => <Command.Item key={o.id} value={'noir highlight ' + o.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, noirHl: o.id }); look.setStyle('noir') })}><Orb sw={['#000000', o.c]} size={16} /> Noir · {o.label}{look.style === 'noir' && look.prefs.noirHl === o.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
           {PRESETS.map((p) => <Command.Item key={p.id} value={'pop ' + p.label} onSelect={run(() => look.setTune({ ...look.tune, ...p.v }))}><Swatch id="pop" tune={p.v} /> Pop · {p.label}{look.style === 'pop' && presetOf(look.tune)?.id === p.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
       </Command.List>

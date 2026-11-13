@@ -176,3 +176,8 @@ export const RoleIcon = ({ role, size = 18 }) => {
 }
 
 export { BRAND }
+
+/** Right-hand dock (Settings › Preferences › Record peek / Assistant).
+    dock: null · { kind: 'record', id, ids } · { kind: 'assistant' }. One slot: opening one replaces the other. */
+export const DockCtx = createContext({ dock: null, setDock: () => {}, peek: 'overlay', assistant: 'off' })
+export const useDock = () => useContext(DockCtx)

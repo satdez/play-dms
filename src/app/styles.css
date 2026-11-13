@@ -376,6 +376,107 @@ html[data-variant='app'][data-style='pop'][data-pop-tone='safe'][data-theme='dar
 }
 html[data-style='pop'][data-pop-tone]:not([data-pop-tone='sand']):not([data-pop-tone='jam']) .b.ink kbd.k { background: rgba(255,255,255,.18); }
 
+/* ═════════ NOIR — black canvas, hairlines, one quiet highlight (dark-only) ═════════
+   Canvas pure black, sidebar a hair lighter, hairlines everywhere. White primary buttons, transparent
+   hairline secondaries. The highlight (--hl) is used sparingly: selected tab/segment, small dots, a verified badge.
+   Dials (src/app/noir.jsx, html[data-noir-hl|canvas|grid]): highlight · canvas · grid lines. */
+html[data-variant='app'][data-style='noir'],
+html[data-variant='app'][data-style='noir'][data-theme] {
+  --bg: #0b0b0c; --surface: #000000; --sunken: #0e0e10; --hover: rgba(255,255,255,.045); --press: rgba(255,255,255,.07);
+  --line: #1f1f22; --line-2: #2a2a2e; --fg: #ededed; --fg-2: #a1a1a6; --muted: #6e6e73; --faint: #3a3a3f;
+  --ink: #ffffff; --ink-fg: #000000;
+  --green: #4fd18b; --violet: #a78bfa; --pink: #f2667f; --yellow: #f2b93f;
+  --green-soft: rgba(79,209,139,.11); --violet-soft: rgba(167,139,250,.12); --pink-soft: rgba(242,102,127,.12); --yellow-soft: rgba(242,185,63,.11);
+  --hl: #7c8cff; --row: #0d0d0f; --on: #1c1c1f;
+  --pop: #0f0f11; --panel: #000000; --border: #1f1f22; --border-2: #2a2a2e; --overlay: rgba(0,0,0,.66); --tip-bg: #ededed; --tip-fg: #000000;
+  --shadow-1: none; --shadow-pop: 0 0 0 1px #26262a, 0 20px 50px -12px rgba(0,0,0,.9);
+  --font: 'Inter', system-ui, sans-serif; --display: 'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+html[data-variant='app'][data-style='noir'][data-noir-canvas='graphite'][data-theme] {
+  --bg: #1c1c1f; --surface: #141416; --sunken: #1d1d20; --line: #2a2a2f; --line-2: #36363c; --row: #1a1a1d; --on: #2a2a2f; --pop: #1f1f22; --panel: #141416; --border: #2a2a2f; --border-2: #36363c;
+}
+html[data-variant='app'][data-style='noir'][data-noir-hl='violet'][data-theme] { --hl: #a78bfa; }
+html[data-variant='app'][data-style='noir'][data-noir-hl='mint'][data-theme] { --hl: #5fd4a8; }
+html[data-variant='app'][data-style='noir'][data-noir-hl='amber'][data-theme] { --hl: #f2b14a; }
+
+html[data-style='noir'] body { -webkit-font-smoothing: antialiased; }
+html[data-style='noir'] :focus-visible { outline-color: color-mix(in oklab, var(--hl) 70%, transparent); }
+
+/* Shell: the sidebar sits a hair above the canvas, one hairline between */
+html[data-style='noir'] .d-main { background: var(--surface); border-left: 1px solid var(--line); }
+html[data-style='noir'] .d-top { border-bottom: 1px solid var(--line); }
+html[data-style='noir'] .d-crumb .cur { font-weight: 500; }
+html[data-style='noir'] .d-item { font-size: 13px; color: var(--fg-2); border-radius: 6px; }
+html[data-style='noir'] .d-item.on, html[data-style='noir'] .d-item.on:hover { background: var(--on); color: var(--fg); }
+html[data-style='noir'] .d-role { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); }
+html[data-style='noir'] .d-h1 { font-weight: 600; letter-spacing: -0.02em; }
+html[data-style='noir'] .metric-v { font-weight: 600; letter-spacing: -0.03em; }
+
+/* Controls: hairline secondaries, white primary, 6px corners */
+html[data-style='noir'] .b { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); border-radius: 6px; font-size: 13px; color: var(--fg); }
+html[data-style='noir'] .b:hover { background: var(--hover); }
+html[data-style='noir'] .b .mute, html[data-style='noir'] .b .num.mute { color: var(--muted); }
+html[data-style='noir'] .b.ghost { box-shadow: none; color: var(--fg-2); }
+html[data-style='noir'] .b.ghost:hover { color: var(--fg); }
+html[data-style='noir'] .b.on { background: var(--on); }
+html[data-style='noir'] .b.ink { background: #fff; color: #000; box-shadow: none; }
+html[data-style='noir'] .b.ink:hover { background: #e4e4e6; }
+html[data-style='noir'] .b.ink kbd.k { background: rgba(0,0,0,.08); }
+html[data-style='noir'] .seg, html[data-style='noir'] .seg button, html[data-style='noir'] .seg-bg, html[data-style='noir'] .chip, html[data-style='noir'] .inp, html[data-style='noir'] .li { border-radius: 6px; }
+html[data-style='noir'] .seg { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+html[data-style='noir'] .seg-bg { background: var(--on); box-shadow: inset 0 0 0 1px var(--line-2); }
+html[data-style='noir'] .seg button.on .c { color: var(--hl); }
+html[data-style='noir'] .tabs-u { background: var(--hl); }
+html[data-style='noir'] .chip { background: rgba(255,255,255,.06); box-shadow: none; }
+html[data-style='noir'] .inp { background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); }
+html[data-style='noir'] .inp:focus-within { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--hl) 60%, var(--line-2)); }
+html[data-style='noir'] .sw.on, html[data-style='noir'] .ck.on { background: var(--hl); }
+html[data-style='noir'] .ck.on { color: #000; }
+html[data-style='noir'] .card, html[data-style='noir'] .metrics, html[data-style='noir'] .pcard, html[data-style='noir'] .kcard, html[data-style='noir'] .vcard { background: transparent; box-shadow: 0 0 0 1px var(--line); border-radius: 8px; }
+html[data-style='noir'] .pop, html[data-style='noir'] .cmdk-content { background: var(--pop); }
+html[data-style='noir'] .sheet { background: var(--surface); box-shadow: 0 0 0 1px var(--line-2), 0 20px 50px -12px rgba(0,0,0,.9); border-radius: 10px; }
+html[data-style='noir'] .track i.cur, html[data-style='noir'] .step.cur .step-bar i { background: var(--hl); }
+
+/* Pill tabs with a count chip ("All 24") */
+html[data-style='noir'] .vtab { border-radius: 99px; box-shadow: none; color: var(--fg-2); padding: 0 6px 0 11px; }
+html[data-style='noir'] .vtab:hover { background: var(--hover); }
+html[data-style='noir'] .vtab.on { background: var(--on); box-shadow: inset 0 0 0 1px var(--line-2); color: var(--fg); }
+html[data-style='noir'] .vtab .mute { height: 18px; min-width: 18px; padding: 0 6px; border-radius: 99px; display: inline-grid; place-items: center; font-size: 11px; background: rgba(255,255,255,.06); }
+html[data-style='noir'] .vtab.on .mute { color: var(--hl); background: color-mix(in oklab, var(--hl) 16%, transparent); }
+
+/* Tables: full grid of hairlines (vertical lines are a dial), lighter row on hover / selected */
+html[data-style='noir'] .gt { font-size: 13px; }
+html[data-style='noir'] .gt th, html[data-style='noir'] .gt td { background: var(--surface); border-color: var(--line); }
+html[data-style='noir'] .gt th { color: var(--muted); font-weight: 500; }
+html[data-style='noir'] .gt tbody tr:hover td { background: var(--row); }
+html[data-style='noir'] .gt tbody tr.sel td { background: color-mix(in oklab, var(--hl) 8%, var(--surface)); }
+html[data-style='noir'] .gt tbody tr.cur td { background: var(--on); }
+html[data-style='noir'] .gt tbody tr.cur .gt-first { box-shadow: inset 2px 0 0 var(--hl), 1px 0 0 var(--line); }
+html[data-style='noir'][data-noir-grid='on'] .tbl th + th, html[data-style='noir'][data-noir-grid='on'] .tbl td + td { box-shadow: inset 1px 0 0 var(--line); }
+html[data-style='noir'][data-noir-grid='off'] .gt th, html[data-style='noir'][data-noir-grid='off'] .gt td { border-right-color: transparent; }
+html[data-style='noir'][data-noir-grid='off'] .gt .gt-first { box-shadow: none; }
+html[data-style='noir'] .tbl tbody tr:hover td { background: var(--row); }
+html[data-style='noir'] .vlist .li.sel { background: var(--row); }
+
+/* Desk pieces */
+html[data-style='noir'] .br-hero { background:
+    radial-gradient(60% 90% at 100% 0%, rgba(124,108,255,.22), transparent 70%),
+    radial-gradient(70% 80% at 45% 130%, rgba(255,128,48,.30), transparent 72%),
+    #070708; box-shadow: 0 0 0 1px var(--line); }
+html[data-style='noir'] .br-start, html[data-style='noir'] .rd-card, html[data-style='noir'] .rd-ck { box-shadow: 0 0 0 1px var(--line); border-radius: 8px; }
+html[data-style='noir'] .br-start-b { background: rgba(255,255,255,.05); box-shadow: none; }
+html[data-style='noir'] .br-box, html[data-style='noir'] .as-box { background: var(--sunken); box-shadow: 0 0 0 1px var(--line-2); }
+html[data-style='noir'] .br-send:not(:disabled), html[data-style='noir'] .as-send:not(:disabled) { background: #fff; color: #000; }
+html[data-style='noir'] .as-me { background: #e8e8ea; color: #0b0b0c; }
+html[data-style='noir'] .as-av { background: var(--hl); color: #000; }
+html[data-style='noir'] .nchip { background: rgba(255,255,255,.05); color: var(--fg-2); }
+html[data-style='noir'] .nchip.g { color: #8fe0b2; background: rgba(79,209,139,.09); }
+html[data-style='noir'] .nchip.y { color: #f5cf7e; background: rgba(242,185,63,.09); }
+html[data-style='noir'] .nchip.r { color: #f79aa9; background: rgba(242,102,127,.1); }
+html[data-style='noir'] .sbs-ws { box-shadow: inset 0 0 0 1px var(--line-2); background: rgba(255,255,255,.03); }
+html[data-style='noir'] .nd-dock { background: var(--surface); }
+
 /* ═════════ FONT override (Settings › Preferences › Font). Beats every style's own font. ═════════ */
 html[data-variant='app'][data-font='inter'][data-theme][data-style] { --font: 'Inter', system-ui, sans-serif; --display: 'Inter Tight', 'Inter', sans-serif; }
 html[data-variant='app'][data-font='geist'][data-theme][data-style] { --font: 'Geist', 'Inter', system-ui, sans-serif; --display: 'Geist', 'Inter', sans-serif; }

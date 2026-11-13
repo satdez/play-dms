@@ -15,6 +15,7 @@ import { team, me, PODS, BRAND, campaigns, fmt, TODAY } from '../data'
 import { PopTuner, THEMES, themeActive } from '../popTune'
 import { PERSONAS } from '../personas'
 import { HOME_LAYOUTS } from './Hub'
+import { NoirTuner, DeskPreset } from '../noir'
 
 /* ───────── sections ───────── */
 export const SETTINGS_SECTIONS = [
@@ -279,7 +280,7 @@ function FontSelect({ value, onChange }) {
   )
 }
 const MODES = [['light', 'Light', Sun], ['dark', 'Dark', Moon], ['system', 'System', Monitor]]
-const SIDEBARS = [{ value: 'panel', label: 'Panel' }, { value: 'rail', label: 'Rail' }, { value: 'icons', label: 'Icons' }, { value: 'stack', label: 'Stacked' }]
+const SIDEBARS = [{ value: 'panel', label: 'Panel' }, { value: 'rail', label: 'Rail' }, { value: 'icons', label: 'Icons' }, { value: 'stack', label: 'Stacked' }, { value: 'sections', label: 'Sections' }]
 const ACCENTS = ['#f2bd2f', '#2fa866', '#8e4fd0', '#d6395e', '#2f5fd0', '#e0621b', '#0e8a85', '#18181b']
 
 function Preferences({ look }) {
@@ -296,6 +297,11 @@ function Preferences({ look }) {
         <Row label="View as" tip="See the DMS the way each role sees it: their workspaces, pages and settings"><Select value={prefs.viewAs} onChange={set('viewAs')} options={PERSONAS} width={200} /></Row>
       </Group>
 
+      <Group title="Desk">
+        <Row label="Preset" tip="Noir desk: Noir style, Sections sidebar, Brief home, docked peek and the assistant, all at once. Back to default: Velin, Khadi, Stacked sidebar, Stack home."><DeskPreset look={look} /></Row>
+        {style === 'noir' && <Row label="Noir" tip="Highlight colour, canvas and table grid lines" stack><NoirTuner prefs={prefs} setPrefs={setPrefs} /></Row>}
+      </Group>
+
       <Group title="Appearance">
         <Row label="Font" tip="Theme default follows the theme's own type"><FontSelect value={prefs.font} onChange={set('font')} /></Row>
         <Row label="Mode" stack>
@@ -307,7 +313,9 @@ function Preferences({ look }) {
         </Row>
         <Row label="Experience" tip={'Shell and navigation model · ' + ALT + 'E'}><Seg id="st-exp" value={exp} onChange={setExp} options={exps.map((x) => ({ value: x.id, label: x.label }))} /></Row>
         <Row label="Home" tip={'Stack: dashboard over chat · Split: chat with a KPI column · Focus: chat first · Dock: dashboard with a chat panel · ' + ALT + 'H'}><Seg id="st-home" value={prefs.home} onChange={set('home')} options={HOME_LAYOUTS} /></Row>
-        {exp !== 'vercel' && <Row label="Sidebar" tip="Panel · Rail: workspaces on a rail · Icons: collapsed · Stacked: every workspace in one list"><Seg id="st-sidebar" value={prefs.sidebar} onChange={set('sidebar')} options={SIDEBARS} /></Row>}
+        {exp !== 'vercel' && <Row label="Sidebar" tip="Panel · Rail: workspaces on a rail · Icons: collapsed · Stacked: every workspace in one list · Sections: Work, Company and your pods as flat lists"><Seg id="st-sidebar" value={prefs.sidebar} onChange={set('sidebar')} options={SIDEBARS} /></Row>}
+        <Row label="Record peek" tip="Overlay: a sheet over the page (Attio) or the full page · Docked: the record opens in a panel beside the list, which shrinks to fit"><Seg id="st-peek" value={prefs.peek} onChange={set('peek')} options={[{ value: 'overlay', label: 'Overlay' }, { value: 'docked', label: 'Docked' }]} /></Row>
+        <Row label="Assistant" tip={'Docked: Ask WLDD in the top bar opens a chat panel on any page · ' + MOD + 'J'}><Seg id="st-assistant" value={prefs.assistant} onChange={set('assistant')} options={[{ value: 'off', label: 'Off' }, { value: 'docked', label: 'Docked' }]} /></Row>
         <Row label="Density"><Seg id="st-density" value={prefs.density} onChange={set('density')} options={[{ value: 'comfortable', label: 'Comfortable' }, { value: 'compact', label: 'Compact' }]} /></Row>
         <Row label="Motion" tip="Reduced turns off slides, morphs and springs"><Seg id="st-motion" value={prefs.motion} onChange={set('motion')} options={[{ value: 'full', label: 'Full' }, { value: 'reduced', label: 'Reduced' }]} /></Row>
       </Group>
@@ -449,7 +457,7 @@ function Notifications() {
 const K = ({ k }) => <span className="st-keys">{k.split(' ').map((x, i) => <kbd key={i} className="k">{x}</kbd>)}</span>
 function Shortcuts() {
   const groups = [
-    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Home', ALT + '0'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to Sales', ALT + '3']]],
+    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Ask WLDD (when docked)', MOD + 'J'], ['Home', ALT + '0'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to Sales', ALT + '3']]],
     ['Look', [['Cycle Home layout', ALT + 'H'], ['Cycle experience', ALT + 'E'], ['Cycle style', ALT + 'S'], ['Cycle Pop presets', ALT + 'P']]],
     ['Lists & boards', [['New campaign', 'C'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
     ['Vercel experience', [['Find', 'F']]],

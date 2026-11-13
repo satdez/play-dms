@@ -1,14 +1,14 @@
 import { Wldd } from '../../loaders/Wldd'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowUp, ArrowUpRight, Check, Lock, Square, SquarePen, History, Search, Trash2, X } from 'lucide-react'
+import { ArrowUp, ArrowUpRight, Check, Lock, Square, SquarePen, History, Search, Trash2, X, BadgeCheck, MessageSquare, Upload, Link2, Paperclip, AtSign, ListFilter, Pin } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
-import { ROLES, trackerFor, monthly, bdMonthly, fmt, TODAY } from '../data'
-import { Ticker, ConfirmButton, Tip, EASE } from '../../shared/motion'
+import { ROLES, STAGES, PODS, trackerFor, monthly, bdMonthly, fmt, TODAY } from '../data'
+import { Ticker, ConfirmButton, Tip, EASE, openNewCampaign } from '../../shared/motion'
 import { Sparkline } from '../../shared/ui'
-import { Track, ClientLogo, RoleIcon, Popover, go } from '../ui'
-import { view } from '../personas'
+import { Track, ClientLogo, RoleIcon, Popover, go, useDock } from '../ui'
+import { view, canLeadApprove } from '../personas'
 import { WlddMark } from '../../shared/WlddMark'
 
 /* Home: one page for everyone. KPIs for each workspace the person can open, and a chat
@@ -23,7 +23,7 @@ const act = (c) => c.name.split(' × ')[1] || c.name
 const sum = (a, f) => a.reduce((t, x) => t + f(x), 0)
 
 /** Every KPI per workspace. `q` is how it's asked; `k` are words that find it in free text. */
-const KPIS = {
+export const KPIS = {
   pod: [
     { id: 'live', label: 'Live', q: 'Live campaigns', k: ['live', 'running', 'active'], weak: ['campaign'], v: (s) => s.campaigns.filter((c) => c.stage >= 4).length },
     { id: 'links', label: 'Links to review', q: 'Links waiting for review', k: ['link', 'review', 'tracker'], v: (s) => sum(reviewOf(s), ([, n]) => n) },
@@ -95,6 +95,7 @@ function summaryFor(mods, s) {
 /** Free text → KPI, by keyword. Returns the best match across all workspaces (access is checked after). */
 function route(text) {
   const t = ' ' + text.toLowerCase() + ' '
+  if (/https?:\/\/|instagram\.com|youtu\.?be|x\.com\//.test(t)) return ALL.find((k) => k.id === 'links') // a pasted post goes to the review queue
   if (/\b(summary|overview|today|everything|how are we|status)\b/.test(t)) return 'summary'
   let best = null, score = 0
   ALL.forEach((k) => {
@@ -110,8 +111,8 @@ function route(text) {
 const KEY = (pid) => 'wldd-chats-' + pid
 const loadChats = (pid) => { try { return JSON.parse(localStorage.getItem(KEY(pid)) || '[]') } catch { return [] } }
 const saveChats = (pid, list) => { try { localStorage.setItem(KEY(pid), JSON.stringify(list.slice(0, 50))) } catch {} }
-const kpiOf = (ref) => { const k = ref?.mod && KPIS[ref.mod]?.find((x) => x.id === ref.id); return k ? { ...k, mod: ref.mod } : null }
-function resolve(ref, mods, s) {
+export const kpiOf = (ref) => { const k = ref?.mod && KPIS[ref.mod]?.find((x) => x.id === ref.id); return k ? { ...k, mod: ref.mod } : null }
+export function resolve(ref, mods, s) {
   if (ref === 'summary') return summaryFor(mods, s)
   if (!ref || ref === 'miss') return { miss: true }
   if (ref.locked || !mods.includes(ref.mod)) return { locked: ref.locked || ref.mod }
@@ -124,6 +125,15 @@ function resolve(ref, mods, s) {
   if (!list.length) return { miss: true } // nothing in the list matches: it wasn't a filter, it was something we don't understand
   return { ...a, list, more: null, text: `${list.length} matching.` }
 }
+/** What a typed question points at. `ctx` is the last answer, so "only Netflix" narrows it. */
+export function refFor(text, ctx, mods, kpi) {
+  let hit = kpi || route(text)
+  let f = null
+  if (!hit && ctx && ctx.mod) { hit = kpiOf(ctx); f = text } // follow-up: narrow the last answer
+  return !hit ? 'miss' : hit === 'summary' ? 'summary' : !mods.includes(hit.mod) ? { locked: hit.mod } : { mod: hit.mod, id: hit.id, ...(f && { f }) }
+}
+/** Two KPIs per workspace the person can open: the starter questions. */
+export const suggestFor = (mods) => mods.flatMap((m) => KPIS[m].slice(0, 2).map((k) => ({ ...k, mod: m }))).slice(0, 4)
 const STOP = new Set(['only', 'just', 'the', 'and', 'for', 'with', 'show', 'what', 'which', 'about', 'from', 'are', 'that', 'this', 'those'])
 const dayKey = (t) => { const d = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(t).setHours(0, 0, 0, 0)) / 864e5); return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : d < 7 ? 'This week' : 'Earlier' }
 const hello = () => { const h = new Date().getHours(); return h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : 'Evening' }
@@ -132,12 +142,14 @@ const hello = () => { const h = new Date().getHours(); return h < 12 ? 'Morning'
     stack  — dashboard on top, chat underneath
     split  — chat is the page; KPIs in a slim column on the right
     focus  — chat first: greeting + composer centred, a strip of headline KPIs; the strip steps away once you talk
-    dock   — dashboard is the page; chat lives in a panel on the right */
+    dock   — dashboard is the page; chat lives in a panel on the right
+    brief  — what's waiting in one sentence, three ways to start, open work as rows, the composer as a card at the foot */
 export const HOME_LAYOUTS = [
   { value: 'stack', label: 'Stack' },
   { value: 'split', label: 'Split' },
   { value: 'focus', label: 'Focus' },
   { value: 'dock', label: 'Dock' },
+  { value: 'brief', label: 'Brief' },
 ]
 
 export default function Hub({ layout = 'stack' }) {
@@ -176,10 +188,7 @@ export default function Hub({ layout = 'stack' }) {
   const ask = (text, kpi) => {
     if (!text.trim() || busy) return
     const ctx = peek || (!kpi && [...thread].reverse().find((m) => m.ref?.mod)?.ref) // what "only Netflix" refers to
-    let hit = kpi || route(text)
-    let f = null
-    if (!hit && ctx && ctx.mod) { hit = kpiOf(ctx); f = text } // follow-up: narrow the last answer
-    const ref = !hit ? 'miss' : hit === 'summary' ? 'summary' : !mods.includes(hit.mod) ? { locked: hit.mod } : { mod: hit.mod, id: hit.id, ...(f && { f }) }
+    const ref = refFor(text, ctx, mods, kpi)
     const now = Date.now()
     let id = cur
     const title = peek ? kpiOf(peek).q : text.trim()[0].toUpperCase() + text.trim().slice(1)
@@ -202,7 +211,7 @@ export default function Hub({ layout = 'stack' }) {
     if (cur === id) setCur(null)
     toast('Chat deleted', { action: { label: 'Undo', onClick: () => setChats((l) => { const n = [...l]; n.splice(i, 0, gone); return n }) } })
   }
-  const suggest = mods.flatMap((m) => KPIS[m].slice(0, 2).map((k) => ({ ...k, mod: m }))).slice(0, 4)
+  const suggest = suggestFor(mods)
 
   /* Always there, pinned to the top of the chat while it scrolls (the composer is pinned to the bottom). */
   const bar = (
@@ -270,6 +279,34 @@ export default function Hub({ layout = 'stack' }) {
       <aside className="hub-col hub-chatcol">{bar}{thread.length || peek ? threadEl : <div className="hub-hello" />}{dock}</aside>
     </div>
   )
+  if (layout === 'brief') {
+    const talking = thread.length || peek
+    const card = (
+      <form className="br-box" onSubmit={(e) => { e.preventDefault(); ask(q) }} onMouseDown={(e) => { if (e.target === e.currentTarget) { e.preventDefault(); box.current?.focus() } }}>
+        <div className="br-box-h">
+          <span className="chip br-mode"><MessageSquare size={12} />Ask</span>
+          <span className="mute xs br-hint m-hide">Enter to send</span>
+        </div>
+        <textarea ref={box} rows={2} value={q} placeholder={talking ? 'Reply…' : 'Ask about campaigns, invoices, pipeline…'} aria-label="Ask"
+          onChange={(e) => { setQ(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px' }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(q) } }} />
+        <div className="br-box-f">
+          {mods.includes('pod') && <Tip label="Upload a brief"><button type="button" className="b ghost icon sm" onClick={() => openNewCampaign()} aria-label="Upload a brief"><Paperclip size={14} /></button></Tip>}
+          <Tip label="Mention"><button type="button" className="b ghost icon sm" onClick={() => { setQ((v) => v + '@'); box.current?.focus() }} aria-label="Mention"><AtSign size={14} /></button></Tip>
+          <span className="grow" />
+          {busy
+            ? <Tip label="Stop"><button type="button" className="b icon br-send" onClick={stop} aria-label="Stop"><Square size={11} fill="currentColor" /></button></Tip>
+            : <Tip label="Send" kbd="↵"><button type="submit" className="b ink icon br-send" disabled={!q.trim()} aria-label="Send"><ArrowUp size={16} /></button></Tip>}
+        </div>
+      </form>
+    )
+    return (
+      <div className={'d-page hub l-brief' + (talking ? ' talking' : '')}>
+        {talking ? <>{bar}{threadEl}</> : <Brief mods={mods} chats={chats} openChat={open} start={() => box.current?.focus()} />}
+        <div className="br-foot">{card}</div>
+      </div>
+    )
+  }
   if (layout === 'focus') return (
     <div className={'d-page hub l-focus' + (thread.length || peek ? ' talking' : '')}>
       {thread.length || peek ? <>{bar}{peek && !thread.length && <div className="hub-strip-top">{kpis('strip')}</div>}{threadEl}{dock}</> : (
@@ -292,6 +329,119 @@ export default function Hub({ layout = 'stack' }) {
       {bar}
       {threadEl}
       {dock}
+    </div>
+  )
+}
+
+/** What's waiting on this person, across the workspaces they can open. */
+function dueOf(mods, s) {
+  const parts = []
+  if (mods.includes('pod') && canLeadApprove()) parts.push({ list: s.invoices.filter((x) => x.stage === 'lead'), to: '/pod/approvals' })
+  if (mods.includes('finance')) parts.push({ list: s.invoices.filter((x) => x.stage === 'finance'), to: '/finance/invoices' })
+  const inv = parts.flatMap((p) => p.list)
+  if (!inv.length && mods.includes('bd')) {
+    const x = s.inbound[0]
+    return { n: s.inbound.length, noun: s.inbound.length === 1 ? 'lead' : 'leads', to: '/bd/inbound', top: x && { logo: x.company, title: x.company, via: x.name, at: x.at, n: s.inbound.length } }
+  }
+  // The campaign with the most waiting is the one to open first.
+  const by = {}
+  inv.forEach((x) => { (by[x.campaignId] ||= []).push(x) })
+  const [cid, top] = Object.entries(by).sort((a, b) => b[1].length - a[1].length)[0] || []
+  const c = cid && s.campaigns.find((x) => x.id === cid)
+  const at = top && new Date(Math.max(...top.map((x) => +x.submitted)))
+  return { n: inv.length, noun: inv.length === 1 ? 'approval' : 'approvals', to: parts.find((p) => p.list.length)?.to || parts[0]?.to, top: c && { logo: c.client, industry: c.industry, title: c.name, via: c.pod, at, n: top.length } }
+}
+
+/** Brief home: one sentence of what's waiting, three ways to start, then open work. */
+function Brief({ mods, chats, openChat, start }) {
+  const s = useStore()
+  const dk = useDock()
+  const due = dueOf(mods, s)
+  const hasPod = mods.includes('pod')
+  const [tab, setTab] = useState(hasPod ? 'open' : 'chats')
+  const [pod, setPod] = useState(null)
+  const open = s.campaigns.filter((c) => c.stage < 6 && (!pod || c.pod === pod)).sort((a, b) => b.updated - a.updated)
+  const rows = open.slice(0, 8)
+  const openRec = (c) => (dk.peek === 'docked' ? dk.setDock({ kind: 'record', id: c.id, ids: rows.map((x) => x.id) }) : go(`/pod/campaigns/${c.id}`))
+  const starts = [
+    { id: 'ask', icon: MessageSquare, tone: 'g', t: 'Ask anything', d: 'Campaigns, invoices, pipeline. Answers come from live data.', b: 'Start typing', on: start },
+    hasPod && { id: 'up', icon: Upload, tone: 'v', t: 'Upload a brief', d: 'A deck or PDF from the client starts a campaign.', b: 'Upload a file', on: () => openNewCampaign() },
+    hasPod && { id: 'link', icon: Link2, tone: 'y', t: 'Paste a link', d: 'A live reel or post goes to its review queue.', b: 'Paste a link', on: start },
+  ].filter(Boolean)
+  return (
+    <div className="br">
+      <section className="br-hero">
+        <h1 className="br-say">
+          {due.n ? <>You have <span className="br-badge" aria-hidden><BadgeCheck size={20} /></span> <span className="num">{due.n}</span> {due.noun} <span className="br-dim">ready to review.</span></>
+            : <>Nothing waiting. <span className="br-dim">Start below.</span></>}
+        </h1>
+        {due.top && (
+          <div className="br-top">
+            <ClientLogo name={due.top.logo} industry={due.top.industry} />
+            <span className="ell br-top-t">{due.top.title}</span>
+            <span className="mute ell br-top-m">· {due.top.via} · {fmt.agoShort(due.top.at)}</span>
+            <span className="grow" />
+            <span className="br-wait"><i />{due.top.n} waiting</span>
+            <button className="b sm" onClick={() => go(due.to)}>Open</button>
+          </div>
+        )}
+      </section>
+
+      <div className="br-starts">
+        {starts.map((x) => (
+          <div key={x.id} className="br-start">
+            <span className={'br-ic ' + x.tone}><x.icon size={15} /></span>
+            <b>{x.t}</b>
+            <p className="mute">{x.d}</p>
+            <button className="b sm br-start-b" onClick={x.on}>{x.b}</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="br-tabs">
+        <div className="vtabs">
+          {hasPod && <button className={'vtab' + (tab === 'open' ? ' on' : '')} onClick={() => setTab('open')}>Open campaigns<span className="mute num">{open.length}</span></button>}
+          <button className={'vtab' + (tab === 'chats' ? ' on' : '')} onClick={() => setTab('chats')}>Recent chats<span className="mute num">{chats.length}</span></button>
+        </div>
+        <span className="grow" />
+        {tab === 'open' && (
+          <Popover width={180} trigger={({ toggle, open: o }) => (
+            <button className={'b sm' + (o || pod ? ' on' : '')} onClick={toggle}><ListFilter size={14} />{pod ? <>Pod <b className="fw5">{pod}</b></> : 'Filter'}</button>
+          )}>
+            {(close) => [null, ...PODS].map((p) => (
+              <button key={p || 'all'} onClick={() => { setPod(p); close() }}>
+                {p ? <span className="pod-dot" data-pod={p} /> : <span style={{ width: 8 }} />}{p || 'Any'}{pod === p && <Check size={14} style={{ marginLeft: 'auto' }} />}
+              </button>
+            ))}
+          </Popover>
+        )}
+      </div>
+
+      <div className="list br-list">
+        {tab === 'open' && rows.map((c) => (
+          <div key={c.id} className="li br-row">
+            <ClientLogo name={c.client} industry={c.industry} />
+            <div className="grow">
+              <div className="li-t ell">{c.name}</div>
+              <div className="br-meta"><span className="chip">{c.stage === 6 ? 'Complete' : STAGES[c.stage]}</span><span className="pod-tag"><span className="pod-dot" data-pod={c.pod} />{c.pod}</span><span className="mute m-hide">{fmt.agoShort(c.updated)}</span></div>
+            </div>
+            <button className="b sm m-hide" onClick={() => s.patchCampaign(c.id, { pinned: !c.pinned })}><Pin size={13} fill={c.pinned ? 'currentColor' : 'none'} />{c.pinned ? 'Pinned' : 'Pin'}</button>
+            <button className="b sm" onClick={() => openRec(c)}>Open</button>
+          </div>
+        ))}
+        {tab === 'chats' && chats.slice(0, 8).map((c) => (
+          <div key={c.id} className="li br-row">
+            <span className="br-ic"><MessageSquare size={14} /></span>
+            <div className="grow">
+              <div className="li-t ell">{c.title}</div>
+              <div className="br-meta"><span className="mute">{dayKey(c.at)}</span></div>
+            </div>
+            <button className="b sm" onClick={() => openChat(c.id)}>Open</button>
+          </div>
+        ))}
+        {tab === 'chats' && !chats.length && <div className="empty"><MessageSquare size={18} /><b>No chats</b></div>}
+        {tab === 'open' && !rows.length && <div className="empty"><b>Clear</b></div>}
+      </div>
     </div>
   )
 }
@@ -395,7 +545,7 @@ function ChatList({ chats, cur, open, remove }) {
   )
 }
 
-function Answer({ a, ask, suggest, onClose }) {
+export function Answer({ a, ask, suggest, onClose }) {
   const s = useStore()
   const [done, setDone] = useState(() => new Set())
   if (a.locked) return <div className="hub-a"><p className="hub-lock"><Lock size={14} /><b>Locked</b><span className="mute">No {roleOf(a.locked).label} access</span></p></div>

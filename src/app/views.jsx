@@ -1,14 +1,15 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Rows3, Columns3, Table2, GanttChart, LayoutGrid, SlidersHorizontal, ChevronDown, ChevronRight, Check, ListFilter, ArrowUpDown, ArrowDown,
-  Plus, Search, Megaphone, GitCommitHorizontal, Hash, Layers, Users, Coins, Percent, Eye, CalendarDays, Clock, CircleDot, Tag, User, ArrowUpRight, Pin, X, Maximize2, ChevronsLeftRight, ZoomIn,
+  Plus, Search, Megaphone, GitCommitHorizontal, Hash, Layers, Users, Coins, Percent, Eye, CalendarDays, Clock, CircleDot, Tag, User, ArrowUpRight, Pin, X, Maximize2, ChevronsLeftRight, ZoomIn, ChevronUp,
 } from 'lucide-react'
 import { useStore } from './store'
-import { STAGES, STAGE_FULL, PODS, fmt, TODAY, team } from './data'
+import { STAGES, STAGE_FULL, PODS, fmt, TODAY, team, trackerFor } from './data'
 import { Tip, EASE, openNewCampaign, AutoHeight, MOD, MOD_SHIFT } from '../shared/motion'
 import { Avatar, AvatarStack, Sparkline } from '../shared/ui'
-import { Svc, Track, ClientLogo, Popover, Select, Switch, go } from './ui'
+import { Svc, Track, ClientLogo, Popover, Select, Switch, Seg, go, useDock } from './ui'
 import { Sheet } from './pages/Finance'
 
 /* ───────── Display model ───────── */
@@ -73,7 +74,7 @@ const SORT = {
   margin: (a, b) => margin(b) - margin(a),
   name: (a, b) => a.client.localeCompare(b.client),
 }
-const stageLabel = (i) => (i === 6 ? 'Complete' : STAGE_FULL[i])
+export const stageLabel = (i) => (i === 6 ? 'Complete' : STAGE_FULL[i])
 
 /** Linear-style status glyph: dashed = not started, pie = progress, filled check = complete. */
 export function StageIcon({ stage, size = 14 }) {
@@ -141,6 +142,7 @@ export function CampaignViews({ exp }) {
   const [q, setQ] = useState('')
   const [pod, setPod] = useState(null)
   const [peek, setPeek] = useState(null)
+  const dk = useDock()
 
   const sc = SCOPES.find((x) => x.id === scope)
   const base = s.campaigns.filter((c) => (!pod || c.pod === pod) && (c.name + c.code).toLowerCase().includes(q.toLowerCase()) && (d.completed || c.stage < 6))
@@ -148,7 +150,9 @@ export function CampaignViews({ exp }) {
   const groupBy = d.layout === 'board' && d.group === 'none' ? 'stage' : d.group
   const groups = groupsFor(groupBy, rows, d.layout === 'board' && groupBy !== 'industry')
 
-  const open = (c) => (exp === 'attio' ? setPeek(c.id) : go(`/pod/campaigns/${c.id}`))
+  // Docked peek (Preferences › Record peek) opens beside the list in every experience; otherwise Attio peeks, the rest navigate.
+  const open = (c) => (dk.peek === 'docked' ? dk.setDock({ kind: 'record', id: c.id, ids: rows.map((x) => x.id) }) : exp === 'attio' ? setPeek(c.id) : go(`/pod/campaigns/${c.id}`))
+  const docked = dk.dock?.kind === 'record' ? dk.dock.id : null
 
   // ⇧⌘B / Ctrl+Shift+B flips list ⇄ board (⌘B alone collapses the sidebar).
   useEffect(() => {
@@ -239,9 +243,9 @@ export function CampaignViews({ exp }) {
         </>
       )}
 
-      {d.layout === 'list' && <ListView groups={groups} d={d} onOpen={open} exp={exp} />}
+      {d.layout === 'list' && <ListView groups={groups} d={d} onOpen={open} exp={exp} cur={docked} />}
       {d.layout === 'board' && <BoardView groups={groups} d={d} groupBy={groupBy} onOpen={open} />}
-      {d.layout === 'table' && <TableView rows={rows} d={d} setD={setD} onOpen={open} />}
+      {d.layout === 'table' && <TableView rows={rows} d={d} setD={setD} onOpen={open} cur={docked} />}
       {d.layout === 'timeline' && <TimelineSwitch groups={groups} d={d} onOpen={open} />}
       {d.layout === 'grid' && exp === 'vercel' && <VxDash rows={rows} all={s.campaigns}><VxCards rows={rows} d={d} onOpen={open} /></VxDash>}
       {d.layout === 'grid' && exp !== 'vercel' && <GridView groups={groups} d={d} onOpen={open} />}
@@ -300,7 +304,7 @@ function DisplayMenu({ d, setD, reset, exp }) {
 }
 
 /* ───────── List ───────── */
-function ListView({ groups, d, onOpen, exp }) {
+function ListView({ groups, d, onOpen, exp, cur: docked }) {
   const [collapsed, setCollapsed] = useState({})
   const [cursor, setCursor] = useState(null)
   const flat = groups.flatMap((g) => (collapsed[g.key] ? [] : g.items))
@@ -310,7 +314,7 @@ function ListView({ groups, d, onOpen, exp }) {
   useEffect(() => {
     const on = (e) => {
       const t = e.target
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || e.metaKey || e.ctrlKey || e.altKey) return
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || e.metaKey || e.ctrlKey || e.altKey || docked) return // the dock steps through records itself
       const i = flat.findIndex((c) => c.id === cursor)
       let n = null
       if (e.key === 'j' || e.key === 'ArrowDown') n = flat[Math.min(flat.length - 1, i + 1)]
@@ -337,7 +341,7 @@ function ListView({ groups, d, onOpen, exp }) {
             {!collapsed[g.key] && (
               <motion.div className="list" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: EASE }} style={{ overflow: 'hidden' }}>
                 {g.items.map((c) => (
-                  <a key={c.id} id={'row-' + c.id} href={`#/pod/campaigns/${c.id}`} className={'li vli' + (cursor === c.id ? ' sel' : '')}
+                  <a key={c.id} id={'row-' + c.id} href={`#/pod/campaigns/${c.id}`} className={'li vli' + (cursor === c.id || docked === c.id ? ' sel' : '')}
                     onClick={(e) => { e.preventDefault(); onOpen(c) }} onMouseMove={() => cursor !== c.id && setCursor(c.id)}>
                     {has('code') && <span className="mono mute vli-id">{c.code}</span>}
                     <Tip label={stageLabel(c.stage)}><span style={{ display: 'grid' }}><StageIcon stage={c.stage} /></span></Tip>
@@ -431,7 +435,7 @@ function BoardView({ groups, d, groupBy, onOpen }) {
 
 /* ───────── Table (records) ───────── */
 const STAGE_OPTS = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ id: i, label: stageLabel(i) }))
-function TableView({ rows, d, setD, onOpen }) {
+function TableView({ rows, d, setD, onOpen, cur }) {
   const s = useStore()
   const [sel, setSel] = useState(() => new Set())
   const cols = PROPS.filter((p) => d.props.includes(p.id))
@@ -481,7 +485,7 @@ function TableView({ rows, d, setD, onOpen }) {
           </thead>
           <tbody>
             {rows.map((c) => (
-              <tr key={c.id} className={sel.has(c.id) ? 'sel' : ''}>
+              <tr key={c.id} className={(sel.has(c.id) ? 'sel' : '') + (cur === c.id ? ' cur' : '')}>
                 <td className="gt-ck"><Check2 on={sel.has(c.id)} onClick={() => tog(c.id)} /></td>
                 <td className="gt-first">
                   <button className="gt-rec" onClick={() => onOpen(c)}>
@@ -916,5 +920,132 @@ function Peek({ id, onClose }) {
         </div>
       )}
     </Sheet>
+  )
+}
+
+/* ───────── Record dock (Preferences › Record peek › Docked) ─────────
+   The record opens in a panel docked to the right; the page shrinks beside it instead of sitting under a scrim.
+   Header steps through the list it was opened from (↑/↓ or J/K), Esc closes. */
+const daysSince = (d) => Math.floor((TODAY - d) / 864e5)
+/** Health checks for a campaign: each one is a line, a verdict chip and two lines of evidence from the record. */
+function checksFor(c, rows) {
+  const m = Math.round(margin(c) * 100)
+  const live = rows.filter((r) => r.status === 'live').length
+  const review = rows.filter((r) => r.status === 'review').length
+  const missing = rows.length - live - review
+  const idle = daysSince(c.updated)
+  return [
+    { t: 'Brief received', tone: c.stage >= 1 ? 'g' : 'y', chip: c.stage >= 1 ? 'Done' : 'Waiting', ev: c.brief },
+    { t: 'Team allocated', tone: c.stage >= 2 ? 'g' : 'n', chip: c.stage >= 2 ? 'Done' : 'Open', ev: `${c.lead.short} leads, with ${c.team.filter((u) => u.id !== c.lead.id).map((u) => u.short).join(' and ') || 'no one else yet'}. ${c.pod} pod.` },
+    { t: 'Plan approved', tone: c.planApproved ? 'g' : c.stage >= 3 ? 'y' : 'n', chip: c.planApproved ? 'Done' : c.stage >= 3 ? 'Waiting' : 'Not yet', ev: `${c.services.map((k) => k.toUpperCase()).join(', ')} across ${rows.length} deliverables. Plan cost ${fmt.inr(c.planCost)}.` },
+    { t: 'Budget within plan', tone: m >= 25 ? 'g' : m >= 15 ? 'y' : 'r', chip: m >= 25 ? 'On track' : m >= 15 ? 'Tight' : 'Over', ev: `${fmt.inr(c.planCost)} planned against a ${fmt.inr(c.budget)} budget. Margin ${m}%, target 25%.` },
+    { t: 'Deliverables live', tone: c.stage < 4 ? 'n' : rows.length && live / rows.length >= 0.8 ? 'g' : 'y', chip: c.stage < 4 ? 'Not started' : `${live} of ${rows.length}`, ev: c.stage < 4 ? `Goes live at Activation. ${rows.length} planned.` : `${review} waiting for review, ${missing} still missing a link.` },
+    { t: 'Moved recently', tone: idle <= 2 || c.stage === 6 ? 'g' : 'r', chip: idle <= 2 || c.stage === 6 ? 'Fresh' : fmt.date(c.updated), ev: `Last update ${ago(c.updated) === 'now' ? 'just now' : ago(c.updated) + ' ago'}, at ${stageLabel(c.stage)}.${idle > 2 && c.stage < 6 ? ` ${idle} days without a move.` : ''}` },
+  ]
+}
+
+export function RecordDock({ id, ids = [], onClose, onMove }) {
+  const s = useStore()
+  const c = s.campaigns.find((x) => x.id === id)
+  const [tab, setTab] = useState('checks')
+  const rows = useMemo(() => (c ? trackerFor(c) : []), [c?.id, c?.stage]) // eslint-disable-line
+  const i = ids.indexOf(id)
+  const step = (d) => { const n = ids[i + d]; if (n) onMove(n) }
+  useEffect(() => {
+    const on = (e) => {
+      const t = e.target
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') || e.metaKey || e.ctrlKey || e.altKey || document.querySelector('.pop, .cmdk-content')) return
+      if (e.key === 'Escape') { e.preventDefault(); onClose() }
+      else if (e.key === 'ArrowDown' || e.key === 'j') { e.preventDefault(); step(1) }
+      else if (e.key === 'ArrowUp' || e.key === 'k') { e.preventDefault(); step(-1) }
+    }
+    window.addEventListener('keydown', on)
+    return () => window.removeEventListener('keydown', on)
+  })
+  if (!c) return null
+  const checks = checksFor(c, rows)
+  const score = Math.round((checks.filter((x) => x.tone === 'g').length / checks.length) * 100)
+  const copy = () => { navigator.clipboard?.writeText(c.code); toast('Copied ' + c.code) }
+  const info = [
+    [Hash, 'ID', <span className="mono">{c.code}</span>, { l: 'Copy', on: copy }],
+    [CircleDot, 'Stage', <span className="row" style={{ gap: 6 }}><StageIcon stage={c.stage} />{stageLabel(c.stage)}</span>, c.stage < 6 && { l: 'Next', on: () => s.patchCampaign(c.id, { stage: c.stage + 1, planApproved: c.stage + 1 >= 4 || c.planApproved, updated: TODAY }) }],
+    [User, 'Lead', CELL.lead(c)],
+    [Tag, 'Pod', CELL.pod(c)],
+    [Coins, 'Budget', <span className="num">{fmt.inrFull(c.budget)}</span>, { l: 'Plan', on: () => go(`/pod/campaigns/${c.id}/plan`) }],
+    [CalendarDays, 'Dates', <span>{fmt.date(c.start)} → {fmt.date(c.end || c.start)}</span>],
+  ]
+  return (
+    <div className="rd">
+      <div className="rd-h">
+        <Tip label="Close" kbd="Esc"><button className="b ghost icon sm" onClick={onClose} aria-label="Close"><X size={15} /></button></Tip>
+        <span className="rd-nav">
+          <Tip label="Previous" kbd="K"><button className="b ghost icon sm" disabled={i <= 0} onClick={() => step(-1)} aria-label="Previous"><ChevronUp size={15} /></button></Tip>
+          <Tip label="Next" kbd="J"><button className="b ghost icon sm" disabled={i < 0 || i >= ids.length - 1} onClick={() => step(1)} aria-label="Next"><ChevronDown size={15} /></button></Tip>
+        </span>
+        {i >= 0 && <span className="mute num rd-pos">{i + 1} of {ids.length}</span>}
+        <span className="grow" />
+        <Tip label="Open page"><button className="b ghost icon sm" onClick={() => { onClose(); go(`/pod/campaigns/${c.id}`) }} aria-label="Open page"><Maximize2 size={14} /></button></Tip>
+      </div>
+      <div className="rd-body">
+        <div className="rd-id">
+          <ClientLogo name={c.client} industry={c.industry} size="lg" />
+          <div className="grow" style={{ minWidth: 0 }}>
+            <div className="rd-t ell">{c.client}</div>
+            <div className="mute ell">{c.activity}</div>
+          </div>
+        </div>
+        <div className="rd-acts">
+          <button className="b sm" onClick={() => s.patchCampaign(c.id, { pinned: !c.pinned })}><Pin size={13} fill={c.pinned ? 'currentColor' : 'none'} />{c.pinned ? 'Pinned' : 'Pin'}</button>
+          <button className="b sm" onClick={() => go(`/pod/campaigns/${c.id}/tracker`)}><Eye size={13} />Tracker<span className="mute num">{rows.length}</span></button>
+          <button className="b sm" onClick={() => go(`/pod/campaigns/${c.id}/plan`)}><Layers size={13} />Plan</button>
+        </div>
+        <div className="rd-card">
+          {info.map(([I, l, v, a]) => (
+            <div key={l} className="rd-kv">
+              <span className="rd-k"><I size={13} />{l}</span>
+              <span className="rd-v">{v}</span>
+              {a ? <button className="rd-act" onClick={a.on}>{a.l}</button> : <span className="rd-act-x" />}
+            </div>
+          ))}
+        </div>
+        <div className="rd-tabs">
+          <Seg id="rd-tab" value={tab} onChange={setTab} options={[
+            { value: 'checks', label: 'Checks', count: score + '%' },
+            { value: 'deliv', label: 'Deliverables', count: rows.length },
+            { value: 'brief', label: 'Brief' },
+          ]} />
+        </div>
+        {tab === 'checks' && (
+          <ol className="rd-checks">
+            {checks.map((k, n) => (
+              <li key={k.t} className="rd-ck">
+                <div className="rd-ck-h"><b className="ell">{n + 1}. {k.t}</b><span className={'nchip ' + k.tone}><i />{k.chip}</span></div>
+                <p className="rd-ev">{k.ev}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+        {tab === 'deliv' && (
+          <div className="rd-dl">
+            {rows.slice(0, 40).map((r) => (
+              <div key={r.id} className="rd-dr">
+                <span className="ell grow">{r.page.handle}</span>
+                <span className="mute">{r.type}</span>
+                <span className={'nchip ' + (r.status === 'live' ? 'g' : r.status === 'review' ? 'y' : 'n')}><i />{r.status === 'live' ? 'Live' : r.status === 'review' ? 'Review' : 'Missing'}</span>
+              </div>
+            ))}
+            {rows.length > 40 && <button className="b sm" onClick={() => go(`/pod/campaigns/${c.id}/tracker`)}>All {rows.length}</button>}
+            {!rows.length && <div className="empty"><b>None planned</b></div>}
+          </div>
+        )}
+        {tab === 'brief' && (
+          <div className="rd-brief">
+            <p className="fg2">{c.brief}</p>
+            <div className="rd-k" style={{ marginTop: 16 }}><Eye size={13} />Reach</div>
+            <Sparkline data={c.trend} width={396} height={56} color="var(--hl, var(--green))" />
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

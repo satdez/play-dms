@@ -51,6 +51,7 @@ export const THEMES = [
   { group: 'Classic', items: [
     { id: 'paper', label: 'Khadi', style: 'paper', sw: { light: ['#fafaf9', '#18181b'], dark: ['#0f0f10', '#ececee'] } },
     { id: 'ink', label: 'Kajal', style: 'ink', sw: { light: ['#08080a', '#5fcf86'], dark: ['#08080a', '#5fcf86'] } },
+    { id: 'noir', label: 'Noir', style: 'noir', sw: { light: ['#000000', '#7c8cff'], dark: ['#000000', '#7c8cff'] } },
   ] },
   { group: 'WLDD colours', items: ['sand', 'sage', 'haze', 'clay'].map(T) },
   { group: 'Fresh', items: ['slate', 'dune', 'lagoon', 'mono'].map(T) },
