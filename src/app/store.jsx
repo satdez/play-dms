@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback } from 'react'
+import { useSalesState } from './sales/state'
 import { toast } from 'sonner'
-import { campaigns as seedCampaigns, invoices as seedInvoices, proposals as seedProposals, outreach as seedOutreach, inbound as seedInbound, billingRequests as seedRequests, vendors as seedVendors, MISC_CHAIN, LINK_CHAIN, TODAY, fmt } from './data'
+import { campaigns as seedCampaigns, invoices as seedInvoices, proposals as seedProposals, outreach as seedOutreach, billingRequests as seedRequests, vendors as seedVendors, MISC_CHAIN, LINK_CHAIN, TODAY, fmt } from './data'
 
 const Ctx = createContext(null)
 export const useStore = () => useContext(Ctx)
@@ -10,7 +11,7 @@ export function StoreProvider({ children }) {
   const [invoices, setInvoices] = useState(seedInvoices)
   const [proposals, setProposals] = useState(seedProposals)
   const [outreach, setOutreach] = useState(seedOutreach)
-  const [inbound, setInbound] = useState(seedInbound)
+  const sales = useSalesState() // Sales portal slice, saved in localStorage
   const [requests, setRequests] = useState(seedRequests)
   const [vendors, setVendors] = useState(seedVendors)
 
@@ -41,7 +42,8 @@ export function StoreProvider({ children }) {
   const value = {
     campaigns, setCampaigns, patchCampaign,
     invoices, setInvoices, advanceInvoice,
-    proposals, setProposals, outreach, setOutreach, inbound, setInbound,
+    proposals, setProposals, outreach, setOutreach, sales,
+    inbound: sales.inbound.filter((x) => x.status === 'open'), // open inbound leads, read by Home and the chat
     requests, setRequests, vendors, setVendors,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

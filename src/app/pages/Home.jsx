@@ -35,7 +35,7 @@ export default function Home({ role }) {
       s.campaigns.filter((c) => c.tally === 'failed').forEach((c) => out.push({ id: 't' + c.id, kind: 'tally', title: 'Tally sync failed', ctx: c.name, at: c.updated, retry: () => s.patchCampaign(c.id, { tally: 'synced' }) }))
     } else {
       s.inbound.forEach((r) => out.push({ id: 'n' + r.id, kind: 'inbound', title: r.company, ctx: r.summary, amount: r.budget, at: r.at, act: { label: 'Open', to: '/bd/inbound' } }))
-      s.proposals.filter((p) => p.status === 'approved' || (p.status === 'mapped' && p.pitch > TODAY && p.pitch - TODAY < 7 * 864e5)).forEach((p) => out.push({ id: 'p' + p.id, kind: 'pitch', title: p.status === 'approved' ? `${p.brand} approved` : `Pitch ${fmt.date(p.pitch)}`, ctx: p.status === 'approved' ? 'Ready to convert' : p.brand, amount: p.billing, at: p.pitch, act: { label: 'Open', to: '/bd/proposals' } }))
+      s.proposals.filter((p) => p.status === 'approved' || (p.status === 'mapped' && p.pitch > TODAY && p.pitch - TODAY < 7 * 864e5)).forEach((p) => out.push({ id: 'p' + p.id, kind: 'pitch', title: p.status === 'approved' ? `${p.brand} approved` : `Pitch ${fmt.date(p.pitch)}`, ctx: p.status === 'approved' ? 'Ready to convert' : p.brand, amount: p.billing, at: p.pitch, act: { label: 'Open', to: '/bd/pipeline' } }))
       s.outreach.filter((o) => o.status === 'lead' && (TODAY - o.touched) / 864e5 > 8).forEach((o) => out.push({ id: 'o' + o.id, kind: 'nudge', title: o.brand, ctx: `${o.poc.name} · ${Math.round((TODAY - o.touched) / 864e5)}d quiet`, at: o.touched, nudge: true }))
     }
     // Decisions first (approve/pay/retry), then things to open.

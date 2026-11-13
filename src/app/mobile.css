@@ -275,3 +275,38 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .br-row { min-height: 52px; }
   .br-foot { padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); }
 }
+
+/* ───────── Sales portal (src/app/sales) ───────── */
+@media (max-width: 960px) {
+  .sl-dgrid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .sl-dside { position: static; }
+}
+@media (max-width: 760px) {
+  .sl-board { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 82%; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .sl-board > * { scroll-snap-align: start; }
+  .sl-board::-webkit-scrollbar { display: none; }
+  .metrics.sl-m4, .metrics.sl-m4:has(> :nth-child(3):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metrics.sl-m4 .metric:nth-child(3), .metrics.sl-m4 .metric:nth-child(4) { box-shadow: 0 -1px 0 var(--line); }
+  .metrics.sl-m4 .metric:nth-child(4) { box-shadow: -1px 0 0 var(--line), 0 -1px 0 var(--line); }
+  .sl-facts.c2, .sl-grid2 { grid-template-columns: minmax(0, 1fr); }
+  .sl-fact, .sl-ans .sl-fact { grid-template-columns: 96px minmax(0, 1fr); }
+  .sl-fact > .tipw { grid-column: 2; justify-self: start; }
+  .sl-sig { gap: 10px; }
+  .sl-sig > .brand-logo, .sl-sig > .logo { width: 28px !important; height: 28px !important; }
+  .sl-sig-d, .sl-brief > div, .sl-notes > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .sl-dh { flex-wrap: wrap; }
+  .sl-dh .sl-step { width: 100%; }
+  .sl-filters > .seg { max-width: 100%; overflow-x: auto; }
+  .sl-dec-a, .sl-dec-n { justify-content: flex-start; }
+  .sl-dec-n .grow { flex-basis: 100%; }
+  .sl-mail-a { flex-wrap: wrap; }
+  .sl-bud-r, .sl-bud-r.tot { grid-template-columns: minmax(0, 1fr) auto; }
+  .sl-bud-r > .tipw { display: none; }
+  .sl-rows > div { grid-template-columns: minmax(0, 1fr) auto; }
+  .sl-rows > div > .mute { display: none; }
+  .sl-know { margin-left: 0; }
+  .sl-ask { top: 8px; max-height: calc(100vh - 16px); }
+  .sl-present-stage { width: calc(100vw - 16px); }
+  .sl-callrow { flex-wrap: wrap; }
+  .sl-thumb { width: 88px; }
+}

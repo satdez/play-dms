@@ -19,7 +19,13 @@ import Hub, { HOME_LAYOUTS } from './pages/Hub'
 import { Wldd } from '../loaders/Wldd'
 import { CampaignList, CampaignPage, PodApprovals } from './pages/Pod'
 import { FinCampaigns, FinInvoices, Payments, Requests, Vendors } from './pages/Finance'
-import { BdDashboard, Outreach, Proposals, InboundPage } from './pages/Bd'
+import { Feed, Discover, Inbound as SalesInbound, Accounts, Contacts, Pipeline, Cases } from './sales/pages'
+import { DealPage } from './sales/Deal'
+import { AskButton, AskDialog, AddLeadSheet, SalesBell, openAddLead, openAsk } from './sales/ui'
+import { isOpen } from './sales/state'
+import { Radar, Compass, BookUser, Kanban, Library, RotateCcw, MessageCircleQuestion } from 'lucide-react'
+import { toast } from 'sonner'
+import './sales/sales.css'
 import Knowledge from './pages/Knowledge'
 import Settings, { SETTINGS_FLAT, SETTINGS_SECTIONS } from './pages/Settings'
 import { fmt as baseFmt } from '../data'
@@ -116,11 +122,13 @@ function navFor(role, s) {
       { to: '/finance/vendors', label: 'Vendors', icon: Store },
     ],
     bd: [
-      { to: '/home', label: 'Inbox', icon: Inbox },
-      { to: '/bd/dashboard', label: 'Dashboard', icon: BarChart3 },
-      { to: '/bd/outreach', label: 'Outreach', icon: Send },
-      { to: '/bd/proposals', label: 'Proposals', icon: FileSignature },
-      { to: '/bd/inbound', label: 'Inbound', icon: MailOpen, n: s.inbound.length },
+      { to: '/bd/feed', label: 'Feed', icon: Radar, n: s.sales.signals.filter((x) => x.status === 'new').length },
+      { to: '/bd/discover', label: 'Discover', icon: Compass },
+      { to: '/bd/inbound', label: 'Inbound', icon: MailOpen, n: s.sales.inbound.filter((x) => x.status === 'open' && !x.owner).length },
+      { to: '/bd/accounts', label: 'Accounts', icon: Building2 },
+      { to: '/bd/contacts', label: 'Contacts', icon: BookUser },
+      { to: '/bd/pipeline', label: 'Pipeline', icon: Kanban },
+      { to: '/bd/cases', label: 'Case Library', icon: Library },
       { to: '/bd/kb', label: 'Knowledge base', icon: BookOpen },
     ],
   }[role]
@@ -280,7 +288,9 @@ function Shell({ path }) {
   }, [])
   const scrim = <div className={'m-scrim' + (navOpen ? ' on' : '')} onClick={() => setNavOpen(false)} aria-hidden />
 
-  const switchRole = (r) => { if (r === role) return; setRole(r); go('/home') }
+  const switchRole = (r) => { if (r === role) return; setRole(r); go(r === 'bd' ? '/bd/feed' : '/home') }
+  // Sales has no Inbox: its home is the Daily Feed.
+  useEffect(() => { if (mod === 'home' && role === 'bd') location.replace('#/bd/feed') }, [mod, role])
 
   let page = null
   if (mod === 'hub') page = <Hub layout={prefs.home} />
@@ -295,11 +305,13 @@ function Shell({ path }) {
   } else if (mod === 'settings') {
     page = <Settings section={parts[1]} look={look} />
   } else if (mod === 'bd') {
-    page = { outreach: <Outreach />, proposals: <Proposals />, inbound: <InboundPage />, kb: <Knowledge base="/bd/kb" id={parts[2]} /> }[parts[1]] || <BdDashboard />
+    // The old Dashboard/Outreach/Proposals pages fold into the Pipeline.
+    if (parts[1] === 'pipeline' && parts[2]) page = <DealPage id={parts[2]} tab={parts[3]} />
+    else page = { feed: <Feed />, discover: <Discover id={parts[2]} />, inbound: <SalesInbound />, accounts: <Accounts id={parts[2]} />, contacts: <Contacts />, pipeline: <Pipeline />, cases: <Cases id={parts[2]} />, dashboard: <Pipeline />, outreach: <Pipeline />, proposals: <Pipeline />, kb: <Knowledge base="/bd/kb" id={parts[2]} /> }[parts[1]] || <Feed />
   }
 
-  const cmdk = <AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />
-  const scroll = <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}><div className="d-scroll" key={mod === 'settings' ? 'settings' : mod + '/' + (parts[1] || '') + '/' + (parts[2] || '')}>{page}</div></MotionConfig>
+  const cmdk = <><AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />{VIEW.roles.includes('bd') && <><AskDialog /><AddLeadSheet /></>}</>
+  const scroll = <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}><div className="d-scroll" key={mod === 'settings' ? 'settings' : mod + '/' + (parts[1] || '') + '/' + (mod === 'bd' && ['discover', 'accounts', 'cases'].includes(parts[1]) ? '' : parts[2] || '')}>{page}</div></MotionConfig>
   // Docking is opt-in: without it the page tree is exactly what it was.
   const reduced = prefs.motion === 'reduced' || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const body = prefs.peek === 'docked' || prefs.assistant === 'docked'
@@ -462,7 +474,7 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
           {(close) => <Appearance look={look} close={close} />}
         </Popover>
         <Tip label="Settings" kbd={MOD + ','} side="top"><a className={'b ghost icon sm' + (path.startsWith('/settings') ? ' on' : '')} href="#/settings" aria-label="Settings"><Gear size={15} /></a></Tip>
-        <Notifications />
+        <Notifications role={role} />
       </div>
     </aside>
   )
@@ -486,6 +498,7 @@ function VxBar({ parts, role, openNav, look }) {
       <div className="vx-bar-c ell">{meta.detail ? <span className={meta.plain ? '' : 'mono'}>{meta.detail}</span> : <>{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400, marginLeft: 8 }}>{meta.count}</span>}</>}</div>
       <div className="vx-bar-r">
         <ViewingAs look={look} />
+        {role === 'bd' && parts[0] === 'bd' && <AskButton />}
         <AskPill />
         {role === 'pod' && parts[0] !== 'hub' && <button className="vx-create" onClick={() => openNewCampaign()}><Plus size={15} /><span className="m-hide">Create New</span></button>}
       </div>
@@ -494,7 +507,10 @@ function VxBar({ parts, role, openNav, look }) {
 }
 
 /* ───────── Notifications ───────── */
-function Notifications() {
+function Notifications({ role }) {
+  return role === 'bd' ? <SalesBell /> : <TeamBell />
+}
+function TeamBell() {
   const [unread, setUnread] = useState(3)
   return (
     <Popover width={320} trigger={({ toggle }) => (
@@ -861,7 +877,7 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
             {(close) => <RoleMenu role={role} switchRole={switchRole} close={close} />}
           </Popover>
         ) : <span className="sbs-ws"><RoleIcon role={r.id} size={18} />{r.label}</span>}
-        <span className="sb-tools"><Notifications /><CollapseBtn look={look} /></span>
+        <span className="sb-tools"><Notifications role={role} /><CollapseBtn look={look} /></span>
       </div>
       <div className="sb-scroll">
         <div className="sbs-h">Work</div>
@@ -906,7 +922,7 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
 const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
 
 /* ───────── Top bar ───────── */
-const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'Sales', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Outreach', proposals: 'Proposals', inbound: 'Inbound', dashboard: 'Dashboard' }
+const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'Sales', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Case Library' }
 /** The page title lives here only — pages don't repeat it. Icon + live count make the space useful. */
 function usePageMeta(parts, role) {
   const s = useStore()
@@ -917,16 +933,19 @@ function usePageMeta(parts, role) {
   }
   if (parts[0] === 'hub') return { title: 'Home', icon: House, to: '/hub' }
   const home = !parts.length || parts[0] === 'home'
-  const sec = home ? 'home' : parts[1] || (parts[0] === 'bd' ? 'dashboard' : 'campaigns')
+  const raw = home ? 'home' : parts[1] || (parts[0] === 'bd' ? 'feed' : 'campaigns')
+  const sec = parts[0] === 'bd' && ['dashboard', 'outreach', 'proposals'].includes(raw) ? 'pipeline' : raw
   const to = home ? '/home' : `/${parts[0]}/${sec}`
   const item = nav.find((n) => n.to === to)
   const count = {
     campaigns: s.campaigns.length, kb: kbTotal, invoices: s.invoices.length, payments: s.invoices.filter((x) => x.stage === 'scheduled').length,
-    requests: s.requests.length, vendors: s.vendors.length, outreach: s.outreach.length, proposals: s.proposals.length, inbound: s.inbound.length,
+    requests: s.requests.length, vendors: s.vendors.length, inbound: s.inbound.length,
+    ...(parts[0] === 'bd' && { feed: s.sales.signals.filter((x) => x.status === 'new').length, accounts: s.sales.accounts.length, contacts: s.sales.contacts.length, pipeline: s.sales.deals.filter(isOpen).length }),
     approvals: s.invoices.filter((x) => x.stage === 'lead').length,
   }[sec]
-  const c = parts[2] && s.campaigns.find((x) => x.id === parts[2])
-  return { title: LABEL[sec], icon: item?.icon, to, count, detail: c ? c.code : null }
+  const c = parts[0] !== 'bd' && parts[2] && s.campaigns.find((x) => x.id === parts[2])
+  const deal = parts[0] === 'bd' && sec === 'pipeline' && parts[2] && s.sales.deals.find((x) => x.id === parts[2])
+  return { title: LABEL[sec], icon: item?.icon, to, count, detail: c ? c.code : deal ? deal.code : null }
 }
 
 function Crumb({ meta }) {
@@ -957,7 +976,8 @@ function TopBar({ parts, role, setCmd, openNav, look }) {
       <div className="d-top-r">
         <ViewingAs look={look} />
         <Tip label="Search" kbd={MOD + 'K'}><button className="b ghost icon" onClick={() => setCmd(true)} aria-label="Search"><Search size={16} /></button></Tip>
-        {look.prefs.sidebar !== 'sections' && <Notifications /> /* Sections keeps the bell in the sidebar */}
+        {role === 'bd' && parts[0] === 'bd' && <AskButton />}
+        {look.prefs.sidebar !== 'sections' && <Notifications role={role} /> /* Sections keeps the bell in the sidebar */}
         <AskPill />
         {role === 'pod' && parts[0] !== 'settings' && parts[0] !== 'hub' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={() => openNewCampaign()} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
       </div>
@@ -991,6 +1011,17 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         {q && (
           <Command.Group heading="Clients">
             {clients.map((c) => <Command.Item key={c.id} value={'client ' + c.name} onSelect={run(() => go(`/${role === 'bd' ? 'bd' : 'pod'}/kb/${c.id}`))}><Building2 size={15} /> {c.name}<span className="cmdk-meta">{c.campaigns}</span></Command.Item>)}
+          </Command.Group>
+        )}
+        {VIEW.roles.includes('bd') && (
+          <Command.Group heading="Sales">
+            <Command.Item value="add lead to pipeline" onSelect={run(() => { if (role !== 'bd') switchRole('bd'); setTimeout(() => openAddLead({ source: 'Discover' }), 0) })}><Plus size={15} /> Add lead<span className="cmdk-meta">Sales</span></Command.Item>
+            <Command.Item value="ask about a brand" onSelect={run(() => setTimeout(() => openAsk(), 0))}><MessageCircleQuestion size={15} /> Ask about a brand<span className="cmdk-meta">Sales</span></Command.Item>
+            {[['feed', 'Feed', Radar], ['discover', 'Discover', Compass], ['inbound', 'Inbound', MailOpen], ['accounts', 'Accounts', Building2], ['contacts', 'Contacts', BookUser], ['pipeline', 'Pipeline', Kanban], ['cases', 'Case Library', Library]].map(([id, l, I]) => (
+              <Command.Item key={id} value={'sales ' + l} onSelect={run(() => go('/bd/' + id))}><I size={15} /> {l}<span className="cmdk-meta">Sales</span></Command.Item>
+            ))}
+            {q && s.sales.deals.map((d) => <Command.Item key={d.id} value={'deal ' + d.brand + ' ' + d.code} onSelect={run(() => go('/bd/pipeline/' + d.id))}><BrandLogo name={d.brand} size={16} radius={4} /> <span className="cmdk-t">{d.brand}</span><span className="cmdk-meta">{d.code}</span></Command.Item>)}
+            <Command.Item value="reset sales demo" onSelect={run(() => { s.sales.reset(); toast('Sales demo reset') })}><RotateCcw size={15} /> Reset sales demo<span className="cmdk-meta">Sales</span></Command.Item>
           </Command.Group>
         )}
         <Command.Group heading="Actions">

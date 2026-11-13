@@ -19,7 +19,9 @@ export const BRAND_DOMAINS = {
   Wakefit: 'wakefit.co', 'The Whole Truth': 'thewholetruthfoods.com', 'Rare Rabbit': 'thehouseofrare.com', 'Swiggy Dineout': 'swiggy.com',
   PhonePe: 'phonepe.com', 'Urban Company': 'urbancompany.com', Mokobara: 'mokobara.com', 'Sleepy Owl': 'sleepyowl.co',
   'Blue Tokai': 'bluetokaicoffee.com', 'Kotak 811': 'kotak.com', Unacademy: 'unacademy.com', Dunzo: 'dunzo.com',
-  'Ather Energy': 'atherenergy.com', 'Duolingo India': 'duolingo.com',
+  'Ather Energy': 'atherenergy.com', 'Duolingo India': 'duolingo.com', Swiggy: 'swiggy.com', Meesho: 'meesho.com', Spinny: 'spinny.com',
+  'Tata Neu': 'tataneu.com', 'Bombay Shaving Company': 'bombayshavingcompany.com', 'Third Wave Coffee': 'thirdwavecoffee.in', Plum: 'plumgoodness.com',
+  Bewakoof: 'bewakoof.com', Atomberg: 'atomberg.com', 'Country Delight': 'countrydelight.in',
   // Integrations
   'Zoho People': 'zoho.com', 'Google Workspace': 'workspace.google.com', Slack: 'slack.com', 'Google Drive': 'drive.google.com',
   Instagram: 'instagram.com', RazorpayX: 'razorpay.com', 'Tally Prime': 'tallysolutions.com', 'WhatsApp Business': 'whatsapp.com',

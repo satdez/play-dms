@@ -45,8 +45,8 @@ export const KPIS = {
 }
 const ALL = Object.entries(KPIS).flatMap(([mod, ks]) => ks.map((k) => ({ ...k, mod })))
 const roleOf = (mod) => ROLES.find((r) => r.id === mod)
-const OPEN = { pod: '/pod/campaigns', finance: '/finance/invoices', bd: '/bd/dashboard' }
-const PAGE = { live: '/pod/campaigns', links: '/pod/campaigns', stalled: '/pod/campaigns', views: '/pod/campaigns', waiting: '/finance/invoices', scheduled: '/finance/payments', paid: '/finance/payments', billing: '/finance/campaigns', inbound: '/bd/inbound', pipeline: '/bd/proposals', closed: '/bd/dashboard', conversion: '/bd/dashboard' }
+const OPEN = { pod: '/pod/campaigns', finance: '/finance/invoices', bd: '/bd/feed' }
+const PAGE = { live: '/pod/campaigns', links: '/pod/campaigns', stalled: '/pod/campaigns', views: '/pod/campaigns', waiting: '/finance/invoices', scheduled: '/finance/payments', paid: '/finance/payments', billing: '/finance/campaigns', inbound: '/bd/inbound', pipeline: '/bd/pipeline', closed: '/bd/pipeline', conversion: '/bd/pipeline' }
 const same = (a, b) => a && b && a.mod === b.mod && a.id === b.id
 
 /** The answer to one KPI: a line, then stats and/or records. Built from the store at ask time. */
