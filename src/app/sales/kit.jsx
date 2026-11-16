@@ -18,6 +18,7 @@ import { Sheet } from '../pages/Finance'
 import { SIGNAL_KIND, F_EMPTY, repOf, proofFor, adsFor, budgetOf, brandOf } from './data'
 import { relOf, stageLabel, isOpen } from './state'
 import { Src, Rel, Val, CaseChip, openAddLead } from './ui'
+import { TodoBlock } from '../todo/ui'
 import {
   FILTERS, filterById, activeCount, describe, run, companyHref, inDb, peopleOf, isKnown, sigsOf, apolloFind, apolloFetch, revealPeople,
   roleOf, FRESH, kbOf, heat, fmtDays, GROUPS, SCOPES, optsOf, facetCounts, quickFind, bdFilters, fetchName, companyByName, searchScope,
@@ -802,6 +803,8 @@ export function CoHead({ c, children, size = 40, meta = true }) {
 }
 
 const DTABS = ['signals', 'people', 'deals', 'proof', 'ads']
+const coCtx = (c) => ({ links: [{ kind: 'brand', id: c.id, label: c.name, brand: c.name }], keys: new Set(['brand:' + c.id]), brand: c.name, label: c.name })
+export { coCtx }
 export function Dossier({ c, back }) {
   const s = useStore(); const st = s.sales
   const [tab, setTab] = useState('signals')
@@ -821,6 +824,7 @@ export function Dossier({ c, back }) {
         <div><span>Creator budget</span><b className="num"><Val v={bud && fmt.inr(bud.annual)} /></b></div>
         <div className="bdv-dos-a"><AddBtn c={c} ink sm={false} /></div>
       </div>
+      <TodoBlock ctx={coCtx(c)} />
       <Tabs id="bdv-dos" value={tab} onChange={setTab} options={DTABS.map((k) => ({ value: k, label: { signals: 'Signals', people: 'People', deals: 'Deals', proof: 'Proof', ads: 'Ads' }[k], count: n[k] }))} />
       <div className="bdv-dos-b">
         {tab === 'signals' && <SignalsTimeline c={c} />}

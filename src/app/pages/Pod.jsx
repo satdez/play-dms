@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
+import { TodoBlock } from '../todo/ui'
 import { STAGES, STAGE_FULL, PODS, planFor, trackerFor, fmt, TODAY, SERVICES, CHAIN_LABEL } from '../data'
 import { Ticker, ConfirmButton, Tip, TextMorph, SlidePanel, AutoHeight, Swap, EASE } from '../../shared/motion'
 import { Avatar, AvatarStack, Meter, Sparkline } from '../../shared/ui'
@@ -107,6 +108,8 @@ function Overview({ c }) {
         <div className="kv-sep" />
         <div className="kv"><span>Vendor submissions</span><Switch on={c.vendorVisible} onChange={(v) => s.patchCampaign(c.id, { vendorVisible: v })} label="Vendor visibility" /></div>
         <div className="kv"><span>Deep report</span><Switch on={c.deepReport} onChange={(v) => s.patchCampaign(c.id, { deepReport: v })} label="Deep report" /></div>
+        <div className="kv-sep" />
+        <TodoBlock ctx={{ links: [{ kind: 'campaign', id: c.id, label: c.name, brand: c.client }], keys: new Set(['campaign:' + c.id]), brand: c.client, label: c.name }} />
       </aside>
     </div>
   )

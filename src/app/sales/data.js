@@ -345,6 +345,9 @@ const accounts = [
   A('Dream11', 'u1', 81e5, 1.02e7, ['memd', 'amp'], ago(44), ahead(26), [{ kind: 'drop', text: 'Spend down 21%' }, { kind: 'renewal', text: 'Renewal in 26 days' }], [{ id: 'o11', kind: 'renewal', title: 'IPL 2027 season', value: 90e5, why: 'IPL brief lands in January; renew early.' }]),
 ]
 
+/* Phone numbers we hold for contacts and inbound senders (Gmail signatures, call logs). Kept as a map so older saves pick them up too. */
+export const PHONES = { 'rare-rabbit-1': '+91 98200 12345', 'licious-1': '+91 99020 87311', ct1: '+91 98201 44556', ct2: '+91 99300 45678', ct4: '+91 98450 22110', ct5: '+91 97400 31862', in1: '+91 99876 54321', in3: '+91 98190 64420', in5: '+91 98111 70707', in8: '+91 98710 55234' }
+
 /* ───────── Own contacts ───────── */
 const contacts = [
   { id: 'ct1', name: 'Juhi Mathur', title: 'Brand Manager', brand: 'Rare Rabbit', email: 'juhi.mathur@thehouseofrare.com', source: 'Event', note: 'Met at Goafest; launching womenswear in spring.', at: ago(3) },
@@ -473,9 +476,9 @@ const views = [
 export const seed = () => ({
   v: 2,
   signals: signals.map((x) => ({ ...x })),
-  inbound: inbound.map((x) => ({ ...x })),
+  inbound: inbound.map((x) => ({ ...x, phone: PHONES[x.id] || null })),
   accounts: accounts.map((x) => ({ ...x })),
-  contacts: contacts.map((x) => ({ ...x })),
+  contacts: contacts.map((x) => ({ ...x, phone: PHONES[x.id] || null })),
   deals: JSON.parse(JSON.stringify(deals), revive),
   notifs: notifs.map((x) => ({ ...x })),
   saved: savedSearches.map((x) => ({ ...x })),

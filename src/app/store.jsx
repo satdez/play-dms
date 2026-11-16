@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
 import { useSalesState } from './sales/state'
+import { useTodoState } from './todo/state'
 import { toast } from 'sonner'
 import { campaigns as seedCampaigns, invoices as seedInvoices, proposals as seedProposals, outreach as seedOutreach, billingRequests as seedRequests, vendors as seedVendors, MISC_CHAIN, LINK_CHAIN, TODAY, fmt } from './data'
 
@@ -12,6 +13,7 @@ export function StoreProvider({ children }) {
   const [proposals, setProposals] = useState(seedProposals)
   const [outreach, setOutreach] = useState(seedOutreach)
   const sales = useSalesState() // Sales portal slice, saved in localStorage
+  const todo = useTodoState() // To-do slice, saved in localStorage; every variation reads it
   const [requests, setRequests] = useState(seedRequests)
   const [vendors, setVendors] = useState(seedVendors)
 
@@ -42,7 +44,7 @@ export function StoreProvider({ children }) {
   const value = {
     campaigns, setCampaigns, patchCampaign,
     invoices, setInvoices, advanceInvoice,
-    proposals, setProposals, outreach, setOutreach, sales,
+    proposals, setProposals, outreach, setOutreach, sales, todo,
     inbound: sales.inbound.filter((x) => x.status === 'open'), // open inbound leads, read by Home and the chat
     requests, setRequests, vendors, setVendors,
   }

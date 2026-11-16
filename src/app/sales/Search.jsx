@@ -9,7 +9,8 @@ import { apollo, brandOf } from './data'
 import { factsFor } from './state'
 import { Facts, Src, GenSteps } from './ui'
 import { Wldd } from '../../loaders/Wldd'
-import { useProspect, CoHead, CoMeta, PinBtn, AddBtn, SignalsTimeline, PeopleList, DealsList, ProofList, AdsList, KbNotes } from './kit'
+import { useProspect, CoHead, CoMeta, PinBtn, AddBtn, SignalsTimeline, PeopleList, DealsList, ProofList, AdsList, KbNotes, coCtx } from './kit'
+import { TodoBlock } from '../todo/ui'
 import { dbCompanies, companyById, inDb, fetchName, heat, sigsOf, peopleOf } from './prospect'
 
 const norm = (t) => t.trim().toLowerCase()
@@ -177,6 +178,7 @@ function CompanyPage({ c }) {
           <Sec title="Deals" n={nD} src="DMS"><DealsList c={c} /></Sec>
         </div>
         <div className="bdv-cp-s">
+          <TodoBlock ctx={coCtx(c)} />
           <Sec title="Profile"><Facts facts={facts} cols={1} /></Sec>
           <Sec title="Meta Ads brand watch"><AdsList c={c} /></Sec>
           <Sec title="Proof" src="Case Library"><ProofList c={c} /></Sec>

@@ -10,6 +10,7 @@ import { Sparkline } from '../../shared/ui'
 import { Track, ClientLogo, RoleIcon, Popover, go, useDock } from '../ui'
 import { view, canLeadApprove } from '../personas'
 import { WlddMark } from '../../shared/WlddMark'
+import { HomeTodos } from '../todo/Home'
 
 /* Home: one page for everyone. KPIs for each workspace the person can open, and a chat
    that answers from the same data.
@@ -152,7 +153,7 @@ export const HOME_LAYOUTS = [
   { value: 'brief', label: 'Brief' },
 ]
 
-export default function Hub({ layout = 'stack' }) {
+export default function Hub({ layout = 'stack', todos = 'strip' }) {
   const s = useStore()
   const p = view()
   const mods = ROLES.filter((r) => p.roles.includes(r.id)).map((r) => r.id)
@@ -265,17 +266,20 @@ export default function Hub({ layout = 'stack' }) {
     </div>
   )
   const kpis = (kind) => <Kpis kind={kind} mods={mods} show={show} peek={peek} />
+  // To-dos on Home (Settings › Preferences): a strip above the KPIs or a card after them, in every layout.
+  const tdTop = <HomeTodos mode={todos} at="top" />
+  const tdEnd = (kind) => <HomeTodos mode={todos} at="end" kind={kind} />
 
   if (layout === 'split') return (
     <div className="hub l-split">
       {/* The scroller is the whole left cell, so the scrollbar sits on its edge; the chat is centred inside it. */}
       <div className="hub-col hub-chatwrap"><div className="hub-chatcol">{bar}{thread.length || peek ? threadEl : <div className="hub-hello"><WlddMark className="hub-mark" /><h1 className="d-h1 keep">{hello()}, {p.person.short}</h1></div>}{dock}</div></div>
-      <aside className="hub-col hub-rail">{kpis('rows')}</aside>
+      <aside className="hub-col hub-rail">{tdTop}{tdEnd('rows')}{kpis('rows')}</aside>
     </div>
   )
   if (layout === 'dock') return (
     <div className="hub l-dock">
-      <div className="hub-col hub-board">{kpis('tiles')}</div>
+      <div className="hub-col hub-board">{tdTop}{kpis('tiles')}{tdEnd('tiles')}</div>
       <aside className="hub-col hub-chatcol">{bar}{thread.length || peek ? threadEl : <div className="hub-hello" />}{dock}</aside>
     </div>
   )
@@ -302,7 +306,7 @@ export default function Hub({ layout = 'stack' }) {
     )
     return (
       <div className={'d-page hub l-brief' + (talking ? ' talking' : '')}>
-        {talking ? <>{bar}{threadEl}</> : <Brief mods={mods} chats={chats} openChat={open} start={() => box.current?.focus()} />}
+        {talking ? <>{bar}{threadEl}</> : <Brief mods={mods} chats={chats} openChat={open} start={() => box.current?.focus()} top={tdTop} end={tdEnd('brief')} />}
         <div className="br-foot">{card}</div>
       </div>
     )
@@ -315,7 +319,9 @@ export default function Hub({ layout = 'stack' }) {
           <div className="hub-hero">
             <h1 className="d-h1 keep">{hello()}, {p.person.short}</h1>
             {dock}
+            {tdTop}
             {kpis('strip')}
+            {tdEnd('strip')}
           </div>
           {/* quiet sign-off, pinned to the foot of the page; gone once you talk */}
           <div className="hub-sign" aria-hidden><WlddMark height={44} /></div>
@@ -325,7 +331,9 @@ export default function Hub({ layout = 'stack' }) {
   )
   return (
     <div className={'d-page wide hub l-stack' + (thread.length ? ' talking' : '')}>
+      {tdTop}
       {kpis('tiles')}
+      {tdEnd('tiles')}
       {bar}
       {threadEl}
       {dock}
@@ -353,7 +361,7 @@ function dueOf(mods, s) {
 }
 
 /** Brief home: one sentence of what's waiting, three ways to start, then open work. */
-function Brief({ mods, chats, openChat, start }) {
+function Brief({ mods, chats, openChat, start, top, end }) {
   const s = useStore()
   const dk = useDock()
   const due = dueOf(mods, s)
@@ -370,6 +378,7 @@ function Brief({ mods, chats, openChat, start }) {
   ].filter(Boolean)
   return (
     <div className="br">
+      {top}
       <section className="br-hero">
         <h1 className="br-say">
           {due.n ? <>You have <span className="br-badge" aria-hidden><BadgeCheck size={20} /></span> <span className="num">{due.n}</span> {due.noun} <span className="br-dim">ready to review.</span></>
@@ -398,6 +407,7 @@ function Brief({ mods, chats, openChat, start }) {
         ))}
       </div>
 
+      {end}
       <div className="br-tabs">
         <div className="vtabs">
           {hasPod && <button className={'vtab' + (tab === 'open' ? ' on' : '')} onClick={() => setTab('open')}>Open campaigns<span className="mute num">{open.length}</span></button>}

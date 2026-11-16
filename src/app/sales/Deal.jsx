@@ -16,6 +16,7 @@ import { brandOf, repOf, caseById, stageIx, DEAL_STAGES, LOST_REASONS, PODS, now
 import { relOf, factsFor, isStale, staleDays, stageLabel } from './state'
 import { Src, Rel, Val, Facts, CaseChip, ProofUsed, Generated, Decision, DeckViewer, deckFor } from './ui'
 import { StageTag } from './pages'
+import { TodoBlock } from '../todo/ui'
 
 const TAB_OF = { new: 'outreach', brief: 'brief', negotiation: 'proposal', pitch: 'pitch', won: 'handoff', lost: 'lost' }
 const TAB_LABEL = { overview: 'Overview', outreach: 'Outreach', brief: 'Brief', proposal: 'Proposal', pitch: 'Pitch', handoff: 'Hand-off', lost: 'Closed lost' }
@@ -136,6 +137,7 @@ function Side({ d, b }) {
           </div>
         ) : <div className="mute xs" style={{ marginTop: 8 }}>No contact yet · <a className="sl-lnk" href={'#/bd/discover/' + (b?.id || '')}>Find people</a></div>}
       </section>
+      <section className="sl-sec"><TodoBlock ctx={{ links: [{ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand }], keys: new Set(['deal:' + d.id]), brand: d.brand, label: d.brand }} /></section>
       <section className="sl-sec">
         <div className="sl-sec-h">Warm intros <Src s="LinkedIn" /></div>
         {paths.map((p) => (

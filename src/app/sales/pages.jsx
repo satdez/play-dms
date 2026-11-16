@@ -18,6 +18,7 @@ import { relOf, factsFor, parseNotes, isOpen, isStale, staleDays, stageLabel, RE
 import { Src, Rel, Val, Facts, CaseChip, openAddLead, dueOf, DeckViewer, credsDeck } from './ui'
 import { Board } from './Board'
 import { DealTimeline } from './Timeline'
+import { TodoBlock } from '../todo/ui'
 
 const mine = (x) => x.owner === me.id
 const SrcRow = ({ children }) => <span className="sl-srcrow">{children}</span>
@@ -197,6 +198,7 @@ function BrandProfile({ b }) {
         {tab === 'overview' && (
           <>
             <p className="fg2" style={{ margin: '0 0 14px' }}>{b.about} <Src s="Apollo" /></p>
+            <TodoBlock className="td-blk-prof" ctx={{ links: [{ kind: 'brand', id: b.id, label: b.name, brand: b.name }], keys: new Set(['brand:' + b.id]), brand: b.name, label: b.name }} />
             <Facts facts={factsFor(b.name, st)} cols={1} />
           </>
         )}

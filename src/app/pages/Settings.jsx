@@ -16,6 +16,7 @@ import { PopTuner, THEMES, themeActive } from '../popTune'
 import { PERSONAS } from '../personas'
 import { HOME_LAYOUTS } from './Hub'
 import { LAYOUTS as BD_LAYOUTS } from '../sales/prospect'
+import { TODO_STYLES, TODO_HOME } from '../todo/state'
 import { NoirTuner, DeskPreset } from '../noir'
 
 /* ───────── sections ───────── */
@@ -321,6 +322,14 @@ function Preferences({ look }) {
             ))}
           </div>
         </Row>
+        <Row label="To-do style" tip="Four ways to keep to-dos inside the DMS. Every style shares the same to-dos, so switching never loses one." stack>
+          <div className="st-modes bdv-lays">
+            {TODO_STYLES.map((x) => (
+              <button key={x.value} className={'st-mode bdv-lay' + ((prefs.todo || 'panel') === x.value ? ' on' : '')} onClick={() => set('todo')(x.value)} aria-pressed={(prefs.todo || 'panel') === x.value}><b>{x.label}</b><span>{x.desc}</span></button>
+            ))}
+          </div>
+        </Row>
+        <Row label="To-dos on Home" tip="Strip: one quiet line above the KPIs that opens into today's list · Card: a KPI-sized card with today's and overdue to-dos · Off"><Seg id="st-tdhome" value={prefs.todoHome || 'strip'} onChange={set('todoHome')} options={TODO_HOME} /></Row>
         <Row label="BD filters" tip="Where the global filter lives in Prospecting, Companies first and Stream. Bar: chips above the results · Side panel: every filter grouped down the left, with a count on each option. Phones always use a sheet."><Seg id="st-bdf" value={prefs.bdFilters || 'bar'} onChange={set('bdFilters')} options={[{ value: 'bar', label: 'Bar' }, { value: 'panel', label: 'Side panel' }]} /></Row>
         {exp !== 'vercel' && <Row label="Sidebar" tip="Panel · Rail: workspaces on a rail · Icons: collapsed · Stacked: every workspace in one list · Sections: Work, Company and your pods as flat lists"><Seg id="st-sidebar" value={prefs.sidebar} onChange={set('sidebar')} options={SIDEBARS} /></Row>}
         <Row label="Record peek" tip="Overlay: a sheet over the page (Attio) or the full page · Docked: the record opens in a panel beside the list, which shrinks to fit"><Seg id="st-peek" value={prefs.peek} onChange={set('peek')} options={[{ value: 'overlay', label: 'Overlay' }, { value: 'docked', label: 'Docked' }]} /></Row>
@@ -468,7 +477,7 @@ function Shortcuts() {
   const groups = [
     ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Ask WLDD (when docked)', MOD + 'J'], ['Home', ALT + '0'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to BD', ALT + '3']]],
     ['Look', [['Cycle Home layout', ALT + 'H'], ['Cycle experience', ALT + 'E'], ['Cycle style', ALT + 'S'], ['Cycle Pop presets', ALT + 'P']]],
-    ['Lists & boards', [['New campaign', 'C'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
+    ['Lists & boards', [['New campaign', 'C'], ['Add to-do', 'T'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
     ['Vercel experience', [['Find', 'F']]],
   ]
   return groups.map(([g, items]) => (

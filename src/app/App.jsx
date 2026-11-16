@@ -45,6 +45,12 @@ import './settings.css'
 import './media.css'
 import './noir.css'
 import './mobile.css'
+import './todo/todo.css'
+import { TodoHost } from './todo/Host'
+import { TodoPage } from './todo/Page'
+import { TodoButton, TodoBellRows, dueMine } from './todo/ui'
+import { TODO_STYLES, TODO_HOME, setTodoStyle, hasPage, openTodoAdd, openTodos } from './todo/state'
+import { ListChecks, ListPlus } from 'lucide-react'
 import { Palette, Settings as Gear, Menu as MenuIcon } from 'lucide-react'
 import { PopTuner, PRESETS, TUNE_AXES, normTune, presetOf, applyTune, clearTune, toneSwatch, Orb } from './popTune'
 import { NoirTuner, NOIR_AXES, NOIR_DEFAULTS, DESK_ON, DESK_OFF, deskIsOn, DeskPreset, DockPanel, useAssistant, applyNoir, clearNoir, noirSwatch, toastDesk } from './noir'
@@ -110,7 +116,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'sources', bdFilters: 'bar', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'sources', bdFilters: 'bar', todo: 'panel', todoHome: 'strip', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -146,7 +152,12 @@ function BdTabBar({ path, openNav }) {
 function useNav(role, s) {
   return navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to))
 }
+/** List and Canvas have a To-do page; it sits at the end of every workspace's pages (and BD's phone More). */
 function navFor(role, s) {
+  const base = navBase(role, s)
+  return hasPage() ? [...base, { to: '/todo', label: 'To-do', icon: ListChecks, n: dueMine(s.todo.items).length, todo: true }] : base
+}
+function navBase(role, s) {
   const inLead = s.invoices.filter((x) => x.stage === 'lead').length
   const inFin = s.invoices.filter((x) => x.stage === 'finance').length
   const sched = s.invoices.filter((x) => x.stage === 'scheduled').length
@@ -216,6 +227,9 @@ function Shell({ path }) {
   const setPrefs = (p) => { setPrefsRaw(p); try { localStorage.setItem('wldd-prefs', JSON.stringify(p)) } catch {} }
   VIEW = personaOf(prefs.viewAs); setView(VIEW)
   BDL = BD_HOME[prefs.bd] ? prefs.bd : 'sources'; setBdLayout(BDL); setBdFilters(prefs.bdFilters)
+  setTodoStyle(prefs.todo)
+  // Pages switch the to-do variation or Home slot with the same preference Settings writes.
+  useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, [e.detail.key]: e.detail.value }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('todo:pref', on); return () => window.removeEventListener('todo:pref', on) }, [])
   // The in-page "side panel / bar" switch writes the same preference as Settings.
   useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, bdFilters: e.detail.mode }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('bd:filters', on); return () => window.removeEventListener('bd:filters', on) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [role, setRole] = useState(() => {
@@ -324,6 +338,7 @@ function Shell({ path }) {
       if (e.altKey && e.code === 'KeyP') { e.preventDefault(); const i = PRESETS.findIndex((p) => p.id === presetOf(tune)?.id); setTune({ ...tune, ...PRESETS[style === 'pop' ? (i + 1) % PRESETS.length : Math.max(i, 0)].v }); return }
       if (e.key === 'f' && exp === 'vercel' && !e.altKey) { e.preventDefault(); setCmd(true); return }
       if (e.key === 'c' && role === 'pod' && !e.altKey) { e.preventDefault(); openNewCampaign('key') }
+      if (e.key.toLowerCase() === 't' && !e.altKey && !e.shiftKey && !t?.isContentEditable && !document.querySelector('.cmdk, [role=dialog]')) { e.preventDefault(); openTodoAdd() }
     }
     window.addEventListener('keydown', on, true)
     return () => window.removeEventListener('keydown', on, true)
@@ -364,7 +379,8 @@ function Shell({ path }) {
   useEffect(() => { if (mod === 'bd' && parts[1] && !BD_PAGES[BDL].includes(parts[1])) location.replace('#' + BD_HOME[BDL]) }, [mod, parts[1], BDL]) // eslint-disable-line
 
   let page = null
-  if (mod === 'hub') page = <Hub layout={prefs.home} />
+  if (mod === 'hub') page = <Hub layout={prefs.home} todos={prefs.todoHome} />
+  else if (mod === 'todo') page = <TodoPage />
   else if (mod === 'home') page = <Home role={role} />
   else if (mod === 'pod') {
     if (parts[1] === 'campaigns' && parts[2]) page = <CampaignPage id={parts[2]} tab={parts[3] || 'overview'} />
@@ -383,7 +399,7 @@ function Shell({ path }) {
     else page = { prospect: <Prospect />, companies: <CompaniesFirst id={parts[2]} />, stream: <Stream />, feed: <Feed />, discover: <Discover id={parts[2]} />, inbound: <SalesInbound />, accounts: <Accounts id={parts[2]} />, contacts: <Contacts />, pipeline: <Pipeline />, cases: <Cases id={parts[2]} />, dashboard: <Pipeline />, outreach: <Pipeline />, proposals: <Pipeline />, kb: <Knowledge base="/bd/kb" id={parts[2]} /> }[parts[1]] || <Feed />
   }
 
-  const cmdk = <><AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />{VIEW.roles.includes('bd') && <><AskDialog /><AddLeadSheet /></>}</>
+  const cmdk = <><AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />{VIEW.roles.includes('bd') && <><AskDialog /><AddLeadSheet /></>}<TodoHost path={path} /></>
   const scroll = <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}><div className="d-scroll" key={mod === 'settings' ? 'settings' : mod + '/' + (parts[1] || '') + '/' + (mod === 'bd' && ['discover', 'accounts', 'cases', 'companies'].includes(parts[1]) ? '' : parts[2] || '')}>{page}</div></MotionConfig>
   // Docking is opt-in: without it the page tree is exactly what it was.
   const reduced = prefs.motion === 'reduced' || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
@@ -412,10 +428,10 @@ function Shell({ path }) {
       <div className={'d' + (prefs.collapsed && prefs.sidebar === 'icons' ? ' no-side' : '')}>
         <Sidebar role={role} switchRole={switchRole} path={path} look={look} open={navOpen} />
         {scrim}
-        <main className={'d-main' + (mod === 'bd' ? ' has-tabbar' : '')}>
+        <main className={'d-main' + (mod === 'bd' || (mod === 'todo' && role === 'bd') ? ' has-tabbar' : '')}>
           <TopBar parts={parts} role={role} setCmd={setCmd} openNav={() => setNavOpen(true)} look={look} />
           {body}
-          {mod === 'bd' && <BdTabBar path={path} openNav={() => setNavOpen(true)} />}
+          {(mod === 'bd' || (mod === 'todo' && role === 'bd')) && <BdTabBar path={path} openNav={() => setNavOpen(true)} />}
         </main>
         {cmdk}
       </div>
@@ -586,6 +602,7 @@ function VxBar({ parts, role, openNav, look }) {
         <ViewingAs look={look} />
         {role === 'bd' && parts[0] === 'bd' && <AskButton />}
         <AskPill />
+        <TodoButton path={'/' + parts.join('/')} />
         {role === 'pod' && parts[0] !== 'hub' && <button className="vx-create" onClick={() => openNewCampaign()}><Plus size={15} /><span className="m-hide">Create New</span></button>}
       </div>
     </header>
@@ -605,8 +622,9 @@ function TeamBell() {
         <AnimatePresence>{unread > 0 && <motion.i initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.15 }} style={{ position: 'absolute', top: 7, right: 8, width: 7, height: 7, borderRadius: 9, background: 'var(--pink)', boxShadow: '0 0 0 2px var(--surface)' }} />}</AnimatePresence>
       </button></Tip>
     )}>
-      {() => (
+      {(close) => (
         <div style={{ padding: 4 }}>
+          <TodoBellRows close={close} />
           {[[team[1], 'shared a report', 'Netflix India × Diwali Drop', '12m'], [team[6], 'flagged GST mismatch', 'INV/26-27/0515', '1h'], [team[3], 'mentioned you', 'District × S5 Launch', '3h'], [team[8], 'converted a proposal', 'Licious', '1d']].map(([u, t, c, a], i) => (
             <div key={i} className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '8px 8px' }}>
               <span className="av" style={{ width: 22, height: 22, fontSize: 9, background: `oklch(0.52 0.12 ${u.hue})` }}>{u.name.split(' ').map((p) => p[0]).join('')}</span>
@@ -1025,7 +1043,7 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
 }
 
 /** Sum of a workspace's live counts (approvals, invoices, payments, inbound…). */
-const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
+const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to) && !n.todo).reduce((t, n) => t + (n.n || 0), 0)
 
 /* ───────── Top bar ───────── */
 const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'BD', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Case Library', prospect: 'Prospecting', companies: 'Companies', stream: 'Stream' }
@@ -1038,6 +1056,7 @@ function usePageMeta(parts, role) {
     return { title: 'Settings', icon: Gear, to: '/settings', detail: sec.label, plain: true }
   }
   if (parts[0] === 'hub') return { title: 'Home', icon: House, to: '/hub' }
+  if (parts[0] === 'todo') return { title: 'To-do', icon: ListChecks, to: '/todo', count: s.todo.items.filter((t) => !t.done).length }
   const home = !parts.length || parts[0] === 'home'
   const raw = home ? 'home' : parts[1] || (parts[0] === 'bd' ? BD_HOME[BDL].split('/')[2] : 'campaigns')
   const sec = parts[0] === 'bd' && ['dashboard', 'outreach', 'proposals'].includes(raw) ? 'pipeline' : raw
@@ -1086,6 +1105,7 @@ function TopBar({ parts, role, setCmd, openNav, look }) {
         <ViewingAs look={look} />
         <Tip label="Search" kbd={MOD + 'K'}><button className="b ghost icon" onClick={() => setCmd(true)} aria-label="Search"><Search size={16} /></button></Tip>
         {role === 'bd' && parts[0] === 'bd' && <AskButton />}
+        <TodoButton path={'/' + parts.join('/')} />
         {look.prefs.sidebar !== 'sections' && <Notifications role={role} /> /* Sections keeps the bell in the sidebar */}
         <AskPill />
         {role === 'pod' && parts[0] !== 'settings' && parts[0] !== 'hub' && <Tip label="New campaign" kbd="C"><button className="b ink" onClick={() => openNewCampaign()} style={{ marginLeft: 6 }}><Plus size={15} /><span className="m-hide">New</span></button></Tip>}
@@ -1141,6 +1161,12 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         </Command.Group>
         <Command.Group heading="Settings">
           {(VIEW.id === 'admin' ? SETTINGS_FLAT : SETTINGS_SECTIONS[0].items).map((x) => <Command.Item key={x.id} value={'settings ' + x.label} onSelect={run(() => go('/settings/' + x.id))}><x.icon size={15} /> {x.label}<span className="cmdk-meta">Settings</span></Command.Item>)}
+        </Command.Group>
+        <Command.Group heading="To-do">
+          <Command.Item value="add to-do todo task remind" onSelect={run(() => setTimeout(() => openTodoAdd(), 0))}><ListPlus size={15} /> Add to-do<kbd className="k" style={{ marginLeft: 'auto' }}>T</kbd></Command.Item>
+          <Command.Item value="open to-dos todo list tasks" onSelect={run(() => setTimeout(openTodos, 0))}><ListChecks size={15} /> Open to-dos</Command.Item>
+          {TODO_STYLES.map((x) => <Command.Item key={x.value} value={'to-do style todo ' + x.label + ' ' + x.desc} onSelect={run(() => look.setPrefs({ ...look.prefs, todo: x.value }))}><ListChecks size={15} /> To-do style · {x.label}<span className="cmdk-meta">{x.desc}</span>{look.prefs.todo === x.value && <Check size={14} style={{ marginLeft: 8 }} />}</Command.Item>)}
+          {TODO_HOME.map((x) => <Command.Item key={x.value} value={'to-dos on home todo ' + x.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, todoHome: x.value }); go('/hub') })}><House size={15} /> To-dos on Home · {x.label}{look.prefs.todoHome === x.value && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
         <Command.Group heading="Home layout">
           {HOME_LAYOUTS.map((x) => <Command.Item key={x.value} value={'home layout ' + x.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, home: x.value }); go('/hub') })}><HomeGlyph id={x.value} /> {x.label}{look.prefs.home === x.value && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}

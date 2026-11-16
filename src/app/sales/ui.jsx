@@ -18,6 +18,7 @@ import { Sheet } from '../pages/Finance'
 import { refFor, resolve, Answer, suggestFor } from '../pages/Hub'
 import { now, ahead, brandOf, repOf, caseById, proofFor, budgetOf, brands } from './data'
 import { factsFor, relOf, brandIn, stageLabel, RELL } from './state'
+import { TodoBellRows, dueMine } from '../todo/ui'
 
 /* ───────── Source chips ───────── */
 const SRC_ICON = { Gmail: Mail, Apollo: Database, LinkedIn: Network, 'Google Calendar': CalendarDays, 'Google Meet': Video, Gemini: NotebookPen, 'Signals engine': Radar, AI: Wand2, 'Case Library': Library, DMS: Layers }
@@ -389,6 +390,7 @@ export function SalesBell() {
   const st = s.sales
   const due = dueOf(st)
   const unread = st.notifs.filter((n) => !n.read).length
+  const todos = dueMine(s.todo.items).length
   const markRead = () => st.set((x) => ({ notifs: x.notifs.map((n) => ({ ...n, read: true })) }))
   const Row = ({ n, close }) => {
     const I = NICON[n.kind] || Bell
@@ -404,11 +406,12 @@ export function SalesBell() {
     <Popover width={340} trigger={({ toggle }) => (
       <Tip label="Notifications"><button className="b ghost icon" onClick={() => { toggle(); setTimeout(markRead, 1200) }} aria-label="Notifications" style={{ position: 'relative' }}>
         <Bell size={16} />
-        <AnimatePresence>{(unread > 0 || due.length > 0) && <motion.i className="sl-dot" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.15 }} />}</AnimatePresence>
+        <AnimatePresence>{(unread > 0 || due.length > 0 || todos > 0) && <motion.i className="sl-dot" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ duration: 0.15 }} />}</AnimatePresence>
       </button></Tip>
     )}>
       {(close) => (
         <div className="sl-bell">
+          <TodoBellRows close={close} />
           {due.length > 0 && <><div className="pop-h">Due <span className="num">{due.length}</span></div>{due.map((n) => <Row key={n.id} n={n} close={close} />)}<div className="pop-sep" /></>}
           <div className="pop-h">Updates</div>
           {st.notifs.slice(0, 8).map((n) => <Row key={n.id} n={n} close={close} />)}
