@@ -371,3 +371,8 @@ html[data-motion='reduced'] .sl-lr-wrap, html[data-motion='reduced'] .sl-lr { an
 @keyframes sl-tabin { from { opacity: 0; transform: translateX(-6px); filter: blur(2px); } }
 html[data-motion='reduced'] .sl-tabnew { animation: none; }
 @media (prefers-reduced-motion: reduce) { .sl-tabnew { animation: none; } }
+.sl-board2 { cursor: default; }
+.sl-board2.panning { cursor: grabbing; user-select: none; }
+.sl-board2.panning * { cursor: grabbing !important; }
+.sl-board2::-webkit-scrollbar { height: 8px; }
+.sl-board2::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 8px; }

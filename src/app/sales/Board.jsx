@@ -219,6 +219,43 @@ export function Board({ st, deals, sort = 'manual' }) {
     })
   })
 
+  /* ───── Sideways navigation: the wheel moves the board, and empty space can be dragged ─────
+     A column with more cards scrolls first; at either end of the board the page scrolls as usual. */
+  useEffect(() => {
+    const b = boardRef.current; if (!b) return
+    const wheel = (e) => {
+      if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY) || b.scrollWidth <= b.clientWidth + 1) return
+      const body = e.target.closest?.('.sl-colb')
+      if (body && body.scrollHeight > body.clientHeight + 1) {
+        const canY = e.deltaY > 0 ? body.scrollTop + body.clientHeight < body.scrollHeight - 1 : body.scrollTop > 0
+        if (canY) return
+      }
+      const canX = e.deltaY > 0 ? b.scrollLeft + b.clientWidth < b.scrollWidth - 1 : b.scrollLeft > 0
+      if (!canX) return
+      e.preventDefault()
+      b.scrollLeft += e.deltaY
+    }
+    let pan = null
+    const down = (e) => {
+      if (e.button !== 0 || e.pointerType !== 'mouse' || e.target.closest('[data-card],button,a,input')) return
+      pan = { x: e.clientX, left: b.scrollLeft, moved: false }
+    }
+    const move = (e) => {
+      if (!pan) return
+      const dx = e.clientX - pan.x
+      if (!pan.moved && Math.abs(dx) < 4) return
+      pan.moved = true
+      b.classList.add('panning')
+      b.scrollLeft = pan.left - dx
+    }
+    const up = () => { pan = null; b.classList.remove('panning') }
+    b.addEventListener('wheel', wheel, { passive: false })
+    b.addEventListener('pointerdown', down)
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    return () => { b.removeEventListener('wheel', wheel); b.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+  }, [])
+
   const stageCols = lostOpen ? DEAL_STAGES : OPEN_STAGES
   return (
     <>
