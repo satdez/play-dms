@@ -1,13 +1,14 @@
 // Discover for the prospecting layouts: search one company, get everything we know.
 // Known: profile, signals, people, deals, proof, notes and Meta ads. Unknown: fetch from Apollo for a credit.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Search as SearchIcon, Database, KeyRound, ArrowRight, Building2, CornerDownLeft, Flame } from 'lucide-react'
 import { fmt } from '../data'
 import { BrandLogo } from '../../shared/brands'
 import { go } from '../ui'
 import { apollo, brandOf } from './data'
 import { factsFor } from './state'
-import { Facts, Src } from './ui'
+import { Facts, Src, GenSteps } from './ui'
+import { Wldd } from '../../loaders/Wldd'
 import { useProspect, CoHead, CoMeta, PinBtn, AddBtn, SignalsTimeline, PeopleList, DealsList, ProofList, AdsList, KbNotes } from './kit'
 import { dbCompanies, companyById, inDb, fetchName, heat, sigsOf, peopleOf } from './prospect'
 
@@ -56,7 +57,8 @@ export function CompanySearch({ id }) {
           </div>
         )}
       </div>
-      {cur ? <CompanyPage c={cur} /> : unknown ? <UnknownPage name={unknown} /> : (
+      {(cur || unknown) && <Lookup key={id} id={id} name={cur ? cur.name : unknown} known={!!cur && inDb(cur, st)} st={st}>{cur ? <CompanyPage c={cur} /> : <UnknownPage name={unknown} />}</Lookup>}
+      {!cur && !unknown && (
         <>
           <div className="group-h"><Flame size={13} />Heating up</div>
           <div className="bdv-hot">{hot.map(({ c, h }) => (
@@ -76,14 +78,65 @@ export function CompanySearch({ id }) {
   )
 }
 
-/** Not in our DB: Apollo has the name, nothing else until we fetch. */
+/* ───────── Looking a company up ─────────
+   The first time a company opens this session it is "fetched": the WLDD mark works while each source checks in,
+   then the page fades in. Opening it again comes straight from our DB. Reduced motion keeps it short. */
+const SEEN = new Set()
+const reduced = () => document.documentElement.dataset.motion === 'reduced' || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+function lookupSteps(name, known, st) {
+  if (!known) return [{ label: 'Checking our DB for ' + name, src: 'DMS' }, { label: 'Asking Apollo for a match', src: 'Apollo' }, { label: 'Scanning recent news', src: 'Signals engine' }]
+  const c = companyById(name, st) || dbCompanies(st).find((x) => x.name === name)
+  const nS = c ? sigsOf(c, st).length : 0, nP = c ? peopleOf(c, st).length : 0
+  return [
+    { label: 'Found in our DB', src: 'DMS' },
+    { label: nS ? `Reading ${nS} ${nS === 1 ? 'signal' : 'signals'}` : 'Checking for signals', src: 'Signals engine' },
+    { label: nP ? `Matching ${nP} ${nP === 1 ? 'person' : 'people'}` : 'Looking for people', src: 'Apollo · Gmail' },
+    { label: 'Checking live Meta ads', src: 'Meta Ads' },
+    { label: 'Building the profile', src: 'AI' },
+  ]
+}
+function Lookup({ id, name, known, st, children }) {
+  const again = SEEN.has(id)
+  const [steps] = useState(() => (again ? [{ label: 'From our DB', src: 'DMS' }] : lookupSteps(name, known, st)))
+  const [i, setI] = useState(0)
+  const done = i >= steps.length
+  useEffect(() => {
+    const per = reduced() ? 90 : again ? 260 : 330
+    const t = steps.map((_, k) => setTimeout(() => setI(k + 1), per * (k + 1)))
+    const end = setTimeout(() => SEEN.add(id), per * steps.length)
+    return () => { t.forEach(clearTimeout); clearTimeout(end) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  if (done) return <div className="bdv-reveal">{children}</div>
+  return <Fetching title={<>Looking up <b>{name}</b></>} steps={steps} i={i} />
+}
+function Fetching({ title, steps, i }) {
+  return (
+    <div className="bdv-look" role="status" aria-live="polite">
+      <Wldd mode="press" size={38} label="Fetching" />
+      <div className="bdv-look-t">{title}</div>
+      <div className="bdv-look-s"><GenSteps steps={steps} i={i} /></div>
+    </div>
+  )
+}
+
+/** Not in our DB: Apollo has the name, nothing else until we fetch. Fetching shows the same WLDD loader. */
 function FetchCard({ name, onDone }) {
   const { st } = useProspect()
+  const [i, setI] = useState(-1)
+  const steps = [{ label: 'Spending 1 credit', src: 'Apollo' }, { label: 'Pulling the company profile', src: 'Apollo' }, { label: 'Pulling people', src: 'Apollo' }, { label: 'Saving to our DB', src: 'DMS' }]
+  const go1 = () => {
+    if (st.credits < 1) { fetchName(st, name); return }
+    const per = reduced() ? 90 : 420
+    setI(0)
+    steps.forEach((_, k) => setTimeout(() => setI(k + 1), per * (k + 1)))
+    setTimeout(() => { const c = fetchName(st, name); if (c) { SEEN.add(c.id); onDone?.(c) } else setI(-1) }, per * steps.length + 120)
+  }
+  if (i >= 0) return <Fetching title={<>Fetching <b>{name}</b> from Apollo</>} steps={steps} i={i} />
   return (
     <div className="bdv-fetch">
       <Database size={16} className="mute" />
       <div className="grow"><b>Not in our DB</b><div className="mute xs">Fetch once, free after · {st.credits} credits left</div></div>
-      <button className="b ink" onClick={() => { const c = fetchName(st, name); if (c) onDone?.(c) }}><KeyRound size={14} />Fetch from Apollo · 1 credit</button>
+      <button className="b ink" onClick={go1}><KeyRound size={14} />Fetch from Apollo · 1 credit</button>
     </div>
   )
 }
