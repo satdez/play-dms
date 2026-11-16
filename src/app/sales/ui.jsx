@@ -53,7 +53,7 @@ export function Facts({ facts, cols = 2 }) {
       {facts.map((f) => (
         <div key={f.k} className="sl-fact">
           <span className="sl-fk">{f.k}</span>
-          <span className="sl-fv">
+          <span className={'sl-fv' + (f.cases ? ' has-proofs' : '')} title={typeof f.v === 'string' && f.v.length > 28 ? f.v : undefined}>
             {f.cases ? <span className="sl-proofs">{f.cases.map((c) => <CaseChip key={c.id} c={c} />)}</span>
               : f.to ? <a href={'#' + f.to} className="sl-lnk">{f.v}</a> : <Val v={f.v} />}
           </span>

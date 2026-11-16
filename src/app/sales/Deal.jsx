@@ -55,7 +55,7 @@ function DealView({ d, tab, st }) {
             {isStale(d) && <span className="chip y"><Hourglass size={12} />Stale · {staleDays(d)}d</span>}
           </div>
         </div>
-        <Stepper d={d} />
+        <Stepper d={d} st={st} to={to} move={move} />
       </header>
 
       <div className="tabs sl-tabs" role="tablist" ref={glide.ref}>
@@ -87,12 +87,23 @@ function DealView({ d, tab, st }) {
   )
 }
 
-function Stepper({ d }) {
+/** The five stages. A stage the deal has reached opens its tab; a later one moves the deal there (Undo in the toast). */
+function Stepper({ d, st, to, move }) {
   const ix = d.stage === 'lost' ? -1 : stageIx(d.stage)
+  const pick = (s, i) => {
+    if (i <= ix) return to(TAB_OF[s.id])
+    const from = d.stage
+    move(s.id, 'Moved to ' + s.label)
+    toast(d.brand + ' → ' + s.label, { action: { label: 'Undo', onClick: () => { st.moveDeal(d.id, from, 'Moved back to ' + stageLabel(from)); to(TAB_OF[from]) } } })
+  }
   return (
-    <div className={'sl-step' + (d.stage === 'lost' ? ' lost' : '')} aria-label={'Stage ' + stageLabel(d.stage)}>
+    <div className={'sl-step' + (d.stage === 'lost' ? ' lost' : '')} role="group" aria-label={'Stage ' + stageLabel(d.stage)}>
       {DEAL_STAGES.slice(0, 5).map((s, i) => (
-        <Tip key={s.id} label={s.n + ' · ' + s.label}><span className={'sl-step-i' + (i < ix ? ' done' : i === ix ? ' cur' : '')}>{i < ix ? <Check size={10} strokeWidth={3} /> : s.n}</span></Tip>
+        <Tip key={s.id} label={i <= ix ? s.n + ' · ' + s.label : 'Move to ' + s.label}>
+          <button className={'sl-step-i' + (i < ix ? ' done' : i === ix ? ' cur' : '')} onClick={() => pick(s, i)} aria-label={i <= ix ? 'Open ' + s.label : 'Move to ' + s.label} aria-current={i === ix ? 'step' : undefined}>
+            {i < ix ? <Check size={10} strokeWidth={3} /> : s.n}
+          </button>
+        </Tip>
       ))}
     </div>
   )
