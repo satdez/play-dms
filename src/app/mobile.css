@@ -437,3 +437,10 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .has-tabbar .chip.sl-sv button:first-child { height: 34px; display: inline-flex; align-items: center; gap: 5px; }
   .has-tabbar .bdv-more { padding: 8px 0; }
 }
+@media (max-width: 760px) {
+  /* Home chat dock: suggestions in one swipeable row on a solid background, so they never sit over the KPIs. */
+  .hub-dock:not(.hub-hero .hub-dock) { z-index: 6; padding-top: 8px; background: linear-gradient(to bottom, transparent, var(--surface) 10px); }
+  .hub-dock .hub-sug:not(.in) { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; flex: none; min-height: 34px; align-items: center; position: relative; z-index: 1; scrollbar-width: none; margin: 0 -16px 10px; padding: 2px 16px; mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent); }
+  .hub-dock .hub-sug:not(.in)::-webkit-scrollbar { display: none; }
+  .hub-dock .hub-sug .hub-chip { flex: none; }
+}
