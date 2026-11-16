@@ -8,7 +8,7 @@ import { dueOf } from './ui'
 
 /* ───────── Layouts (Settings › Preferences › BD layout) ───────── */
 export const LAYOUTS = [
-  { value: 'sources', label: 'Sources', desc: 'One page per lead source.' },
+  { value: 'sources', label: 'Sources (old)', desc: 'One page per lead source.' },
   { value: 'prospect', label: 'Prospecting', desc: 'One global filter across Signals, Companies, People and Inbound.' },
   { value: 'accounts', label: 'Companies first', desc: 'Everything rolls up to the company.' },
   { value: 'stream', label: 'Stream', desc: 'One stream of everything, sorted by what to do next.' },
