@@ -122,10 +122,10 @@ function InfoDialog({ info, onClose }) {
   const lay = LAYOUTS.find((x) => x.value === info.layout)
   return createPortal(
     <div className="bdv-iw" onClick={onClose}>
-      <div className="bdv-id" role="dialog" aria-label={'About ' + info.title} onClick={(e) => e.stopPropagation()}>
+      <div className="bdv-id" role="dialog" aria-modal="true" aria-label={'About ' + info.title} tabIndex={-1} ref={(el) => el?.focus({ preventScroll: true })} onClick={(e) => e.stopPropagation()}>
         <div className="bdv-id-h">
           <div className="grow"><div className="mute xs">About this view</div><h2>{info.title}</h2></div>
-          <button className="b ghost icon sm" onClick={onClose} aria-label="Close" autoFocus><X size={15} /></button>
+          <button className="b ghost icon sm" onClick={onClose} aria-label="Close"><X size={15} /></button>
         </div>
         <p className="bdv-id-lead">{info.what}</p>
         <div className="bdv-id-s"><h3>Who it’s for</h3><p>{info.who}</p></div>

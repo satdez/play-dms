@@ -2,7 +2,15 @@
    Every class is bdv-prefixed; tokens only, so styles and themes repaint it. Phone rules live in mobile.css. */
 
 /* ───── Filter bar ───── */
-.bdv-fbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.bdv-fbar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; min-width: 0; }
+.bdv-fbar-1 { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.bdv-fbar-2 { display: flex; align-items: center; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 1px; margin: -1px; mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); }
+.bdv-fbar-2::-webkit-scrollbar { display: none; }
+.bdv-fgrp { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.bdv-fbar-2 .bdv-fc { flex: none; }
+.bdv-gsep { flex: none; width: 1px; height: 16px; margin: 0 4px; background: var(--line-2); }
+.bdv-credit { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border-radius: 8px; font-size: 12.5px; font-weight: 500; color: var(--fg-2); background: color-mix(in oklab, var(--fg) 4.5%, transparent); }
+.bdv-credit svg { color: var(--muted); }
 .bdv-q { width: 230px; }
 .bdv-q button { display: grid; place-items: center; color: var(--muted); }
 .bdv-fc { display: inline-flex; align-items: center; height: 28px; border-radius: 8px; color: var(--fg-2); background: color-mix(in oklab, var(--fg) 4.5%, transparent); font-size: 12.5px; font-weight: 500; transition: background 120ms, color 120ms; }
@@ -232,22 +240,19 @@
 .st-mode.bdv-lay span { font-size: 12px; color: var(--muted); font-weight: 400; }
 
 /* ───── Search box: scope + instant results ───── */
-.bdv-sb { position: relative; width: 300px; }
-.bdv-sb.stacked { width: auto; }
-.bdv-sb-in { padding-left: 4px; }
-.bdv-sb-in input { min-width: 0; }
-.bdv-scope { position: relative; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 6px 0 7px; margin-right: 6px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--fg); background: var(--surface); box-shadow: 0 0 0 1px var(--line-2), 0 1px 1px rgba(0,0,0,.04); white-space: nowrap; flex: none; transition: box-shadow 150ms, background 150ms; }
-.bdv-scope svg:first-child { color: var(--fg-2); }
-.bdv-scope-c { color: var(--muted); transition: transform 150ms; }
-.bdv-scope:hover { box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 30%, transparent); }
-.bdv-scope:hover .bdv-scope-c, .bdv-scope.open .bdv-scope-c { color: var(--fg); }
-.bdv-scope.open .bdv-scope-c { transform: rotate(180deg); }
-.bdv-scope.on { background: color-mix(in oklab, var(--fg) 9%, var(--surface)); }
-.bdv-scope::after { content: ''; position: absolute; right: -7px; top: 3px; bottom: 3px; width: 1px; background: var(--line-2); }
-html[data-theme='dark'] .bdv-scope, html:not([data-theme='light']) .bdv-scope { background: color-mix(in oklab, var(--fg) 8%, transparent); }
-html[data-theme='light'] .bdv-scope { background: var(--surface); }
-.bdv-sb-x { display: grid; place-items: center; color: var(--muted); }
-.bdv-sb-pop { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; width: max(100%, 420px); max-height: 420px; overflow: auto; padding: 4px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 16px 40px -12px rgba(0,0,0,.25)); }
+.bdv-sb { display: flex; align-items: center; gap: 8px; flex: 1 1 560px; max-width: 680px; min-width: 0; }
+.bdv-sb > .seg { flex: none; }
+.bdv-sb-w { position: relative; flex: 1; min-width: 0; }
+.bdv-sb-in { height: 32px; gap: 8px; }
+.bdv-sb-in input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: none !important; box-shadow: none; background: none; font-size: 13.5px; color: var(--fg); }
+.bdv-sb-in input::placeholder { color: var(--muted); }
+.bdv-sb.stacked { flex-direction: column; align-items: stretch; gap: 8px; flex: none; max-width: none; padding-bottom: 6px; }
+.bdv-sb.stacked > .seg { display: flex; width: 100%; }
+.bdv-sb.stacked > .seg button { flex: 1; justify-content: center; padding: 0 4px; font-size: 12px; }
+.bdv-sb.stacked .bdv-sb-in input { font-size: 13px; }
+.bdv-sb-x { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; color: var(--muted); flex: none; }
+.bdv-sb-x:hover { background: var(--hover); color: var(--fg); }
+.bdv-sb-pop { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; width: max(100%, 380px); max-height: 420px; overflow: auto; padding: 4px; border-radius: 12px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 16px 40px -12px rgba(0,0,0,.25)); }
 .bdv-sb-pop .pop-h { padding: 8px 10px 4px; }
 .bdv-sb-r { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 34px; padding: 4px 10px; border-radius: 8px; text-align: left; font-size: 13px; color: var(--fg); }
 .bdv-sb-r b { font-weight: 600; }
@@ -298,13 +303,13 @@ html[data-theme='light'] .bdv-scope { background: var(--surface); }
 .bdv-fb.sheet .bdv-fb-f { bottom: -28px; background: var(--surface); }
 .bdv-act { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 32px; margin-bottom: 14px; }
 .bdv-mf-top .bdv-act { margin-bottom: 12px; }
-@media (max-width: 760px) { .bdv-sb { width: 100%; flex: 1 1 100%; } .bdv-sb-pop { width: 100%; } }
+@media (max-width: 760px) { .bdv-fbar-1 { flex-wrap: wrap; } .bdv-sb { flex: 1 1 100%; max-width: none; flex-direction: column; align-items: stretch; } .bdv-sb > .seg { display: flex; } .bdv-sb > .seg button { flex: 1; justify-content: center; } .bdv-sb-pop { width: 100%; } }
 
 /* ───── About this view (ⓘ beside the page title) ───── */
 .bdv-ib { display: grid; place-items: center; width: 22px; height: 22px; margin-left: -2px; border-radius: 6px; color: var(--muted); }
 .bdv-ib:hover { background: var(--hover); color: var(--fg); }
 .bdv-ib:focus-visible { outline: 2px solid var(--fg); outline-offset: 1px; }
-.bdv-iw { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 16px; background: color-mix(in oklab, #000 30%, transparent); animation: sl-fade 160ms ease-out; }
+.bdv-iw { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; padding: 16px; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); background: color-mix(in oklab, #000 30%, transparent); animation: sl-fade 160ms ease-out; }
 .bdv-id { width: min(560px, 100%); max-height: min(82dvh, 760px); overflow: auto; padding: 20px 22px 16px; border-radius: 16px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 24px 60px -16px rgba(0,0,0,.35)); animation: sl-rise 200ms ease-out; font-size: 13.5px; line-height: 1.55; }
 .bdv-id-h { display: flex; align-items: flex-start; gap: 10px; }
 .bdv-id-h h2 { margin: 2px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
@@ -316,3 +321,4 @@ html[data-theme='light'] .bdv-scope { background: var(--surface); }
 .bdv-id-f { position: sticky; bottom: -16px; display: flex; align-items: center; gap: 10px; margin-top: 18px; padding: 12px 0 2px; border-top: 1px solid var(--line); background: var(--surface); }
 html[data-motion='reduced'] .bdv-iw, html[data-motion='reduced'] .bdv-id { animation: none; }
 @media (prefers-reduced-motion: reduce) { .bdv-iw, .bdv-id { animation: none; } }
+.bdv-id:focus { outline: none; }

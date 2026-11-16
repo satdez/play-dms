@@ -28,7 +28,7 @@ import { Prospect } from './sales/Prospecting'
 import { CompaniesFirst } from './sales/Companies'
 import { Stream } from './sales/Stream'
 import { CompanySearch } from './sales/Search'
-import { LAYOUTS as BD_LAYOUTS, BD_HOME, BD_PAGES, setBdLayout, setBdFilters } from './sales/prospect'
+import { LAYOUTS as BD_LAYOUTS, BD_HOME, BD_PAGES, setBdLayout, setBdFilters, companyById } from './sales/prospect'
 import { brandOf as salesBrandOf } from './sales/data'
 import './sales/bdv.css'
 import { Radar, Compass, BookUser, Kanban, Library, RotateCcw, MessageCircleQuestion, Filter, Flame, Rows3, Handshake } from 'lucide-react'
@@ -1021,7 +1021,9 @@ function usePageMeta(parts, role) {
   }[sec]
   const c = parts[0] !== 'bd' && parts[2] && s.campaigns.find((x) => x.id === parts[2])
   const deal = parts[0] === 'bd' && sec === 'pipeline' && parts[2] && s.sales.deals.find((x) => x.id === parts[2])
-  return { title: LABEL[sec], icon: item?.icon, to, count, detail: c ? c.code : deal ? deal.code : null, info: parts[0] === 'bd' ? sec : null }
+  // A company opened from Discover or Companies: the title links back to the list or search.
+  const co = parts[0] === 'bd' && ['discover', 'companies'].includes(sec) && parts[2] && (companyById(parts[2], s.sales) || { name: decodeURIComponent(parts[2]).replace(/^~/, '') })
+  return { title: LABEL[sec], icon: item?.icon, to, count, detail: c ? c.code : deal ? deal.code : co ? co.name : null, plain: !!co, info: parts[0] === 'bd' ? sec : null }
 }
 
 function Crumb({ meta }) {
@@ -1033,6 +1035,7 @@ function Crumb({ meta }) {
           <a href={'#' + meta.to} className="row" style={{ gap: 8 }}>{I && <I size={15} />}{meta.title}</a>
           <ChevronRight size={13} className="mute" />
           <span className={'cur' + (meta.plain ? '' : ' mono')}>{meta.detail}</span>
+          {meta.info && meta.plain && <ViewInfo sec={meta.info} />}
         </>
       ) : (
         <span className="cur row" style={{ gap: 8 }}>{I && <I size={15} className="mute" />}{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400 }}>{meta.count}</span>}{meta.info && <ViewInfo sec={meta.info} />}</span>

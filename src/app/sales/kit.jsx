@@ -13,7 +13,7 @@ import { fmt, me } from '../data'
 import { Tip, AutoHeight, EASE, DRAWER } from '../../shared/motion'
 import { Avatar } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
-import { Popover, Switch, Svc, Tabs, go } from '../ui'
+import { Popover, Switch, Svc, Tabs, Seg, go } from '../ui'
 import { Sheet } from '../pages/Finance'
 import { SIGNAL_KIND, F_EMPTY, repOf, proofFor, adsFor, budgetOf, brandOf } from './data'
 import { relOf, stageLabel, isOpen } from './state'
@@ -81,8 +81,7 @@ function FilterChip({ def, f, setF }) {
 /* ───────── Search: a scope, then instant results ─────────
    Scope picks what the search looks at. Typing shows the best few companies, people and signals; Enter filters every tab by it;
    a name we don't have can be fetched from Apollo. */
-const SCOPE_I = { all: Layers3, companies: Building2, people: User, signals: Radar }
-const SCOPE_PH = { all: 'Search signals, companies, people', companies: 'Company name, industry or city', people: 'Name or title, e.g. CMO', signals: 'Headline or intent, e.g. Series B' }
+const SCOPE_PH = { all: 'Search everything', companies: 'Company, industry or city', people: 'Name or title, e.g. CMO', signals: 'Headline, e.g. Series B' }
 export function SearchBox({ stacked }) {
   const { st, f, setF } = useProspect()
   const [text, setText] = useState(f.q)
@@ -113,20 +112,13 @@ export function SearchBox({ stacked }) {
     else if (e.key === 'Escape') { if (open) { e.stopPropagation(); setOpen(false) } else if (text) { setText(''); setF({ ...f, q: '' }) } }
   }
   return (
-    <div className={'bdv-sb' + (stacked ? ' stacked' : '')} ref={box}>
+    <div className={'bdv-sb' + (stacked ? ' stacked' : '')}>
+      <Seg id={'bdv-scope' + (stacked ? '-p' : '-b')} value={scope} onChange={(k) => { setF({ ...f, scope: k }); setHi(0) }} options={SCOPES.map(([k, l]) => ({ value: k, label: l }))} />
+      <div className="bdv-sb-w" ref={box}>
       <div className="inp bdv-sb-in">
-        <Popover align="left" width={170} trigger={({ toggle, open: o }) => (
-          <Tip label="Choose what to search"><button className={'bdv-scope' + (o ? ' open' : '') + (scope !== 'all' ? ' on' : '')} onClick={toggle} aria-label={'Search in ' + scope}>{(() => { const I = SCOPE_I[scope]; return <I size={13} /> })()}{SCOPES.find((x) => x[0] === scope)[1]}<ChevronDown size={12} className="bdv-scope-c" /></button></Tip>
-        )}>
-          {(close) => (
-            <div className="bdv-pop-l">
-              <div className="pop-h">Search in</div>
-              {SCOPES.map(([k, l]) => { const I = SCOPE_I[k]; return <button key={k} aria-pressed={scope === k} onClick={() => { setF({ ...f, scope: k }); close() }}><I size={14} className="mute" />{l}{scope === k && <Check size={14} style={{ marginLeft: 'auto' }} />}</button> })}
-            </div>
-          )}
-        </Popover>
+        <Search size={14} className="mute" />
         <input value={text} onChange={(e) => { setText(e.target.value); setOpen(true); setHi(0) }} onFocus={() => text && setOpen(true)} onKeyDown={key}
-          placeholder={SCOPE_PH[scope]} aria-label="Search" aria-expanded={open} role="combobox" />
+          placeholder={SCOPE_PH[scope]} aria-label={'Search ' + (scope === 'all' ? 'everything' : scope)} aria-expanded={open} role="combobox" />
         {(text || f.q) && <button className="bdv-sb-x" aria-label="Clear search" onClick={() => { setText(''); setF({ ...f, q: '' }) }}><X size={13} /></button>}
       </div>
       {open && text.trim() && (
@@ -154,33 +146,44 @@ export function SearchBox({ stacked }) {
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }
 
-/** Search, filter chips (a sheet on phones), saved views and Clear. One filter for every tab and layout. */
+/** Two rows. Top: scoped search, saved views, Clear, credits and the panel switch. Below: the main filters, grouped by what
+    they narrow (Company | Signals | People), then More. The chip row never wraps; it scrolls sideways if it must. */
 export function FilterBar({ children, inline = true }) {
   const { f, setF, st } = useProspect()
   const narrow = useNarrow()
   const [sheet, setSheet] = useState(false)
   const n = activeCount(f)
   const more = FILTERS.filter((x) => !INLINE.includes(x.id)).filter((x) => isOn(f[x.id])).length
+  const groups = GROUPS.map((g) => INLINE.filter((id) => filterById[id].group === g.id)).filter((l) => l.length)
   return (
     <div className="bdv-fbar">
-      <SearchBox />
-      {inline && !narrow ? (
-        <>
-          {INLINE.map((id) => <FilterChip key={id} def={filterById[id]} f={f} setF={setF} />)}
+      <div className="bdv-fbar-1">
+        <SearchBox />
+        {(!inline || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={() => setSheet(true)}><SlidersHorizontal size={13} />Filters{n > 0 && <span className="num">{n}</span>}</button>}
+        <ViewsMenu />
+        {n > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear{!narrow && <span className="mute num">{n}</span>}</button>}
+        <span className="grow" />
+        <span className="m-hide"><Tip label="Apollo credits left"><span className="bdv-credit"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
+        {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
+        {children}
+      </div>
+      {inline && !narrow && (
+        <div className="bdv-fbar-2" role="group" aria-label="Filters">
+          {groups.map((ids, i) => (
+            <span key={i} className="bdv-fgrp">
+              {i > 0 && <i className="bdv-gsep" aria-hidden />}
+              {ids.map((id) => <FilterChip key={id} def={filterById[id]} f={f} setF={setF} />)}
+            </span>
+          ))}
+          <i className="bdv-gsep" aria-hidden />
           <button className={'bdv-fc bdv-fc-b' + (more ? ' on' : '')} onClick={() => setSheet(true)}><SlidersHorizontal size={12} />More{more > 0 && <b className="num">{more}</b>}</button>
-        </>
-      ) : (
-        <button className={'b sm' + (n ? ' on' : '')} onClick={() => setSheet(true)}><SlidersHorizontal size={13} />Filters{n > 0 && <span className="num">{n}</span>}</button>
+        </div>
       )}
-      <ViewsMenu />
-      {n > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear</button>}
-      <span className="bdv-cred m-hide"><Tip label="Apollo credits left"><span className="chip"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
-      {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
-      {children}
       <FilterSheet open={sheet} onClose={() => setSheet(false)} />
     </div>
   )
@@ -312,7 +315,7 @@ function ActiveChips({ children }) {
       {!chips.length && <span className="mute xs">No filters · showing everything</span>}
       {chips.length > 1 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear</button>}
       <span className="grow" />
-      <span className="bdv-cred m-hide"><Tip label="Apollo credits left"><span className="chip"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
+      <span className="m-hide"><Tip label="Apollo credits left"><span className="bdv-credit"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
       {children}
     </div>
   )
