@@ -322,3 +322,19 @@
 html[data-motion='reduced'] .bdv-iw, html[data-motion='reduced'] .bdv-id { animation: none; }
 @media (prefers-reduced-motion: reduce) { .bdv-iw, .bdv-id { animation: none; } }
 .bdv-id:focus { outline: none; }
+
+/* Scope + field read as one search unit: a shared well, a hairline between them, the field lifts on focus. */
+.bdv-sb { padding: 3px; gap: 3px; border-radius: 11px; background: color-mix(in oklab, var(--fg) 3.5%, transparent); box-shadow: inset 0 0 0 1px var(--line); }
+.bdv-sb > .seg { padding: 0; background: transparent; }
+.bdv-sb .bdv-sb-in { height: 28px; border-radius: 8px; background: transparent; box-shadow: none; }
+.bdv-sb .bdv-sb-in:focus-within { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2); }
+.bdv-sb:not(.stacked) .bdv-sb-w { padding-left: 4px; }
+.bdv-sb:not(.stacked) .bdv-sb-w::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 1px; background: var(--line-2); }
+.bdv-sb.stacked { gap: 0; padding: 3px; }
+.bdv-sb.stacked .bdv-sb-w { margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line); }
+.bdv-fb > .bdv-sb { margin-bottom: 6px; padding-bottom: 3px; }
+@media (max-width: 760px) {
+  .bdv-sb { gap: 0; }
+  .bdv-sb:not(.stacked) .bdv-sb-w { padding-left: 0; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line); }
+  .bdv-sb:not(.stacked) .bdv-sb-w::before { display: none; }
+}
