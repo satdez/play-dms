@@ -1,12 +1,14 @@
 // Layout 3 · Companies first: everything rolls up to the company. A heat-ranked list beside one dossier.
+import { useEffect } from 'react'
 import { ChevronLeft, Building2, Flame } from 'lucide-react'
 import { go } from '../ui'
 import { useProspect, useNarrow, FilterTop, FilterFrame, CoRow, BeyondRow, Dossier } from './kit'
-import { companyById } from './prospect'
+import { companyById, setSearchScope } from './prospect'
 
 export function CompaniesFirst({ id }) {
-  const { st, res } = useProspect()
+  const { st, res, f, setF } = useProspect()
   const narrow = useNarrow()
+  setSearchScope('all')
   const list = [...res.companies].sort((a, b) => b.heat - a.heat || b.sigs.length - a.sigs.length)
   const picked = id && companyById(id, st)
   const cur = picked || (!narrow ? list[0]?.c : null)

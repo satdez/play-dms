@@ -13,7 +13,7 @@ const FILTER_NOTE = () => (bdFilters() === 'panel'
 
 const GLOBAL = [
   'One global filter drives every tab and layout: company facts (funding, size, industry, city, relationship) apply everywhere; signal filters narrow signals; people filters (seniority, department, contact, movement) narrow people. Each also narrows the companies behind what matched.',
-  'Search has a scope. All looks everywhere. Companies, People or Signals look only there, and the other tabs follow from it: search People for “CMO” and Companies shows where those CMOs work.',
+  'In Prospecting, search looks at the tab you are on, and the other tabs follow from it: on People, “CMO” finds the CMOs, and Companies shows where they work. Inbound and Moments, Companies first and Stream search everything.',
   'Typing shows instant matches. Enter filters every tab by the text, picking a row opens that company, and a name we don’t have can be fetched from Apollo for 1 credit.',
   'Saved views keep a filter. Turn on Auto and that view applies whenever BD opens.',
 ]
@@ -82,7 +82,7 @@ export const VIEW_INFO = {
     title: 'Prospecting', layout: 'prospect',
     what: 'One page for finding who to sell to: Signals, Companies, People, Inbound and Moments, all under one global filter.',
     who: 'Reps and leads who start from a question like “Series B, 50–200 people, who should we call?”.',
-    how: ['Every tab’s count updates as you filter, so one query answers what is happening, which companies and which people.', 'Companies are sorted by matching signals, so the few companies with the most news stand out.', 'People build themselves from signals (a new CMO signal adds that person) and from our DB; pick several and reveal in bulk.', 'Search beyond our DB, at the end of Companies and People, runs the same filter on Apollo.', 'Moments lists upcoming days (Black Friday, Diwali, Pride Month…) with the brands that fit.', 'Reorder the tabs with the arrows icon.'],
+    how: ['Every tab’s count updates as you filter, so one query answers what is happening, which companies and which people.', 'Companies are sorted by matching signals, so the few companies with the most news stand out.', 'People build themselves from signals (a new CMO signal adds that person) and from our DB; pick several and reveal in bulk.', 'Search beyond our DB, at the end of Companies and People, runs the same filter on Apollo.', 'Moments lists upcoming days (Black Friday, Diwali, Pride Month…) with the brands that fit.', 'Reorder the tabs with the arrows icon. The tab you are on is also what search looks at.'],
     filters: true, credits: true,
     uses: ['Signals engine', 'Apollo', 'AI', 'Gmail', 'DMS'],
   },
@@ -127,6 +127,7 @@ function InfoDialog({ info, onClose }) {
           <div className="grow"><div className="mute xs">About this view</div><h2>{info.title}</h2></div>
           <button className="b ghost icon sm" onClick={onClose} aria-label="Close"><X size={15} /></button>
         </div>
+        <div className="bdv-id-b">
         <p className="bdv-id-lead">{info.what}</p>
         <div className="bdv-id-s"><h3>Who it’s for</h3><p>{info.who}</p></div>
         <div className="bdv-id-s"><h3>How it works</h3><ul>{info.how.map((x) => <li key={x}>{x}</li>)}</ul></div>
@@ -135,6 +136,7 @@ function InfoDialog({ info, onClose }) {
         )}
         {info.credits && <div className="bdv-id-s"><h3>Apollo credits</h3><p>{CREDITS}</p></div>}
         <div className="bdv-id-s"><h3>Where the data comes from</h3><div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>{info.uses.map((u) => <Src key={u} s={u} />)}</div><p className="mute xs" style={{ marginTop: 8 }}>Every fact shows its source. Anything unknown is marked Unknown, never guessed.</p></div>
+        </div>
         <div className="bdv-id-f">
           <span className="grow mute xs">{lay ? <>Part of the <b>{lay.label}</b> BD layout · {lay.desc}</> : 'Shared by every BD layout'} · Search anything with {MOD}K</span>
           <button className="b sm" onClick={() => { onClose(); go('/settings/preferences') }}><Settings2 size={13} />BD layout</button>

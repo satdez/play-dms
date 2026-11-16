@@ -69,6 +69,10 @@ export const optsOf = (def, st) => (def.id === 'co' ? dbCompanies(st).map((c) =>
 let fmode = 'bar'
 export const setBdFilters = (v) => { fmode = v === 'panel' ? 'panel' : 'bar' }
 export const bdFilters = () => fmode
+/** What a new search looks at: the Prospecting tab you are on, otherwise everything. A search keeps the scope it was made in. */
+let sscope = 'all'
+export const setSearchScope = (v) => { sscope = v || 'all' }
+export const searchScope = () => sscope
 export const filterById = Object.fromEntries(FILTERS.map((x) => [x.id, x]))
 const on = (v) => (Array.isArray(v) ? v.length > 0 : !!v)
 export const activeCount = (f) => FILTERS.filter((x) => on(f[x.id])).length + (f.q ? 1 : 0)

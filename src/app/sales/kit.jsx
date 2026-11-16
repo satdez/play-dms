@@ -5,11 +5,11 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, Check, ChevronDown, SlidersHorizontal, Bookmark, Plus, KeyRound, UserCheck, Database, Radar, Pin, PinOff, Megaphone, ArrowUpRight,
-  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, Building2, User, CornerDownLeft, Layers3,
+  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, Building2, User, CornerDownLeft, Layers3, Flame,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
-import { fmt, me } from '../data'
+import { fmt, me, TODAY } from '../data'
 import { Tip, AutoHeight, EASE, DRAWER } from '../../shared/motion'
 import { Avatar } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
@@ -20,7 +20,7 @@ import { relOf, stageLabel, isOpen } from './state'
 import { Src, Rel, Val, CaseChip, openAddLead } from './ui'
 import {
   FILTERS, filterById, activeCount, describe, run, companyHref, inDb, peopleOf, isKnown, sigsOf, apolloFind, apolloFetch, revealPeople,
-  roleOf, FRESH, kbOf, heat, fmtDays, GROUPS, SCOPES, optsOf, facetCounts, quickFind, bdFilters, fetchName, companyByName,
+  roleOf, FRESH, kbOf, heat, fmtDays, GROUPS, SCOPES, optsOf, facetCounts, quickFind, bdFilters, fetchName, companyByName, searchScope,
 } from './prospect'
 
 /* ───────── Hooks ───────── */
@@ -81,7 +81,7 @@ function FilterChip({ def, f, setF }) {
 /* ───────── Search: a scope, then instant results ─────────
    Scope picks what the search looks at. Typing shows the best few companies, people and signals; Enter filters every tab by it;
    a name we don't have can be fetched from Apollo. */
-const SCOPE_PH = { all: 'Search everything', companies: 'Company, industry or city', people: 'Name or title, e.g. CMO', signals: 'Headline, e.g. Series B' }
+const SCOPE_PH = { all: 'Search companies, people and signals', companies: 'Search companies by name, industry or city', people: 'Search people by name or title, e.g. CMO', signals: 'Search signals, e.g. Series B' }
 export function SearchBox({ stacked }) {
   const { st, f, setF } = useProspect()
   const [text, setText] = useState(f.q)
@@ -95,14 +95,18 @@ export function SearchBox({ stacked }) {
     document.addEventListener('pointerdown', out)
     return () => document.removeEventListener('pointerdown', out)
   }, [open])
-  const scope = f.scope || 'all'
-  const hits = useMemo(() => quickFind(st, text, scope), [st.signals, st.db, st.revealed, text, scope]) // eslint-disable-line react-hooks/exhaustive-deps
-  const rows = [
-    ...hits.companies.map((c) => ({ k: 'c' + c.id, kind: 'company', c, go: () => go(companyHref(c).slice(1)) })),
-    ...hits.people.map((p) => ({ k: 'p' + p.id, kind: 'person', p, go: () => { const c = companyByName(p.brand, st); if (c) go(companyHref(c).slice(1)) } })),
-    ...hits.signals.map((g) => ({ k: 'g' + g.id, kind: 'signal', g, go: () => { const c = companyByName(g.brand, st); if (c) go(companyHref(c).slice(1)) } })),
-  ]
-  const apply = () => { setF({ ...f, q: text.trim() }); setOpen(false) }
+  // A new search looks at the tab you are on; an applied one keeps the scope it was made in.
+  const scope = text.trim() && text.trim() === f.q ? f.scope || 'all' : searchScope()
+  // Suggestions always cover all three; the tab you are on comes first.
+  const hits = useMemo(() => quickFind(st, text, 'all'), [st.signals, st.db, st.revealed, text]) // eslint-disable-line react-hooks/exhaustive-deps
+  const groups = {
+    companies: hits.companies.map((c) => ({ k: 'c' + c.id, kind: 'company', c, go: () => go(companyHref(c).slice(1)) })),
+    people: hits.people.map((p) => ({ k: 'p' + p.id, kind: 'person', p, go: () => { const c = companyByName(p.brand, st); if (c) go(companyHref(c).slice(1)) } })),
+    signals: hits.signals.map((g) => ({ k: 'g' + g.id, kind: 'signal', g, go: () => { const c = companyByName(g.brand, st); if (c) go(companyHref(c).slice(1)) } })),
+  }
+  const order = scope === 'people' ? ['people', 'companies', 'signals'] : scope === 'signals' ? ['signals', 'companies', 'people'] : ['companies', 'people', 'signals']
+  const rows = order.flatMap((k) => groups[k])
+  const apply = () => { setF({ ...f, q: text.trim(), scope: searchScope() }); setOpen(false) }
   const exact = hits.companies.some((c) => c.name.toLowerCase() === text.trim().toLowerCase())
   const canFetch = text.trim().length > 2 && !exact && (scope === 'all' || scope === 'companies')
   const key = (e) => {
@@ -113,7 +117,6 @@ export function SearchBox({ stacked }) {
   }
   return (
     <div className={'bdv-sb' + (stacked ? ' stacked' : '')}>
-      <Seg id={'bdv-scope' + (stacked ? '-p' : '-b')} value={scope} onChange={(k) => { setF({ ...f, scope: k }); setHi(0) }} options={SCOPES.map(([k, l]) => ({ value: k, label: l }))} />
       <div className="bdv-sb-w" ref={box}>
       <div className="inp bdv-sb-in">
         <Search size={14} className="mute" />
@@ -124,13 +127,11 @@ export function SearchBox({ stacked }) {
       {open && text.trim() && (
         <div className="bdv-sb-pop" role="listbox">
           <button className={'bdv-sb-r all' + (hi === 0 ? ' hi' : '')} onMouseEnter={() => setHi(0)} onClick={apply}>
-            <Search size={14} className="mute" /><span className="grow ell">Filter every tab by <b>“{text.trim()}”</b>{scope !== 'all' && <span className="mute"> in {SCOPES.find((x) => x[0] === scope)[1]}</span>}</span><CornerDownLeft size={13} className="mute" />
+            <Search size={14} className="mute" /><span className="grow ell">Search {scope === 'all' ? 'everything' : SCOPES.find((x) => x[0] === scope)[1].toLowerCase()} for <b>“{text.trim()}”</b></span><CornerDownLeft size={13} className="mute" />
           </button>
-          {hits.companies.length > 0 && <div className="pop-h">Companies</div>}
           {rows.map((r, i) => (
             <span key={r.k}>
-              {r.kind === 'person' && rows[i - 1]?.kind !== 'person' && <div className="pop-h">People</div>}
-              {r.kind === 'signal' && rows[i - 1]?.kind !== 'signal' && <div className="pop-h">Signals</div>}
+              {r.kind !== rows[i - 1]?.kind && <div className="pop-h">{{ company: 'Companies', person: 'People', signal: 'Signals' }[r.kind]}</div>}
               <button className={'bdv-sb-r' + (hi === i + 1 ? ' hi' : '')} onMouseEnter={() => setHi(i + 1)} onClick={() => { r.go(); setOpen(false) }}>
                 {r.kind === 'company' && <><BrandLogo name={r.c.name} size={20} /><span className="grow ell"><b>{r.c.name}</b> <span className="mute">{[r.c.funding, r.c.cat, r.c.hq].filter(Boolean).join(' · ')}</span></span>{!inDb(r.c, st) && <span className="chip">Apollo</span>}</>}
                 {r.kind === 'person' && <><Avatar user={{ name: r.p.name, hue: r.p.name.length * 41 }} size={20} /><span className="grow ell"><b>{r.p.name}</b> <span className="mute">{r.p.title} · {r.p.brand}</span></span>{isKnown(r.p, st) ? <span className="mute xs">On file</span> : <Lock size={12} className="mute" />}</>}
@@ -222,7 +223,7 @@ function Facet({ def, f, setF, counts, st, open: open0 }) {
             const n = c ? c[k] || 0 : null
             return (
               <button key={k} className={'bdv-fo' + (sel ? ' on' : '') + (n === 0 && !sel ? ' zero' : '')} role={def.single ? 'radio' : 'checkbox'} aria-checked={!!sel} onClick={() => setF(togOf(def, f, k))}>
-                <span className={'bdv-ck' + (def.single ? ' r' : '')}>{sel && <Check size={10} strokeWidth={3} />}</span>
+                <span className={'bdv-ck' + (def.single ? ' r' : '')}>{sel ? <Check size={10} strokeWidth={3} /> : null}</span>
                 {def.id === 'co' && <BrandLogo name={l} size={16} />}
                 <span className="grow ell">{l}</span>
                 {n != null && <span className="num bdv-fo-n">{n}</span>}
@@ -570,19 +571,53 @@ export function InboundRow({ x }) {
   )
 }
 
+/** A moment: click to open the brands that fit, hottest first, each one a step from the pipeline. */
 export function MomentRow({ m }) {
+  const { st } = useProspect()
+  const [open, setOpen] = useState(false)
+  const [all, setAll] = useState(false)
   const d = m.at
+  const days = Math.round((d - TODAY) / 864e5)
+  const brief = new Date(d.getTime() - 14 * 864e5)
+  const late = days < 14
+  const list = all ? m.brands : m.brands.slice(0, 8)
   return (
-    <div className="li bdv-mo">
-      <span className="bdv-date"><b className="num">{d.getDate()}</b><span>{fmt.date(d).split(' ')[1]}</span></span>
-      <span className="grow bdv-co-m">
-        <span className="row" style={{ gap: 6 }}><span className="li-t ell">{m.name}</span><span className="chip">{m.region}</span><span className="mute xs">{fmtDays(d)}</span></span>
-        <span className="li-s ell">{[...new Set(m.cats)].slice(0, 4).join(' · ')}</span>
-      </span>
-      <span className="bdv-logos">
-        {m.brands.slice(0, 5).map((c) => <Tip key={c.id} label={c.name}><a href={companyHref(c)}><BrandLogo name={c.name} size={22} /></a></Tip>)}
-        {m.brands.length > 5 && <span className="mute xs num">+{m.brands.length - 5}</span>}
-      </span>
+    <div className={'bdv-mo-w' + (open ? ' open' : '')}>
+      <button className="li bdv-mo" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="bdv-date"><b className="num">{d.getDate()}</b><span>{fmt.date(d).split(' ')[1]}</span></span>
+        <span className="grow bdv-co-m">
+          <span className="row" style={{ gap: 6 }}><span className="li-t ell">{m.name}</span><span className="chip">{m.region}</span><span className="mute xs">{fmtDays(d)}</span></span>
+          <span className="li-s ell">{[...new Set(m.cats)].slice(0, 4).join(' · ')}</span>
+        </span>
+        <span className="bdv-logos">
+          {m.brands.slice(0, 5).map((c) => <BrandLogo key={c.id} name={c.name} size={22} />)}
+          {m.brands.length > 5 && <span className="mute xs num">+{m.brands.length - 5}</span>}
+        </span>
+        <ChevronDown size={15} className="mute bdv-mo-i" />
+      </button>
+      {open && (
+        <div className="bdv-mo-b">
+          <div className="bdv-mo-note">
+            <CalendarDays size={14} className="mute" />
+            <span className="grow">{late ? <>Brief this week: creators need about two weeks, and {m.name} is {fmtDays(d).toLowerCase()}.</> : <>Pitch by <b>{fmt.date(brief)}</b> so creators have two weeks before {m.name}.</>}</span>
+            <Src s="AI" />
+          </div>
+          <div className="bdv-mo-h"><span className="grow">{m.brands.length} {m.brands.length === 1 ? 'brand fits' : 'brands fit'} · hottest first</span><span className="mute xs">{[...new Set(m.cats)].join(' · ')}</span></div>
+          <div className="list">
+            {list.map((c) => (
+              <div key={c.id} className="li bdv-mo-r">
+                <a className="row grow" href={companyHref(c)} style={{ gap: 10, minWidth: 0, color: 'inherit', textDecoration: 'none' }}>
+                  <BrandLogo name={c.name} size={24} />
+                  <span className="grow bdv-co-m"><span className="li-t ell">{c.name}</span><CoMeta c={c} short /></span>
+                </a>
+                <Tip label="Heat: recent signals × relevance"><span className="mute xs num bdv-mo-heat"><Flame size={12} />{heat(c, st)}</span></Tip>
+                <AddBtn c={c} />
+              </div>
+            ))}
+          </div>
+          {m.brands.length > 8 && !all && <button className="bdv-more" style={{ marginLeft: 0 }} onClick={() => setAll(true)}>Show all {m.brands.length}</button>}
+        </div>
+      )}
     </div>
   )
 }

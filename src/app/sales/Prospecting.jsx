@@ -1,13 +1,15 @@
 // Layout 2 · Prospecting: one global filter over Signals, Companies, People, Inbound and Moments.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowUp, ArrowDown, ArrowUpDown, Check } from 'lucide-react'
 import { Popover, Tabs } from '../ui'
 import { Src } from './ui'
 import { useProspect, FilterTop, FilterFrame, SigRow, CoRow, PersonRow, InboundRow, MomentRow, BeyondRow, BulkBar } from './kit'
-import { isKnown } from './prospect'
+import { isKnown, setSearchScope } from './prospect'
 
 const TABS = { signals: 'Signals', companies: 'Companies', people: 'People', inbound: 'Inbound', moments: 'Moments' }
 const ORDER0 = Object.keys(TABS)
+/** The tab you are on is what search looks at; the other tabs follow from it. */
+export const TAB_SCOPE = { signals: 'signals', companies: 'companies', people: 'people', inbound: 'all', moments: 'all' }
 const readOrder = () => { try { const o = JSON.parse(localStorage.getItem('wldd-bdv-tabs') || 'null'); if (Array.isArray(o) && o.length === ORDER0.length && ORDER0.every((k) => o.includes(k))) return o } catch {} return ORDER0 }
 const readTab = () => { try { return localStorage.getItem('wldd-bdv-tab') || 'signals' } catch { return 'signals' } }
 
@@ -35,12 +37,13 @@ function Arrange({ order, setOrder }) {
 }
 
 export function Prospect() {
-  const { st, res } = useProspect()
+  const { st, res, f, setF } = useProspect()
   const [order, setOrderRaw] = useState(readOrder)
   const [tab, setTabRaw] = useState(readTab)
   const [pick, setPick] = useState([])
   const setOrder = (o) => { setOrderRaw(o); try { localStorage.setItem('wldd-bdv-tabs', JSON.stringify(o)) } catch {} }
   const setTab = (t) => { setTabRaw(t); try { localStorage.setItem('wldd-bdv-tab', t) } catch {} }
+  setSearchScope(TAB_SCOPE[tab])
   const n = { signals: res.signals.length, companies: res.companies.length, people: res.people.length, inbound: res.inbound.length, moments: res.moments.length }
   const max = Math.max(1, ...res.companies.map((x) => x.sigs.length))
   const locked = res.people.filter((p) => !isKnown(p, st))

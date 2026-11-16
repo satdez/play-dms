@@ -1,5 +1,5 @@
 // Layout 4 · Stream: one ranked stream of everything, sorted by what to do next. Phone first.
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Radar, Inbox, CalendarDays, AlertTriangle, Clock, X, Plus, UserCheck, KeyRound, Moon, ArrowUpRight, Check } from 'lucide-react'
 import { toast } from 'sonner'
@@ -11,13 +11,14 @@ import { Sheet } from '../pages/Finance'
 import { DEAL_STAGES, repOf } from './data'
 import { isOpen } from './state'
 import { openAddLead, dueOf } from './ui'
-import { stream, companyByName, peopleOf, isKnown, revealPeople, fmtDays } from './prospect'
+import { stream, companyByName, peopleOf, isKnown, revealPeople, fmtDays, setSearchScope } from './prospect'
 import { useProspect, useNarrow, useMq, ViewStrip, FilterFrame, Enrich, BottomSheet, Dossier, BeyondRow, addSignal, addCompany } from './kit'
 
 const TYPE = { signal: ['Signal', Radar], inbound: ['Inbound', Inbox], moment: ['Moment', CalendarDays], alert: ['Account alert', AlertTriangle], follow: ['Follow-up', Clock] }
 
 export function Stream() {
-  const { st, res } = useProspect()
+  const { st, res, f, setF } = useProspect()
+  setSearchScope('all')
   const cards = useMemo(() => stream(res, st), [res, st.hidden]) // eslint-disable-line react-hooks/exhaustive-deps
   const [co, setCo] = useState(null)
   const narrow = useNarrow()
