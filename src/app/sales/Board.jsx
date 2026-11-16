@@ -291,7 +291,7 @@ const Card = memo(function Card({ d, hidden, onPointerDown, onClick, keyMove }) 
         : (
           <div className="sl-c-n row">
             <ArrowRight size={12} className="mute" /><span className="ell grow">{d.next}</span>
-            {due != null && <span className={'sl-due' + (due < 0 ? ' late' : due === 0 ? ' today' : '')}><CalendarClock size={11} />{due < 0 ? -due + 'd late' : due === 0 ? 'Today' : due === 1 ? 'Tmrw' : due + 'd'}</span>}
+            {due != null && <span className={'sl-cdue' + (due < 0 ? ' late' : due === 0 ? ' today' : '')}><CalendarClock size={11} />{due < 0 ? -due + 'd late' : due === 0 ? 'Today' : due === 1 ? 'Tmrw' : due + 'd'}</span>}
           </div>
         )}
       <div className="row sl-c-f">

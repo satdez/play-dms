@@ -341,9 +341,9 @@ html[data-motion='reduced'] .sl-spin, html[data-motion='reduced'] .sl-think i { 
 .sl-c-p { font-size: 12.5px; color: var(--fg-2); }
 .sl-c-n { gap: 5px; font-size: 12.5px; color: var(--fg-2); min-width: 0; }
 .sl-c-f { gap: 6px; min-height: 20px; }
-.sl-due { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--muted); padding: 0 5px; height: 18px; border-radius: 6px; }
-.sl-due.today { color: color-mix(in oklab, var(--yellow) 55%, var(--fg)); background: var(--yellow-soft); }
-.sl-due.late { color: color-mix(in oklab, var(--pink) 60%, var(--fg)); background: var(--pink-soft); }
+.sl-cdue { display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--muted); padding: 0 5px; height: 18px; border-radius: 6px; }
+.sl-cdue.today { color: color-mix(in oklab, var(--yellow) 55%, var(--fg)); background: var(--yellow-soft); }
+.sl-cdue.late { color: color-mix(in oklab, var(--pink) 60%, var(--fg)); background: var(--pink-soft); }
 
 .sl-lostlane { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 0; border-radius: 14px; background: color-mix(in oklab, var(--fg) 2.5%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--line) 60%, transparent); color: var(--muted); font-size: 12.5px; font-weight: 600; transition: background 150ms, color 150ms; min-height: 160px; }
 .sl-lostlane:hover { color: var(--fg-2); background: color-mix(in oklab, var(--fg) 5%, transparent); }
