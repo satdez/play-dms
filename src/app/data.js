@@ -19,7 +19,7 @@ export const BRAND = { green: '#5fcf86', violet: '#c46bf0', pink: '#f0506e', yel
 export const ROLES = [
   { id: 'pod', label: 'Pod', color: BRAND.green },
   { id: 'finance', label: 'Finance', color: BRAND.violet },
-  { id: 'bd', label: 'Sales', color: BRAND.yellow },
+  { id: 'bd', label: 'BD', full: 'Business development', color: BRAND.yellow },
 ]
 
 /* ───────── Services ───────── */

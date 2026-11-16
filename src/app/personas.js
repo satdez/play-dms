@@ -11,7 +11,7 @@ export const PERSONAS = [
   { id: 'podlead', label: 'Pod lead', roles: ['pod'], person: by('u3') },
   { id: 'pod', label: 'Pod member', roles: ['pod'], hide: ['/pod/approvals'], person: by('u4') },
   { id: 'finance', label: 'Finance', roles: ['finance'], person: by('u7') },
-  { id: 'sales', label: 'Sales', roles: ['bd'], person: by('u9') },
+  { id: 'sales', label: 'BD', roles: ['bd'], person: by('u9') },
 ]
 export const personaOf = (id) => PERSONAS.find((p) => p.id === id) || PERSONAS[0]
 

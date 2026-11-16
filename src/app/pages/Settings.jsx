@@ -93,7 +93,7 @@ const ACCESS = [
   { id: 'admin', label: 'Admin', icon: Crown },
   { id: 'pod', label: 'Pod', module: true },
   { id: 'finance', label: 'Finance', module: true },
-  { id: 'bd', label: 'Sales', module: true },
+  { id: 'bd', label: 'BD', module: true },
   { id: 'procurement', label: 'Procurement', icon: PackageCheck },
   { id: 'inventory', label: 'Inventory', icon: Archive },
   { id: 'hr', label: 'HR', icon: UserCog },
@@ -368,7 +368,7 @@ function Preferences({ look }) {
 
       <Group title="Workspace">
         <Row label="Open on" tip="Workspace shown when DMS starts">
-          <Select value={prefs.startRole} onChange={set('startRole')} options={[{ id: 'last', label: 'Last used' }, { id: 'pod', label: 'Pod' }, { id: 'finance', label: 'Finance' }, { id: 'bd', label: 'Sales' }]} />
+          <Select value={prefs.startRole} onChange={set('startRole')} options={[{ id: 'last', label: 'Last used' }, { id: 'pod', label: 'Pod' }, { id: 'finance', label: 'Finance' }, { id: 'bd', label: 'BD' }]} />
         </Row>
         <Row label="Confirm before approving" tip="Ask once more before an approval moves money"><Switch on={prefs.confirmApprove} onChange={set('confirmApprove')} label="Confirm before approving" /></Row>
       </Group>
@@ -393,7 +393,7 @@ const EVENTS = [
   { group: 'Invoices & payments', role: 'finance', items: [
     ['needs', 'Needs my approval', 'app email slack'], ['rej', 'Invoice rejected', 'app email'], ['sched', 'Payment scheduled', 'app'], ['paid', 'Payment released', 'app email'],
   ] },
-  { group: 'Sales', role: 'bd', items: [
+  { group: 'BD', role: 'bd', items: [
     ['lead', 'New inbound lead', 'app slack wa'], ['viewed', 'Proposal opened', 'app'], ['won', 'Deal converted', 'app email slack'],
   ] },
   { group: 'People', items: [
@@ -457,7 +457,7 @@ function Notifications() {
 const K = ({ k }) => <span className="st-keys">{k.split(' ').map((x, i) => <kbd key={i} className="k">{x}</kbd>)}</span>
 function Shortcuts() {
   const groups = [
-    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Ask WLDD (when docked)', MOD + 'J'], ['Home', ALT + '0'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to Sales', ALT + '3']]],
+    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Ask WLDD (when docked)', MOD + 'J'], ['Home', ALT + '0'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to BD', ALT + '3']]],
     ['Look', [['Cycle Home layout', ALT + 'H'], ['Cycle experience', ALT + 'E'], ['Cycle style', ALT + 'S'], ['Cycle Pop presets', ALT + 'P']]],
     ['Lists & boards', [['New campaign', 'C'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
     ['Vercel experience', [['Find', 'F']]],
@@ -655,7 +655,7 @@ function Pods({ list, setList }) {
 const CAPS = [
   { group: 'Campaigns', items: [['View campaigns', 'admin pod finance bd'], ['Create campaigns', 'admin pod bd'], ['Edit plan & tracker', 'admin pod'], ['Approve deliverables', 'admin pod']] },
   { group: 'Money', items: [['Approve invoices', 'admin pod finance'], ['Schedule payments', 'admin finance'], ['Release payments', 'admin finance'], ['Edit vendor bank details', 'admin finance procurement']] },
-  { group: 'Sales', items: [['Outreach & leads', 'admin bd'], ['Send proposals', 'admin bd'], ['Convert deals', 'admin bd']] },
+  { group: 'BD', items: [['Outreach & leads', 'admin bd'], ['Send proposals', 'admin bd'], ['Convert deals', 'admin bd']] },
   { group: 'Vendors & inventory', items: [['Assign vendor roles', 'admin procurement'], ['Assign misc services', 'admin procurement pod'], ['Approve assets', 'admin inventory'], ['Merge pages', 'admin inventory']] },
   { group: 'People', items: [['Invite & deactivate', 'admin hr'], ['Change access', 'admin hr']] },
 ]
@@ -831,7 +831,7 @@ const AUDIT = (() => {
     ['settings', 0, 'changed auto-approve to', '₹5,000'],
     ['people', 2, 'moved', 'Kabir Mehta to Neon'],
     ['money', 6, 'released', '9 payments', 1265000],
-    ['access', 0, 'removed Sales access from', 'Dev Malhotra'],
+    ['access', 0, 'removed BD access from', 'Dev Malhotra'],
     ['settings', 6, 'turned on', 'Tally sync'],
     ['people', 0, 'deactivated', 'Kabir Grewal'],
     ['money', 4, 'approved', 'INV-0388 · Meme Chakra', 54000],

@@ -922,7 +922,7 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
 const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
 
 /* ───────── Top bar ───────── */
-const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'Sales', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Case Library' }
+const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'BD', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Case Library' }
 /** The page title lives here only — pages don't repeat it. Icon + live count make the space useful. */
 function usePageMeta(parts, role) {
   const s = useStore()
@@ -1014,14 +1014,14 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
           </Command.Group>
         )}
         {VIEW.roles.includes('bd') && (
-          <Command.Group heading="Sales">
-            <Command.Item value="add lead to pipeline" onSelect={run(() => { if (role !== 'bd') switchRole('bd'); setTimeout(() => openAddLead({ source: 'Discover' }), 0) })}><Plus size={15} /> Add lead<span className="cmdk-meta">Sales</span></Command.Item>
-            <Command.Item value="ask about a brand" onSelect={run(() => setTimeout(() => openAsk(), 0))}><MessageCircleQuestion size={15} /> Ask about a brand<span className="cmdk-meta">Sales</span></Command.Item>
+          <Command.Group heading="BD">
+            <Command.Item value="add lead to pipeline" onSelect={run(() => { if (role !== 'bd') switchRole('bd'); setTimeout(() => openAddLead({ source: 'Discover' }), 0) })}><Plus size={15} /> Add lead<span className="cmdk-meta">BD</span></Command.Item>
+            <Command.Item value="ask about a brand" onSelect={run(() => setTimeout(() => openAsk(), 0))}><MessageCircleQuestion size={15} /> Ask about a brand<span className="cmdk-meta">BD</span></Command.Item>
             {[['feed', 'Feed', Radar], ['discover', 'Discover', Compass], ['inbound', 'Inbound', MailOpen], ['accounts', 'Accounts', Building2], ['contacts', 'Contacts', BookUser], ['pipeline', 'Pipeline', Kanban], ['cases', 'Case Library', Library]].map(([id, l, I]) => (
-              <Command.Item key={id} value={'sales ' + l} onSelect={run(() => go('/bd/' + id))}><I size={15} /> {l}<span className="cmdk-meta">Sales</span></Command.Item>
+              <Command.Item key={id} value={'bd business development sales ' + l} onSelect={run(() => go('/bd/' + id))}><I size={15} /> {l}<span className="cmdk-meta">BD</span></Command.Item>
             ))}
             {q && s.sales.deals.map((d) => <Command.Item key={d.id} value={'deal ' + d.brand + ' ' + d.code} onSelect={run(() => go('/bd/pipeline/' + d.id))}><BrandLogo name={d.brand} size={16} radius={4} /> <span className="cmdk-t">{d.brand}</span><span className="cmdk-meta">{d.code}</span></Command.Item>)}
-            <Command.Item value="reset sales demo" onSelect={run(() => { s.sales.reset(); toast('Sales demo reset') })}><RotateCcw size={15} /> Reset sales demo<span className="cmdk-meta">Sales</span></Command.Item>
+            <Command.Item value="reset bd demo business development sales" onSelect={run(() => { s.sales.reset(); toast('BD demo reset') })}><RotateCcw size={15} /> Reset BD demo<span className="cmdk-meta">BD</span></Command.Item>
           </Command.Group>
         )}
         <Command.Group heading="Actions">

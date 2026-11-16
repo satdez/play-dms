@@ -488,7 +488,7 @@ function Handoff({ d }) {
     s.setCampaigns((l) => [{
       ...l[0], id: cid, code: 'WL-' + (2500 + l.length), client: d.brand, clientId: null, industry: 'Others', activity: 'Launch', name: `${d.brand} × Launch`, pod, lead: team[{ Kulfi: 2, Neon: 3, Masala: 4 }[pod]],
       stage: 0, services: svc, budget: value, planCost: Math.round(value * 0.65), internal: Math.round(value * 0.47), live: 0, views: 0, deliverables: 40,
-      planApproved: false, pinned: false, flags: { agreement: false, po: false, invoice: false, payment: false }, tally: 'none', tallyKey: null, updated: new Date(), start: new Date(), brief: d.scope?.need || 'Brief from Sales hand-off.',
+      planApproved: false, pinned: false, flags: { agreement: false, po: false, invoice: false, payment: false }, tally: 'none', tallyKey: null, updated: new Date(), start: new Date(), brief: d.scope?.need || 'Brief from the BD hand-off.',
     }, ...l])
     st.set((x) => ({
       deals: x.deals.map((y) => (y.id === d.id ? { ...y, value, services: svc, updated: now(), next: '', won: { value, services: svc, pod, campaignId: cid, note }, history: [...y.history, { at: now(), text: `Handed to ${pod} with the pitch deck`, kind: 'won', by: me.id }] } : y)),
