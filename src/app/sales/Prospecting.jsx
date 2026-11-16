@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { ArrowUp, ArrowDown, ArrowUpDown, Check } from 'lucide-react'
 import { Popover, Tabs } from '../ui'
 import { Src } from './ui'
-import { useProspect, FilterBar, SigRow, CoRow, PersonRow, InboundRow, MomentRow, BeyondRow, BulkBar } from './kit'
+import { useProspect, FilterTop, FilterFrame, SigRow, CoRow, PersonRow, InboundRow, MomentRow, BeyondRow, BulkBar } from './kit'
 import { isKnown } from './prospect'
 
 const TABS = { signals: 'Signals', companies: 'Companies', people: 'People', inbound: 'Inbound', moments: 'Moments' }
@@ -46,9 +46,10 @@ export function Prospect() {
   const locked = res.people.filter((p) => !isKnown(p, st))
   const tog = (p) => setPick((l) => (l.includes(p.id) ? l.filter((x) => x !== p.id) : [...l, p.id]))
   return (
+    <FilterFrame>
     <div className="d-page wide bdv-page">
       <div className="d-head"><h1 className="d-h1">Prospecting</h1></div>
-      <FilterBar />
+      <FilterTop />
       <div className="bdv-tabrow">
         <Tabs id="bdv-pt" value={tab} onChange={setTab} options={order.map((k) => ({ value: k, label: TABS[k], count: n[k] }))} />
         <Arrange order={order} setOrder={setOrder} />
@@ -88,6 +89,7 @@ export function Prospect() {
         </div>
       )}
     </div>
+    </FilterFrame>
   )
 }
 export const Empty = () => <div className="empty"><Check size={18} /><b>No matches</b></div>

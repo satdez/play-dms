@@ -23,11 +23,12 @@ import { Feed, Discover, Inbound as SalesInbound, Accounts, Contacts, Pipeline, 
 import { DealPage } from './sales/Deal'
 import { AskButton, AskDialog, AddLeadSheet, SalesBell, openAddLead, openAsk } from './sales/ui'
 import { isOpen } from './sales/state'
+import { ViewInfo } from './sales/ViewInfo'
 import { Prospect } from './sales/Prospecting'
 import { CompaniesFirst } from './sales/Companies'
 import { Stream } from './sales/Stream'
 import { CompanySearch } from './sales/Search'
-import { LAYOUTS as BD_LAYOUTS, BD_HOME, BD_PAGES, setBdLayout } from './sales/prospect'
+import { LAYOUTS as BD_LAYOUTS, BD_HOME, BD_PAGES, setBdLayout, setBdFilters } from './sales/prospect'
 import { brandOf as salesBrandOf } from './sales/data'
 import './sales/bdv.css'
 import { Radar, Compass, BookUser, Kanban, Library, RotateCcw, MessageCircleQuestion, Filter, Flame, Rows3, Handshake } from 'lucide-react'
@@ -109,7 +110,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'sources', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'sources', bdFilters: 'bar', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -190,7 +191,9 @@ function Shell({ path }) {
   const [prefs, setPrefsRaw] = useState(() => { try { return { ...PREF_DEFAULTS, ...JSON.parse(read('wldd-prefs', '{}')) } } catch { return PREF_DEFAULTS } })
   const setPrefs = (p) => { setPrefsRaw(p); try { localStorage.setItem('wldd-prefs', JSON.stringify(p)) } catch {} }
   VIEW = personaOf(prefs.viewAs); setView(VIEW)
-  BDL = BD_HOME[prefs.bd] ? prefs.bd : 'sources'; setBdLayout(BDL)
+  BDL = BD_HOME[prefs.bd] ? prefs.bd : 'sources'; setBdLayout(BDL); setBdFilters(prefs.bdFilters)
+  // The in-page "side panel / bar" switch writes the same preference as Settings.
+  useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, bdFilters: e.detail.mode }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('bd:filters', on); return () => window.removeEventListener('bd:filters', on) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [role, setRole] = useState(() => {
     const m = path.split('/').filter(Boolean)[0]
     if (['pod', 'finance', 'bd'].includes(m)) return m // deep link decides — no switch animation on load
@@ -1018,7 +1021,7 @@ function usePageMeta(parts, role) {
   }[sec]
   const c = parts[0] !== 'bd' && parts[2] && s.campaigns.find((x) => x.id === parts[2])
   const deal = parts[0] === 'bd' && sec === 'pipeline' && parts[2] && s.sales.deals.find((x) => x.id === parts[2])
-  return { title: LABEL[sec], icon: item?.icon, to, count, detail: c ? c.code : deal ? deal.code : null }
+  return { title: LABEL[sec], icon: item?.icon, to, count, detail: c ? c.code : deal ? deal.code : null, info: parts[0] === 'bd' ? sec : null }
 }
 
 function Crumb({ meta }) {
@@ -1032,7 +1035,7 @@ function Crumb({ meta }) {
           <span className={'cur' + (meta.plain ? '' : ' mono')}>{meta.detail}</span>
         </>
       ) : (
-        <span className="cur row" style={{ gap: 8 }}>{I && <I size={15} className="mute" />}{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400 }}>{meta.count}</span>}</span>
+        <span className="cur row" style={{ gap: 8 }}>{I && <I size={15} className="mute" />}{meta.title}{meta.count != null && <span className="mute num" style={{ fontWeight: 400 }}>{meta.count}</span>}{meta.info && <ViewInfo sec={meta.info} />}</span>
       )}
     </div>
   )

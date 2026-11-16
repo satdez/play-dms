@@ -33,31 +33,53 @@ const REC = { '1d': 1, '7d': 7, '14d': 14, '30d': 30 }
 const ALL_CATS = [...new Set([...brands, ...extras, ...apollo].map((b) => b.cat))].sort()
 const ALL_CITIES = [...new Set([...brands, ...extras, ...apollo].map((b) => b.hq))].sort()
 export const ROLES_P = ['CXO', 'Head', 'Manager', 'Lead']
-export const FILTERS = [
-  { id: 'funding', label: 'Funding', opts: FUNDING.map((x) => [x, x]) },
-  { id: 'size', label: 'Employees', opts: [['1-50', '1–50'], ['50-200', '50–200'], ['200-1000', '200–1,000'], ['1000-5000', '1,000–5,000'], ['5000+', '5,000+']] },
-  { id: 'cat', label: 'Industry', opts: ALL_CATS.map((x) => [x, x]) },
-  { id: 'city', label: 'City', opts: ALL_CITIES.map((x) => [x, x]) },
-  { id: 'kind', label: 'Signal', opts: Object.entries(SIGNAL_KIND) },
-  { id: 'recency', label: 'Recency', single: true, opts: [['1d', 'Last day'], ['7d', 'Last week'], ['14d', 'Last 2 weeks'], ['30d', 'Last 30 days']] },
-  { id: 'rel', label: 'Relationship', opts: [['client', 'Client'], ['warm', 'Warm'], ['cold', 'Cold']] },
-  { id: 'fit', label: 'Service fit', opts: ['memd', 'inf', 'amp', 'cc', 'tt', 'solo', 'off'].map((k) => [k, SERVICES[k].label]) },
-  { id: 'relevance', label: 'BD relevance', opts: [['high', 'High'], ['med', 'Medium'], ['low', 'Low']] },
-  { id: 'deal', label: 'Deal size', opts: [['lt10', 'Under ₹10L'], ['10-25', '₹10–25L'], ['25-50', '₹25–50L'], ['50+', '₹50L+']] },
-  { id: 'role', label: 'Role', opts: ROLES_P.map((x) => [x, x]) },
-  { id: 'types', label: 'Type', opts: [['signal', 'Signals'], ['inbound', 'Inbound'], ['moment', 'Moments'], ['alert', 'Account alerts'], ['follow', 'Follow-ups']] },
-  { id: 'owner', label: 'Owner', single: true, opts: [['mine', 'Mine'], ['unclaimed', 'Unclaimed']] },
+export const DEPTS = ['Marketing', 'Brand', 'Growth', 'Digital & social', 'Founder office']
+/** Filter groups, so a reader knows what each filter narrows. Company facts reach every tab; the rest narrow their own entity
+    and, through it, the companies behind it (one global filter). */
+export const GROUPS = [
+  { id: 'company', label: 'Company', hint: 'Applies to every tab' },
+  { id: 'signal', label: 'Signals', hint: 'Narrows signals, and the companies behind them' },
+  { id: 'people', label: 'People', hint: 'Narrows people, and the companies they work at' },
+  { id: 'activity', label: 'Activity', hint: 'Inbound, moments, alerts and follow-ups' },
 ]
+export const FILTERS = [
+  { id: 'co', label: 'Company', group: 'company', search: true, opts: [] }, // options come from our DB (optsOf)
+  { id: 'funding', label: 'Funding', group: 'company', opts: FUNDING.map((x) => [x, x]) },
+  { id: 'size', label: 'Employees', group: 'company', opts: [['1-50', '1–50'], ['50-200', '50–200'], ['200-1000', '200–1,000'], ['1000-5000', '1,000–5,000'], ['5000+', '5,000+']] },
+  { id: 'cat', label: 'Industry', group: 'company', search: true, opts: ALL_CATS.map((x) => [x, x]) },
+  { id: 'city', label: 'City', group: 'company', search: true, opts: ALL_CITIES.map((x) => [x, x]) },
+  { id: 'rel', label: 'Relationship', group: 'company', opts: [['client', 'Client'], ['warm', 'Warm'], ['cold', 'Cold']] },
+  { id: 'kind', label: 'Signal', group: 'signal', opts: Object.entries(SIGNAL_KIND) },
+  { id: 'recency', label: 'Recency', group: 'signal', single: true, opts: [['1d', 'Last day'], ['7d', 'Last week'], ['14d', 'Last 2 weeks'], ['30d', 'Last 30 days']] },
+  { id: 'fit', label: 'Service fit', group: 'signal', opts: ['memd', 'inf', 'amp', 'cc', 'tt', 'solo', 'off'].map((k) => [k, SERVICES[k].label]) },
+  { id: 'relevance', label: 'BD relevance', group: 'signal', opts: [['high', 'High'], ['med', 'Medium'], ['low', 'Low']] },
+  { id: 'deal', label: 'Deal size', group: 'signal', opts: [['lt10', 'Under ₹10L'], ['10-25', '₹10–25L'], ['25-50', '₹25–50L'], ['50+', '₹50L+']] },
+  { id: 'role', label: 'Seniority', group: 'people', opts: ROLES_P.map((x) => [x, x]) },
+  { id: 'dept', label: 'Department', group: 'people', opts: DEPTS.map((x) => [x, x]) },
+  { id: 'contact', label: 'Contact', group: 'people', single: true, opts: [['known', 'On file · free'], ['locked', 'Needs a reveal']] },
+  { id: 'pflag', label: 'Movement', group: 'people', opts: [['new', 'New in role'], ['moved', 'Moved in from a brand']] },
+  { id: 'types', label: 'Type', group: 'activity', opts: [['signal', 'Signals'], ['inbound', 'Inbound'], ['moment', 'Moments'], ['alert', 'Account alerts'], ['follow', 'Follow-ups']] },
+  { id: 'owner', label: 'Owner', group: 'activity', single: true, opts: [['mine', 'Mine'], ['unclaimed', 'Unclaimed']] },
+]
+/** Search scopes: what the search box looks at. */
+export const SCOPES = [['all', 'All'], ['companies', 'Companies'], ['people', 'People'], ['signals', 'Signals']]
+/** Options for a filter. Company names come from our DB, so they grow as Apollo fetches land. */
+export const optsOf = (def, st) => (def.id === 'co' ? dbCompanies(st).map((c) => [c.id, c.name]).sort((a, b) => a[1].localeCompare(b[1])) : def.opts)
+/** Filter placement, set by Shell from Settings > Preferences > BD filters. */
+let fmode = 'bar'
+export const setBdFilters = (v) => { fmode = v === 'panel' ? 'panel' : 'bar' }
+export const bdFilters = () => fmode
 export const filterById = Object.fromEntries(FILTERS.map((x) => [x.id, x]))
 const on = (v) => (Array.isArray(v) ? v.length > 0 : !!v)
 export const activeCount = (f) => FILTERS.filter((x) => on(f[x.id])).length + (f.q ? 1 : 0)
+const SCOPE_L = { companies: 'Companies', people: 'People', signals: 'Signals' }
 /** One-line summary: "Series B · 50–200". */
 export const describe = (f) => FILTERS.flatMap((x) => {
   const v = f[x.id]
   if (!on(v)) return []
-  const lab = (k) => x.opts.find((o) => o[0] === k)?.[1] || k
+  const lab = (k) => x.opts.find((o) => o[0] === k)?.[1] || (x.id === 'co' ? (brandById(k)?.name || k.replace(/^x-/, '').replace(/-/g, ' ')) : k)
   return Array.isArray(v) ? (v.length > 2 ? [x.label + ' ' + v.length] : v.map(lab)) : [lab(v)]
-}).concat(f.q ? ['“' + f.q + '”'] : []).join(' · ')
+}).concat(f.q ? [(SCOPE_L[f.scope] ? SCOPE_L[f.scope] + ' ' : '') + '“' + f.q + '”'] : []).join(' · ')
 
 /* ───────── Companies and people in our DB ───────── */
 const slug = (n) => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
@@ -70,6 +92,14 @@ export const dbCompanies = (st) => [...brands, ...extras, ...apollo.filter((c) =
 export const FRESH = new Set()
 
 export const roleOf = (title = '') => (/CMO|CEO|COO|VP|Founder|Chief/.test(title) ? 'CXO' : /^Head/.test(title) ? 'Head' : /Manager|Director/.test(title) ? 'Manager' : 'Lead')
+export const deptOf = (title = '') => (/Founder|CEO|COO|Chief Executive/.test(title) ? 'Founder office' : /Growth|Performance|Acquisition/.test(title) ? 'Growth' : /Digital|Social|Content|Community/.test(title) ? 'Digital & social' : /Brand|Category/.test(title) ? 'Brand' : 'Marketing')
+const peopleLevel = (f) => on(f.role) || on(f.dept) || on(f.contact) || on(f.pflag)
+function personMatch(p, f, st) {
+  return (!on(f.role) || f.role.includes(roleOf(p.title)))
+    && (!on(f.dept) || f.dept.includes(deptOf(p.title)))
+    && (!on(f.contact) || (f.contact === 'known') === isKnown(p, st))
+    && (!on(f.pflag) || f.pflag.some((k) => (k === 'new' ? !!p.born : !!p.moved)))
+}
 /** People a signal introduced (a new CMO): they join People on their own. */
 export function bornOf(g) {
   if (!g.born) return null
@@ -93,12 +123,13 @@ const inB = (v, [lo, hi]) => v != null && v >= lo && v < hi
 const has = (q, ...t) => !q || t.join(' ').toLowerCase().includes(q.toLowerCase())
 export const relKind = (c, st) => { const k = relOf(c.name, st).kind; return k === 'client' ? 'client' : k === 'cold' ? 'cold' : 'warm' }
 export function coMatch(c, f, st) {
-  if (!c) return !(on(f.funding) || on(f.size) || on(f.cat) || on(f.city) || on(f.rel))
+  if (!c) return !(on(f.funding) || on(f.size) || on(f.cat) || on(f.city) || on(f.rel) || on(f.co))
   return (!on(f.funding) || f.funding.includes(c.funding))
     && (!on(f.size) || f.size.some((k) => c.size != null && c.size >= SIZE_B[k][0] && c.size <= SIZE_B[k][1]))
     && (!on(f.cat) || f.cat.includes(c.cat))
     && (!on(f.city) || f.city.includes(c.hq))
     && (!on(f.rel) || f.rel.includes(relKind(c, st)))
+    && (!on(f.co) || f.co.includes(c.id))
 }
 const sigLevel = (f) => on(f.kind) || on(f.recency) || on(f.fit) || on(f.relevance) || on(f.deal)
 const typeOk = (f, t) => !on(f.types) || f.types.includes(t)
@@ -111,43 +142,112 @@ function sigMatch(g, f) {
 }
 const inbRel = (x) => (x.budget >= 20e5 ? 'high' : x.budget >= 10e5 ? 'med' : 'low')
 
-/** Everything the filter matches, in one pass. Every layout reads this. */
+/** Everything the filter matches, in one pass. Every layout reads this.
+    Search has a scope: All looks everywhere; Companies, People or Signals look only at that entity, and the other tabs
+    follow from it (the companies those people work at, the signals of those companies). */
 export function run(st, f = F_EMPTY) {
   const q = (f.q || '').trim()
+  const scope = q ? f.scope || 'all' : 'all'
+  const qAll = scope === 'all' ? q : ''
   const cos = dbCompanies(st)
   const byName = Object.fromEntries(cos.map((c) => [c.name, c]))
   const coOk = new Map(cos.map((c) => [c.name, coMatch(c, f, st)]))
-  const okName = (n) => (byName[n] ? coOk.get(n) : coMatch(null, f, st))
+  if (scope === 'companies') coOk.forEach((v, n) => { if (v) coOk.set(n, has(q, n, byName[n].cat, byName[n].hq, byName[n].about)) })
+  // People filters (and a People search) keep only companies with someone who matches.
+  const pBy = new Map()
+  const pq = scope === 'people' ? q : ''
+  if (peopleLevel(f) || pq) {
+    coOk.forEach((v, n) => {
+      if (!v) return
+      const ps = peopleOf(byName[n], st).filter((p) => personMatch(p, f, st) && has(pq, p.name, p.title, p.email))
+      if (ps.length) pBy.set(n, ps); else coOk.set(n, false)
+    })
+  }
+  const okName = (n) => (byName[n] ? coOk.get(n) : coMatch(null, f, st) && scope !== 'companies' && scope !== 'people' && !peopleLevel(f))
+  const sigQ = (g) => (scope === 'signals' ? has(q, g.title, g.intent, g.pitch, SIGNAL_KIND[g.kind]) : has(qAll, g.brand, g.title, g.intent, g.pitch))
 
-  const signals = typeOk(f, 'signal') ? st.signals.filter((g) => g.status !== 'dismissed' && okName(g.brand) && sigMatch(g, f) && has(q, g.brand, g.title, g.intent, g.pitch)) : []
-  const inbound = typeOk(f, 'inbound') && !on(f.kind) && !on(f.fit)
+  const signals = typeOk(f, 'signal') ? st.signals.filter((g) => g.status !== 'dismissed' && okName(g.brand) && sigMatch(g, f) && sigQ(g)) : []
+  const sideOk = scope === 'all' || scope === 'companies' || scope === 'people' // a Signals search hides the other kinds
+  const inbound = sideOk && typeOk(f, 'inbound') && !on(f.kind) && !on(f.fit)
     ? st.inbound.filter((x) => x.status === 'open' && okName(x.company) && (!on(f.recency) || daysAgo(x.at) <= REC[f.recency]) && (!on(f.relevance) || f.relevance.includes(inbRel(x)))
-      && (!on(f.deal) || f.deal.some((k) => inB(x.budget, DEAL_B[k]))) && (f.owner === 'mine' ? x.owner === me.id : f.owner === 'unclaimed' ? !x.owner : true) && has(q, x.company, x.name, x.summary))
+      && (!on(f.deal) || f.deal.some((k) => inB(x.budget, DEAL_B[k]))) && (f.owner === 'mine' ? x.owner === me.id : f.owner === 'unclaimed' ? !x.owner : true) && has(qAll, x.company, x.name, x.summary))
     : []
-  const momentList = typeOk(f, 'moment') && !on(f.kind) && !on(f.fit) && !on(f.relevance) && !on(f.deal)
+  const momentList = sideOk && typeOk(f, 'moment') && !on(f.kind) && !on(f.fit) && !on(f.relevance) && !on(f.deal)
     ? moments.filter((m) => daysTo(m.at) >= -0.5 && (!on(f.recency) || daysTo(m.at) <= REC[f.recency]) && (!on(f.cat) || m.cats.some((k) => f.cat.includes(k))))
       .map((m) => ({ ...m, brands: cos.filter((c) => m.cats.includes(c.cat) && coOk.get(c.name) && (inDb(c, st))).sort((a, b) => heatRaw(b, st) - heatRaw(a, st)) }))
-      .filter((m) => m.brands.length && has(q, m.name, ...m.brands.map((c) => c.name)))
+      .filter((m) => m.brands.length && has(qAll, m.name, ...m.brands.map((c) => c.name)))
     : []
-  const alerts = typeOk(f, 'alert') && !on(f.kind) && !on(f.fit) && f.owner !== 'unclaimed'
-    ? st.accounts.filter((a) => a.alerts.length && okName(a.brand) && (f.owner !== 'mine' || a.owner === me.id) && has(q, a.brand, ...a.alerts.map((x) => x.text)))
+  const alerts = sideOk && typeOk(f, 'alert') && !on(f.kind) && !on(f.fit) && f.owner !== 'unclaimed'
+    ? st.accounts.filter((a) => a.alerts.length && okName(a.brand) && (f.owner !== 'mine' || a.owner === me.id) && has(qAll, a.brand, ...a.alerts.map((x) => x.text)))
     : []
-  const follows = typeOk(f, 'follow') && !on(f.kind) && !on(f.fit) && f.owner !== 'unclaimed'
-    ? dueOf(st).filter((d) => okName(d.deal.brand) && (f.owner !== 'mine' || d.deal.owner === me.id) && has(q, d.deal.brand, d.text))
+  const follows = sideOk && typeOk(f, 'follow') && !on(f.kind) && !on(f.fit) && f.owner !== 'unclaimed'
+    ? dueOf(st).filter((d) => okName(d.deal.brand) && (f.owner !== 'mine' || d.deal.owner === me.id) && has(qAll, d.deal.brand, d.text))
     : []
 
   // Companies: every match when only company facts are filtered; otherwise the companies behind what matched.
-  const entity = sigLevel(f) || on(f.types) || on(f.owner)
+  const entity = sigLevel(f) || on(f.types) || on(f.owner) || scope === 'signals'
   const behind = new Set([...signals.map((g) => g.brand), ...inbound.map((x) => x.company), ...alerts.map((a) => a.brand), ...(on(f.types) ? momentList.flatMap((m) => m.brands.slice(0, 3).map((c) => c.name)) : [])])
   const sigBy = {}; signals.forEach((g) => { (sigBy[g.brand] ||= []).push(g) })
-  const companies = cos.filter((c) => coOk.get(c.name) && (entity ? behind.has(c.name) : has(q, c.name, c.cat, c.hq, c.about) || (sigBy[c.name]?.length > 0)))
-    .map((c) => ({ c, sigs: sigBy[c.name] || [], inb: inbound.filter((x) => x.company === c.name).length, heat: heat(c, st) }))
+  const companies = cos.filter((c) => coOk.get(c.name) && (entity ? behind.has(c.name) : !qAll || has(qAll, c.name, c.cat, c.hq, c.about) || (sigBy[c.name]?.length > 0)))
+    .map((c) => ({ c, sigs: sigBy[c.name] || [], inb: inbound.filter((x) => x.company === c.name).length, heat: heat(c, st), match: pBy.get(c.name)?.length || 0 }))
     .sort((a, b) => b.sigs.length - a.sigs.length || b.heat - a.heat || a.c.name.localeCompare(b.c.name))
   const people = typeOk(f, 'person') || !on(f.types)
-    ? companies.flatMap(({ c }) => peopleOf(c, st)).filter((p) => (!on(f.role) || f.role.includes(roleOf(p.title))) && (!q || has(q, p.name, p.title, p.brand) || has(q, p.brand)))
+    ? companies.flatMap(({ c }) => pBy.get(c.name) || peopleOf(c, st).filter((p) => personMatch(p, f, st)))
+      .filter((p) => !qAll || has(qAll, p.name, p.title, p.brand))
       .sort((a, b) => (b.born ? 1 : 0) - (a.born ? 1 : 0) || (isKnown(b, st) ? 1 : 0) - (isKnown(a, st) ? 1 : 0))
     : []
   return { signals: [...signals].sort((a, b) => b.at - a.at), companies, people, inbound, moments: momentList, alerts, follows }
+}
+
+/** Per-option counts for the side panel: how many results each option would give, all other filters kept.
+    Company facets count companies, signal facets count signals, people facets count people. */
+export function facetCounts(st, f) {
+  const out = {}
+  for (const def of FILTERS) {
+    if (def.group === 'activity' || def.id === 'co') continue
+    const base = run(st, { ...f, [def.id]: def.single ? '' : [] })
+    const m = {}
+    const bump = (k) => { m[k] = (m[k] || 0) + 1 }
+    if (def.group === 'company') {
+      for (const { c } of base.companies) {
+        if (def.id === 'funding') bump(c.funding)
+        else if (def.id === 'cat') bump(c.cat)
+        else if (def.id === 'city') bump(c.hq)
+        else if (def.id === 'rel') bump(relKind(c, st))
+        else if (def.id === 'size') for (const k of Object.keys(SIZE_B)) if (c.size != null && c.size >= SIZE_B[k][0] && c.size <= SIZE_B[k][1]) bump(k)
+      }
+    } else if (def.group === 'signal') {
+      for (const g of base.signals) {
+        if (def.id === 'kind') bump(g.kind)
+        else if (def.id === 'relevance') bump(g.relevance)
+        else if (def.id === 'fit') (g.fit || []).forEach(bump)
+        else if (def.id === 'recency') for (const k of Object.keys(REC)) if (daysAgo(g.at) <= REC[k]) bump(k)
+        else if (def.id === 'deal') for (const k of Object.keys(DEAL_B)) if (inB(g.dealSize, DEAL_B[k])) bump(k)
+      }
+    } else if (def.group === 'people') {
+      for (const p of base.people) {
+        if (def.id === 'role') bump(roleOf(p.title))
+        else if (def.id === 'dept') bump(deptOf(p.title))
+        else if (def.id === 'contact') bump(isKnown(p, st) ? 'known' : 'locked')
+        else if (def.id === 'pflag') { if (p.born) bump('new'); if (p.moved) bump('moved') }
+      }
+    }
+    out[def.id] = m
+  }
+  return out
+}
+
+/** Quick lookup for the search box: a few companies, people and signals by name, title or headline. */
+export function quickFind(st, q, scope = 'all') {
+  q = q.trim().toLowerCase()
+  if (!q) return { companies: [], people: [], signals: [] }
+  const hit = (...t) => t.some((x) => x && String(x).toLowerCase().includes(q))
+  const starts = (x) => (String(x).toLowerCase().startsWith(q) ? 0 : 1)
+  const cos = dbCompanies(st)
+  const companies = scope === 'all' || scope === 'companies' ? cos.filter((c) => hit(c.name, scope === 'companies' && c.cat, scope === 'companies' && c.hq)).sort((a, b) => starts(a.name) - starts(b.name) || a.name.localeCompare(b.name)).slice(0, 5) : []
+  const people = scope === 'all' || scope === 'people' ? cos.flatMap((c) => peopleOf(c, st)).filter((p) => hit(p.name, p.title)).sort((a, b) => starts(a.name) - starts(b.name)).slice(0, 5) : []
+  const signals = scope === 'all' || scope === 'signals' ? st.signals.filter((g) => g.status !== 'dismissed' && hit(g.title, g.intent, scope === 'all' && g.brand)).sort((a, b) => b.at - a.at).slice(0, 4) : []
+  return { companies, people, signals }
 }
 
 /* ───────── Heat: recent signals × relevance, plus relationship and open inbound ───────── */

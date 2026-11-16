@@ -321,6 +321,7 @@ function Preferences({ look }) {
             ))}
           </div>
         </Row>
+        <Row label="BD filters" tip="Where the global filter lives in Prospecting, Companies first and Stream. Bar: chips above the results · Side panel: every filter grouped down the left, with a count on each option. Phones always use a sheet."><Seg id="st-bdf" value={prefs.bdFilters || 'bar'} onChange={set('bdFilters')} options={[{ value: 'bar', label: 'Bar' }, { value: 'panel', label: 'Side panel' }]} /></Row>
         {exp !== 'vercel' && <Row label="Sidebar" tip="Panel · Rail: workspaces on a rail · Icons: collapsed · Stacked: every workspace in one list · Sections: Work, Company and your pods as flat lists"><Seg id="st-sidebar" value={prefs.sidebar} onChange={set('sidebar')} options={SIDEBARS} /></Row>}
         <Row label="Record peek" tip="Overlay: a sheet over the page (Attio) or the full page · Docked: the record opens in a panel beside the list, which shrinks to fit"><Seg id="st-peek" value={prefs.peek} onChange={set('peek')} options={[{ value: 'overlay', label: 'Overlay' }, { value: 'docked', label: 'Docked' }]} /></Row>
         <Row label="Assistant" tip={'Docked: Ask WLDD in the top bar opens a chat panel on any page · ' + MOD + 'J'}><Seg id="st-assistant" value={prefs.assistant} onChange={set('assistant')} options={[{ value: 'off', label: 'Off' }, { value: 'docked', label: 'Docked' }]} /></Row>

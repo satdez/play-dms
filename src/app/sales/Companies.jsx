@@ -1,7 +1,7 @@
 // Layout 3 · Companies first: everything rolls up to the company. A heat-ranked list beside one dossier.
 import { ChevronLeft, Building2, Flame } from 'lucide-react'
 import { go } from '../ui'
-import { useProspect, useNarrow, FilterBar, CoRow, BeyondRow, Dossier } from './kit'
+import { useProspect, useNarrow, FilterTop, FilterFrame, CoRow, BeyondRow, Dossier } from './kit'
 import { companyById } from './prospect'
 
 export function CompaniesFirst({ id }) {
@@ -12,8 +12,9 @@ export function CompaniesFirst({ id }) {
   const cur = picked || (!narrow ? list[0]?.c : null)
   const open = (c) => go('/bd/companies/' + c.id)
   return (
+    <FilterFrame className="bdv-wp-mf">
     <div className={'bdv-mf' + (picked ? ' has-cur' : '')}>
-      <div className="bdv-mf-top"><div className="d-head"><h1 className="d-h1">Companies</h1></div><FilterBar /></div>
+      <div className="bdv-mf-top"><div className="d-head"><h1 className="d-h1">Companies</h1></div><FilterTop /></div>
       <div className="bdv-mf-g">
         <div className="bdv-mf-l">
           <div className="bdv-lh"><Flame size={13} /><span className="grow">Heat</span><span className="mute num">{list.length}</span></div>
@@ -28,5 +29,6 @@ export function CompaniesFirst({ id }) {
         </div>
       </div>
     </div>
+    </FilterFrame>
   )
 }

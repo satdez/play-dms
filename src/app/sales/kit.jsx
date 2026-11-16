@@ -1,11 +1,11 @@
 // Prospecting kit: the global filter bar, saved views, sheets, rows and the company dossier.
 // Every non-Sources BD layout is built from these, over one shared slice.
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, Check, ChevronDown, SlidersHorizontal, Bookmark, Plus, KeyRound, UserCheck, Database, Radar, Pin, PinOff, Megaphone, ArrowUpRight,
-  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2,
+  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, Building2, User, CornerDownLeft, Layers3,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
@@ -20,7 +20,7 @@ import { relOf, stageLabel, isOpen } from './state'
 import { Src, Rel, Val, CaseChip, openAddLead } from './ui'
 import {
   FILTERS, filterById, activeCount, describe, run, companyHref, inDb, peopleOf, isKnown, sigsOf, apolloFind, apolloFetch, revealPeople,
-  roleOf, FRESH, kbOf, heat, fmtDays,
+  roleOf, FRESH, kbOf, heat, fmtDays, GROUPS, SCOPES, optsOf, facetCounts, quickFind, bdFilters, fetchName, companyByName,
 } from './prospect'
 
 /* ───────── Hooks ───────── */
@@ -42,15 +42,23 @@ export function useProspect() {
 const same = (a, b) => JSON.stringify({ ...F_EMPTY, ...a }) === JSON.stringify({ ...F_EMPTY, ...b })
 
 /* ───────── Filter bar ───────── */
-const INLINE = ['funding', 'size', 'cat', 'city', 'kind', 'recency', 'rel', 'fit', 'relevance', 'deal']
+const INLINE = ['funding', 'size', 'cat', 'city', 'kind', 'recency', 'relevance', 'role', 'dept']
+const isOn = (v) => (Array.isArray(v) ? v.length > 0 : !!v)
+const togOf = (def, f, k) => {
+  const v = f[def.id] ?? (def.single ? '' : [])
+  return { ...f, [def.id]: def.single ? (v === k ? '' : k) : v.includes(k) ? v.filter((x) => x !== k) : [...v, k] }
+}
 function FilterChip({ def, f, setF }) {
-  const v = f[def.id]
-  const act = Array.isArray(v) ? v.length > 0 : !!v
-  const lab = (k) => def.opts.find((o) => o[0] === k)?.[1] || k
+  const { st } = useProspect()
+  const v = f[def.id] ?? (def.single ? '' : [])
+  const opts = optsOf(def, st)
+  const act = isOn(v)
+  const lab = (k) => opts.find((o) => o[0] === k)?.[1] || k
   const val = !act ? null : Array.isArray(v) ? (v.length === 1 ? lab(v[0]) : v.length) : lab(v)
-  const tog = (k) => setF({ ...f, [def.id]: def.single ? (v === k ? '' : k) : v.includes(k) ? v.filter((x) => x !== k) : [...v, k] })
+  const [q, setQ] = useState('')
+  const list = def.search && q ? opts.filter((o) => o[1].toLowerCase().includes(q.toLowerCase())) : opts
   return (
-    <Popover align="left" width={220} trigger={({ toggle, open }) => (
+    <Popover align="left" width={def.search ? 250 : 220} trigger={({ toggle, open }) => (
       <span className={'bdv-fc' + (act ? ' on' : '') + (open ? ' open' : '')}>
         <button className="bdv-fc-b" onClick={toggle}>{def.label}{act ? <b className="num">{val}</b> : <ChevronDown size={12} className="mute" />}</button>
         {act && <button className="bdv-fc-x" aria-label={'Clear ' + def.label} onClick={() => setF({ ...f, [def.id]: def.single ? '' : [] })}><X size={11} /></button>}
@@ -58,13 +66,95 @@ function FilterChip({ def, f, setF }) {
     )}>
       {(close) => (
         <div className="bdv-pop-l">
-          {def.opts.map(([k, l]) => {
+          {def.search && <div className="inp bdv-fsrch"><Search size={13} /><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={'Find ' + def.label.toLowerCase()} aria-label={'Find ' + def.label} /></div>}
+          {list.slice(0, 60).map(([k, l]) => {
             const sel = def.single ? v === k : v.includes(k)
-            return <button key={k} onClick={() => { tog(k); if (def.single) close() }} aria-pressed={sel}>{l}{sel && <Check size={14} style={{ marginLeft: 'auto' }} />}</button>
+            return <button key={k} onClick={() => { setF(togOf(def, f, k)); if (def.single) close() }} aria-pressed={sel}>{def.id === 'co' && <BrandLogo name={l} size={16} />}{l}{sel && <Check size={14} style={{ marginLeft: 'auto' }} />}</button>
           })}
+          {!list.length && <div className="mute xs" style={{ padding: '8px 10px' }}>No match</div>}
         </div>
       )}
     </Popover>
+  )
+}
+
+/* ───────── Search: a scope, then instant results ─────────
+   Scope picks what the search looks at. Typing shows the best few companies, people and signals; Enter filters every tab by it;
+   a name we don't have can be fetched from Apollo. */
+const SCOPE_I = { all: Layers3, companies: Building2, people: User, signals: Radar }
+const SCOPE_PH = { all: 'Search signals, companies, people', companies: 'Company name, industry or city', people: 'Name or title, e.g. CMO', signals: 'Headline or intent, e.g. Series B' }
+export function SearchBox({ stacked }) {
+  const { st, f, setF } = useProspect()
+  const [text, setText] = useState(f.q)
+  const [open, setOpen] = useState(false)
+  const [hi, setHi] = useState(0)
+  const box = useRef(null)
+  useEffect(() => { setText(f.q) }, [f.q])
+  useEffect(() => {
+    if (!open) return
+    const out = (e) => { if (!box.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('pointerdown', out)
+    return () => document.removeEventListener('pointerdown', out)
+  }, [open])
+  const scope = f.scope || 'all'
+  const hits = useMemo(() => quickFind(st, text, scope), [st.signals, st.db, st.revealed, text, scope]) // eslint-disable-line react-hooks/exhaustive-deps
+  const rows = [
+    ...hits.companies.map((c) => ({ k: 'c' + c.id, kind: 'company', c, go: () => go(companyHref(c).slice(1)) })),
+    ...hits.people.map((p) => ({ k: 'p' + p.id, kind: 'person', p, go: () => { const c = companyByName(p.brand, st); if (c) go(companyHref(c).slice(1)) } })),
+    ...hits.signals.map((g) => ({ k: 'g' + g.id, kind: 'signal', g, go: () => { const c = companyByName(g.brand, st); if (c) go(companyHref(c).slice(1)) } })),
+  ]
+  const apply = () => { setF({ ...f, q: text.trim() }); setOpen(false) }
+  const exact = hits.companies.some((c) => c.name.toLowerCase() === text.trim().toLowerCase())
+  const canFetch = text.trim().length > 2 && !exact && (scope === 'all' || scope === 'companies')
+  const key = (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setHi((i) => Math.min(rows.length, i + 1)) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setHi((i) => Math.max(0, i - 1)) }
+    else if (e.key === 'Enter') { e.preventDefault(); if (open && hi > 0 && rows[hi - 1]) { rows[hi - 1].go(); setOpen(false) } else apply() }
+    else if (e.key === 'Escape') { if (open) { e.stopPropagation(); setOpen(false) } else if (text) { setText(''); setF({ ...f, q: '' }) } }
+  }
+  return (
+    <div className={'bdv-sb' + (stacked ? ' stacked' : '')} ref={box}>
+      <div className="inp bdv-sb-in">
+        <Popover align="left" width={170} trigger={({ toggle, open: o }) => (
+          <Tip label="Choose what to search"><button className={'bdv-scope' + (o ? ' open' : '') + (scope !== 'all' ? ' on' : '')} onClick={toggle} aria-label={'Search in ' + scope}>{(() => { const I = SCOPE_I[scope]; return <I size={13} /> })()}{SCOPES.find((x) => x[0] === scope)[1]}<ChevronDown size={12} className="bdv-scope-c" /></button></Tip>
+        )}>
+          {(close) => (
+            <div className="bdv-pop-l">
+              <div className="pop-h">Search in</div>
+              {SCOPES.map(([k, l]) => { const I = SCOPE_I[k]; return <button key={k} aria-pressed={scope === k} onClick={() => { setF({ ...f, scope: k }); close() }}><I size={14} className="mute" />{l}{scope === k && <Check size={14} style={{ marginLeft: 'auto' }} />}</button> })}
+            </div>
+          )}
+        </Popover>
+        <input value={text} onChange={(e) => { setText(e.target.value); setOpen(true); setHi(0) }} onFocus={() => text && setOpen(true)} onKeyDown={key}
+          placeholder={SCOPE_PH[scope]} aria-label="Search" aria-expanded={open} role="combobox" />
+        {(text || f.q) && <button className="bdv-sb-x" aria-label="Clear search" onClick={() => { setText(''); setF({ ...f, q: '' }) }}><X size={13} /></button>}
+      </div>
+      {open && text.trim() && (
+        <div className="bdv-sb-pop" role="listbox">
+          <button className={'bdv-sb-r all' + (hi === 0 ? ' hi' : '')} onMouseEnter={() => setHi(0)} onClick={apply}>
+            <Search size={14} className="mute" /><span className="grow ell">Filter every tab by <b>“{text.trim()}”</b>{scope !== 'all' && <span className="mute"> in {SCOPES.find((x) => x[0] === scope)[1]}</span>}</span><CornerDownLeft size={13} className="mute" />
+          </button>
+          {hits.companies.length > 0 && <div className="pop-h">Companies</div>}
+          {rows.map((r, i) => (
+            <span key={r.k}>
+              {r.kind === 'person' && rows[i - 1]?.kind !== 'person' && <div className="pop-h">People</div>}
+              {r.kind === 'signal' && rows[i - 1]?.kind !== 'signal' && <div className="pop-h">Signals</div>}
+              <button className={'bdv-sb-r' + (hi === i + 1 ? ' hi' : '')} onMouseEnter={() => setHi(i + 1)} onClick={() => { r.go(); setOpen(false) }}>
+                {r.kind === 'company' && <><BrandLogo name={r.c.name} size={20} /><span className="grow ell"><b>{r.c.name}</b> <span className="mute">{[r.c.funding, r.c.cat, r.c.hq].filter(Boolean).join(' · ')}</span></span>{!inDb(r.c, st) && <span className="chip">Apollo</span>}</>}
+                {r.kind === 'person' && <><Avatar user={{ name: r.p.name, hue: r.p.name.length * 41 }} size={20} /><span className="grow ell"><b>{r.p.name}</b> <span className="mute">{r.p.title} · {r.p.brand}</span></span>{isKnown(r.p, st) ? <span className="mute xs">On file</span> : <Lock size={12} className="mute" />}</>}
+                {r.kind === 'signal' && <><Radar size={14} className="mute" /><span className="grow ell">{r.g.title} <span className="mute">· {r.g.brand}</span></span><span className="mute xs">{fmt.agoShort(r.g.at)}</span></>}
+              </button>
+            </span>
+          ))}
+          {!rows.length && <div className="mute xs" style={{ padding: '6px 10px 8px' }}>Nothing in our DB</div>}
+          {canFetch && (
+            <button className="bdv-sb-r" onClick={() => { const c = fetchName(st, text.trim()); if (c) { setOpen(false); go(companyHref(c).slice(1)) } }}>
+              <KeyRound size={14} className="mute" /><span className="grow ell">Find <b>{text.trim()}</b> on Apollo</span><span className="mute xs">1 credit</span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -74,10 +164,10 @@ export function FilterBar({ children, inline = true }) {
   const narrow = useNarrow()
   const [sheet, setSheet] = useState(false)
   const n = activeCount(f)
-  const more = FILTERS.filter((x) => !INLINE.includes(x.id)).filter((x) => (Array.isArray(f[x.id]) ? f[x.id].length : f[x.id])).length
+  const more = FILTERS.filter((x) => !INLINE.includes(x.id)).filter((x) => isOn(f[x.id])).length
   return (
     <div className="bdv-fbar">
-      <div className="inp bdv-q"><Search size={14} /><input value={f.q} onChange={(e) => setF({ ...f, q: e.target.value })} placeholder="Search signals, companies, people" aria-label="Search" />{f.q && <button aria-label="Clear search" onClick={() => setF({ ...f, q: '' })}><X size={13} /></button>}</div>
+      <SearchBox />
       {inline && !narrow ? (
         <>
           {INLINE.map((id) => <FilterChip key={id} def={filterById[id]} f={f} setF={setF} />)}
@@ -89,36 +179,150 @@ export function FilterBar({ children, inline = true }) {
       <ViewsMenu />
       {n > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear</button>}
       <span className="bdv-cred m-hide"><Tip label="Apollo credits left"><span className="chip"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
+      {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
       {children}
       <FilterSheet open={sheet} onClose={() => setSheet(false)} />
     </div>
   )
 }
 
-/** Every filter as chip groups. Bottom sheet on phones, side sheet on desktop. */
-export function FilterSheet({ open, onClose }) {
-  const { f, setF, res } = useProspect()
-  const narrow = useNarrow()
-  const total = res.signals.length + res.companies.length + res.inbound.length + res.moments.length
-  const body = (
-    <div className="bdv-fsheet">
-      <div className="row"><b className="grow">Filters</b>{activeCount(f) > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear</button>}</div>
-      {FILTERS.map((def) => {
-        const v = f[def.id]
-        return (
-          <div key={def.id} className="sl-f">
-            <span>{def.label}</span>
-            <div className="sl-chips">{def.opts.map(([k, l]) => {
-              const sel = def.single ? v === k : v.includes(k)
-              return <button key={k} className={'chip sl-tog' + (sel ? ' on' : '')} aria-pressed={sel} onClick={() => setF({ ...f, [def.id]: def.single ? (sel ? '' : k) : sel ? v.filter((x) => x !== k) : [...v, k] })}>{l}</button>
-            })}</div>
-          </div>
-        )
-      })}
-      <div className="bdv-fsheet-a"><button className="b ink" onClick={onClose}><Check size={14} />Show <span className="num">{total}</span></button></div>
+/** Switch where filters live; Shell stores it in Settings › Preferences › BD filters. */
+export const setFilterMode = (mode) => window.dispatchEvent(new CustomEvent('bd:filters', { detail: { mode } }))
+
+/* ───────── Side panel ─────────
+   Search, saved views, then every filter grouped by what it narrows, each option with a live count. */
+function Facet({ def, f, setF, counts, st, open: open0 }) {
+  const v = f[def.id] ?? (def.single ? '' : [])
+  const act = isOn(v)
+  const [open, setOpen] = useState(open0 || act)
+  const [q, setQ] = useState('')
+  const [all, setAll] = useState(false)
+  const opts = optsOf(def, st)
+  const c = counts?.[def.id]
+  let list = q ? opts.filter((o) => o[1].toLowerCase().includes(q.toLowerCase())) : opts
+  if (c && !q && opts.length > 8) list = [...list].sort((a, b) => (isSel(def, v, b[0]) - isSel(def, v, a[0])) || ((c[b[0]] || 0) - (c[a[0]] || 0)))
+  const long = list.length > 6 && !all && !q
+  const shown = long ? list.slice(0, 6) : list.slice(0, 80)
+  return (
+    <div className={'bdv-fx' + (open ? ' open' : '')}>
+      <button className="bdv-fx-h" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="grow">{def.label}</span>
+        {act && <span className="bdv-fx-n num">{Array.isArray(v) ? v.length : 1}</span>}
+        {act && <span className="bdv-fx-c" role="button" tabIndex={0} aria-label={'Clear ' + def.label} onClick={(e) => { e.stopPropagation(); setF({ ...f, [def.id]: def.single ? '' : [] }) }}><X size={11} /></span>}
+        <ChevronDown size={13} className="mute bdv-fx-i" />
+      </button>
+      {open && (
+        <div className="bdv-fx-b">
+          {(def.search || opts.length > 10) && <div className="inp bdv-fsrch"><Search size={13} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={'Find ' + def.label.toLowerCase()} aria-label={'Find ' + def.label} /></div>}
+          {shown.map(([k, l]) => {
+            const sel = isSel(def, v, k)
+            const n = c ? c[k] || 0 : null
+            return (
+              <button key={k} className={'bdv-fo' + (sel ? ' on' : '') + (n === 0 && !sel ? ' zero' : '')} role={def.single ? 'radio' : 'checkbox'} aria-checked={!!sel} onClick={() => setF(togOf(def, f, k))}>
+                <span className={'bdv-ck' + (def.single ? ' r' : '')}>{sel && <Check size={10} strokeWidth={3} />}</span>
+                {def.id === 'co' && <BrandLogo name={l} size={16} />}
+                <span className="grow ell">{l}</span>
+                {n != null && <span className="num bdv-fo-n">{n}</span>}
+              </button>
+            )
+          })}
+          {long && <button className="bdv-more" onClick={() => setAll(true)}>Show all {list.length}</button>}
+          {!list.length && <div className="mute xs" style={{ padding: '4px 8px' }}>No match</div>}
+        </div>
+      )}
     </div>
   )
-  return narrow ? <BottomSheet open={open} onClose={onClose}>{body}</BottomSheet> : <Sheet open={open} onClose={onClose} width={420}>{body}</Sheet>
+}
+const isSel = (def, v, k) => (def.single ? v === k : v.includes(k)) ? 1 : 0
+
+export function FilterBody({ sheet, onDone }) {
+  const { st, f, setF, res } = useProspect()
+  const counts = useMemo(() => facetCounts(st, f), [st.signals, st.inbound, st.accounts, st.db, st.revealed, f]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [shut, setShut] = useState({})
+  const n = activeCount(f)
+  const cur = st.views.find((v) => same(v.f, f))
+  return (
+    <div className={'bdv-fb' + (sheet ? ' sheet' : '')}>
+      <div className="bdv-fb-h">
+        <b className="grow">Filters{n > 0 && <span className="num mute"> {n}</span>}</b>
+        {n > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear all</button>}
+        {!sheet && <Tip label="Filters as a bar"><button className="b ghost icon sm" onClick={() => setFilterMode('bar')} aria-label="Filters as a bar"><PanelLeftClose size={15} /></button></Tip>}
+      </div>
+      {!sheet && <SearchBox stacked />}
+      <div className="bdv-fb-sec">
+        <div className="bdv-fb-gh"><span className="grow">Saved views</span><ViewsMenu icon /></div>
+        <div className="bdv-fb-views">
+          {st.views.map((v) => (
+            <button key={v.id} className={'bdv-fv' + (cur?.id === v.id ? ' on' : '')} onClick={() => setF(cur?.id === v.id ? F_EMPTY : v.f)}>
+              {cur?.id === v.id ? <Check size={13} /> : <Bookmark size={13} className="mute" />}<span className="grow ell">{v.label}</span>{v.auto && <Tip label="Applies when BD opens"><Sparkle size={11} className="mute" /></Tip>}
+            </button>
+          ))}
+        </div>
+      </div>
+      {GROUPS.map((g) => (
+        <div key={g.id} className="bdv-fb-sec">
+          <button className="bdv-fb-gh" onClick={() => setShut((x) => ({ ...x, [g.id]: !x[g.id] }))} aria-expanded={!shut[g.id]}>
+            <span className="grow">{g.label}</span>
+            <Tip label={g.hint}><span className="bdv-fb-hint">{g.id === 'company' ? 'All tabs' : g.id === 'signal' ? 'Signals' : g.id === 'people' ? 'People' : 'Stream'}</span></Tip>
+            <ChevronDown size={13} className="mute bdv-fx-i" style={{ transform: shut[g.id] ? 'rotate(-90deg)' : '' }} />
+          </button>
+          {!shut[g.id] && FILTERS.filter((d) => d.group === g.id).map((d, i) => <Facet key={d.id} def={d} f={f} setF={setF} counts={counts} st={st} open={g.id !== 'activity' && i < 2 && d.id !== 'co'} />)}
+        </div>
+      ))}
+      <div className="bdv-fb-f">
+        <span className="grow mute xs num">{res.signals.length} signals · {res.companies.length} companies · {res.people.length} people</span>
+        {sheet && <button className="b ink" onClick={onDone}><Check size={14} />Show</button>}
+      </div>
+    </div>
+  )
+}
+
+/** Filters around a layout: the side panel on desktop when chosen, otherwise the bar (or the sheet on phones). */
+export function FilterFrame({ children, className = '' }) {
+  const narrow = useNarrow()
+  const panel = bdFilters() === 'panel' && !narrow
+  if (!panel) return children
+  return (
+    <div className={'bdv-wp ' + className}>
+      <aside className="bdv-fp" aria-label="Filters"><FilterBody /></aside>
+      <div className="bdv-wp-m">{children}</div>
+    </div>
+  )
+}
+/** The top of a layout: the filter bar, or (with the side panel) just the active filters as removable chips. */
+export function FilterTop({ children }) {
+  const narrow = useNarrow()
+  if (bdFilters() !== 'panel' || narrow) return <FilterBar>{children}</FilterBar>
+  return <ActiveChips>{children}</ActiveChips>
+}
+function ActiveChips({ children }) {
+  const { st, f, setF } = useProspect()
+  const chips = []
+  if (f.q) chips.push({ k: 'q', l: (f.scope && f.scope !== 'all' ? SCOPES.find((x) => x[0] === f.scope)[1] + ': ' : '') + '“' + f.q + '”', x: () => setF({ ...f, q: '' }) })
+  for (const def of FILTERS) {
+    const v = f[def.id]
+    if (!isOn(v)) continue
+    const opts = optsOf(def, st)
+    const lab = (k) => opts.find((o) => o[0] === k)?.[1] || k
+    for (const k of Array.isArray(v) ? v : [v]) chips.push({ k: def.id + k, l: def.label + ': ' + lab(k), x: () => setF(togOf(def, f, k)) })
+  }
+  return (
+    <div className="bdv-act">
+      {chips.map((c) => <span key={c.k} className="bdv-fc on"><span className="bdv-fc-b">{c.l}</span><button className="bdv-fc-x" aria-label={'Remove ' + c.l} onClick={c.x}><X size={11} /></button></span>)}
+      {!chips.length && <span className="mute xs">No filters · showing everything</span>}
+      {chips.length > 1 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear</button>}
+      <span className="grow" />
+      <span className="bdv-cred m-hide"><Tip label="Apollo credits left"><span className="chip"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
+      {children}
+    </div>
+  )
+}
+
+/** Every filter, grouped and counted. Bottom sheet on phones, side sheet on desktop. */
+export function FilterSheet({ open, onClose }) {
+  const narrow = useNarrow()
+  const body = <FilterBody sheet onDone={onClose} />
+  return narrow ? <BottomSheet open={open} onClose={onClose} tall>{body}</BottomSheet> : <Sheet open={open} onClose={onClose} width={400}>{body}</Sheet>
 }
 
 /* ───────── Saved views ───────── */
@@ -164,6 +368,7 @@ function ViewsMenu({ icon }) {
 /** Stream's sticky strip: one chip per saved view, plus New view and Filters. */
 export function ViewStrip() {
   const { st, f, setF } = useProspect()
+  const narrow = useNarrow()
   const [sheet, setSheet] = useState(false)
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
@@ -183,8 +388,9 @@ export function ViewStrip() {
           </form>
         ) : <button className="chip sl-tog bdv-plus" onClick={() => (n ? setNaming(true) : setSheet(true))}><Plus size={12} />New view</button>}
       </div>
-      <button className={'b sm' + (n ? ' on' : '')} onClick={() => setSheet(true)} aria-label="Filters"><SlidersHorizontal size={13} /><span className="m-hide">Filters</span>{n > 0 && <span className="num">{n}</span>}</button>
-      <ViewsMenu icon />
+      {(bdFilters() !== 'panel' || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={() => setSheet(true)} aria-label="Filters"><SlidersHorizontal size={13} /><span className="m-hide">Filters</span>{n > 0 && <span className="num">{n}</span>}</button>}
+      {(bdFilters() !== 'panel' || narrow) && <ViewsMenu icon />}
+      {!narrow && bdFilters() !== 'panel' && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
       <FilterSheet open={sheet} onClose={() => setSheet(false)} />
     </div>
   )

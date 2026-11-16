@@ -12,7 +12,7 @@ import { DEAL_STAGES, repOf } from './data'
 import { isOpen } from './state'
 import { openAddLead, dueOf } from './ui'
 import { stream, companyByName, peopleOf, isKnown, revealPeople, fmtDays } from './prospect'
-import { useProspect, useNarrow, useMq, ViewStrip, Enrich, BottomSheet, Dossier, BeyondRow, addSignal, addCompany } from './kit'
+import { useProspect, useNarrow, useMq, ViewStrip, FilterFrame, Enrich, BottomSheet, Dossier, BeyondRow, addSignal, addCompany } from './kit'
 
 const TYPE = { signal: ['Signal', Radar], inbound: ['Inbound', Inbox], moment: ['Moment', CalendarDays], alert: ['Account alert', AlertTriangle], follow: ['Follow-up', Clock] }
 
@@ -30,6 +30,7 @@ export function Stream() {
   }
   const dossier = co && <Dossier c={co} />
   return (
+    <FilterFrame className="bdv-wp-st">
     <div className="bdv-stream">
       <div className="bdv-st-main">
         <div className="d-head"><h1 className="d-h1">Stream</h1></div>
@@ -45,6 +46,7 @@ export function Stream() {
       <Rail />
       {narrow ? <BottomSheet open={!!co} onClose={() => setCo(null)} tall>{dossier}</BottomSheet> : <Sheet open={!!co} onClose={() => setCo(null)} width={620}>{dossier}</Sheet>}
     </div>
+    </FilterFrame>
   )
 }
 

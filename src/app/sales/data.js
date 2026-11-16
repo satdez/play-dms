@@ -459,7 +459,7 @@ const savedSearches = [
 ]
 
 /* Saved views: a name plus a global filter. One may auto-apply when the portal opens. */
-export const F_EMPTY = { q: '', funding: [], size: [], cat: [], city: [], kind: [], recency: '', rel: [], fit: [], relevance: [], deal: [], role: [], types: [], owner: '' }
+export const F_EMPTY = { q: '', scope: 'all', co: [], funding: [], size: [], cat: [], city: [], kind: [], recency: '', rel: [], fit: [], relevance: [], deal: [], role: [], dept: [], contact: '', pflag: [], types: [], owner: '' }
 const V = (id, label, f, auto = false) => ({ id, label, f: { ...F_EMPTY, ...f }, auto })
 const views = [
   V('v1', 'Fresh · 14 days', { recency: '14d' }, true),
