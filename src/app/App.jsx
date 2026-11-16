@@ -119,6 +119,30 @@ let BDL = 'sources'
 /** Workspaces the current persona can open, in ⌥1–3 order. */
 const seen = () => ROLES.filter((r) => VIEW.roles.includes(r.id))
 
+/** BD on phones: a thumb-reachable tab bar. The layout's home, Discover, Pipeline and one more; More opens the full menu. */
+function BdTabBar({ path, openNav }) {
+  const s = useStore()
+  const nav = useNav('bd', s)
+  const pick = ['/bd/discover', '/bd/pipeline', BDL === 'sources' ? '/bd/inbound' : '/bd/accounts']
+  const items = [nav[0], ...pick.map((to) => nav.find((n) => n.to === to)).filter(Boolean)]
+  const at = (to) => path === to || path.startsWith(to + '/')
+  return (
+    <nav className="bd-tabbar" aria-label="BD">
+      {items.map((x) => {
+        const I = x.icon
+        const on = at(x.to)
+        return (
+          <a key={x.to} href={'#' + x.to} className={'bd-tab' + (on ? ' on' : '')} aria-current={on ? 'page' : undefined}>
+            <span className="bd-tab-i"><I size={20} />{x.n > 0 && <span className="bd-tab-n num">{x.n > 99 ? '99+' : x.n}</span>}</span>
+            <span className="bd-tab-l">{x.label}</span>
+          </a>
+        )
+      })}
+      <button className="bd-tab" onClick={openNav} aria-label="More"><span className="bd-tab-i"><MoreHorizontal size={20} /></span><span className="bd-tab-l">More</span></button>
+    </nav>
+  )
+}
+
 function useNav(role, s) {
   return navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to))
 }
@@ -388,9 +412,10 @@ function Shell({ path }) {
       <div className={'d' + (prefs.collapsed && prefs.sidebar === 'icons' ? ' no-side' : '')}>
         <Sidebar role={role} switchRole={switchRole} path={path} look={look} open={navOpen} />
         {scrim}
-        <main className="d-main">
+        <main className={'d-main' + (mod === 'bd' ? ' has-tabbar' : '')}>
           <TopBar parts={parts} role={role} setCmd={setCmd} openNav={() => setNavOpen(true)} look={look} />
           {body}
+          {mod === 'bd' && <BdTabBar path={path} openNav={() => setNavOpen(true)} />}
         </main>
         {cmdk}
       </div>

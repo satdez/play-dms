@@ -370,3 +370,70 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .bdv-dos-k > div { min-width: 0; }
   .bdv-dos-k .sl-rel { white-space: normal; font-size: 11.5px; }
 }
+
+/* ═════════ BD on phones ═════════
+   BD is used mostly on phones: a bottom tab bar, 40px touch targets, 16px inputs (no iOS zoom), compact stats. */
+.bd-tabbar { display: none; }
+@media (max-width: 760px) {
+  .bd-tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; height: calc(58px + env(safe-area-inset-bottom)); padding: 0 6px env(safe-area-inset-bottom); background: color-mix(in oklab, var(--surface) 86%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); box-shadow: 0 -1px 0 var(--line); }
+  .bd-tab { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--muted); font-size: 11px; font-weight: 500; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+  .bd-tab.on { color: var(--fg); font-weight: 600; }
+  .bd-tab-i { position: relative; display: grid; place-items: center; width: 52px; height: 30px; border-radius: 15px; transition: background 150ms; }
+  .bd-tab.on .bd-tab-i { background: color-mix(in oklab, var(--fg) 11%, transparent); }
+  .bd-tab:active .bd-tab-i { background: color-mix(in oklab, var(--fg) 15%, transparent); }
+  .bd-tab-n { position: absolute; top: -2px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; display: grid; place-items: center; font-size: 10px; font-weight: 600; color: #fff; background: var(--pink); box-shadow: 0 0 0 2px var(--surface); }
+  .bd-tab-l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .d-main.has-tabbar .d-scroll { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .d-main.has-tabbar ~ [data-sonner-toaster], body:has(.has-tabbar) [data-sonner-toaster] { bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
+
+  /* Touch targets: 36–44px. */
+  .has-tabbar .d-top .b.icon, .has-tabbar .d-top .b.sm, .has-tabbar .d-top .b { min-width: 40px; min-height: 40px; }
+  .has-tabbar .b.sm { min-height: 36px; padding-left: 12px; padding-right: 12px; }
+  .has-tabbar .b.icon.sm { min-width: 36px; padding: 0; }
+  .has-tabbar .seg button { height: 36px; }
+  .has-tabbar .tabs button { height: 44px; }
+  .has-tabbar .chip.sl-tog, .bdv-bs .chip.sl-tog { height: 34px; padding: 0 12px; }
+  .has-tabbar .bdv-fc, .has-tabbar .bdv-fc-b { height: 36px; }
+  .bdv-ib { width: 34px; height: 34px; margin: -6px -8px -6px -6px; }
+  .has-tabbar .sl-step { gap: 6px; }
+  .has-tabbar .sl-step-i { width: 36px; height: 36px; border-radius: 10px; font-size: 13px; }
+  .bdv-fo, .bdv-fv, .bdv-fx-h { height: 44px; }
+  .has-tabbar .li { min-height: 52px; }
+
+  /* Inputs at 16px so iOS doesn't zoom in on focus. */
+  .has-tabbar input, .has-tabbar textarea, .bdv-bs input, .bdv-bs textarea, .sl-ask input, .sheet input, .sheet textarea { font-size: 16px; }
+  .has-tabbar .inp { height: 42px; }
+  .has-tabbar .bdv-sb-in, .has-tabbar .bdv-sb .bdv-sb-in { height: 42px; }
+
+  /* Readable small text. */
+  .has-tabbar .svc-c { font-size: 11.5px; }
+  .has-tabbar .sl-src { font-size: 11.5px; }
+
+  /* Compact stats: four in a row, not four big cards. */
+  .has-tabbar .metrics.sl-m4, .has-tabbar .metrics.sl-m4:has(> :nth-child(3):last-child), .has-tabbar .metrics { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+  .has-tabbar .metrics .metric, .has-tabbar .metrics .sl-mbtn { padding: 10px 12px; gap: 2px; }
+  .has-tabbar .metrics .metric + .metric, .has-tabbar .metrics .sl-mbtn + .metric, .has-tabbar .metrics .metric + .sl-mbtn { box-shadow: -1px 0 0 var(--line); }
+  .has-tabbar .metric-v { font-size: 17px; }
+  .has-tabbar .metric-l { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Pipeline header: search and add on one row. */
+  .has-tabbar .sl-pipe .d-head { flex-wrap: nowrap; gap: 8px; }
+  .has-tabbar .sl-pipe .d-head .inp { flex: 1; width: auto !important; }
+  .has-tabbar .sl-pipe .d-head .b.ink { min-width: 42px; min-height: 42px; }
+
+  /* Tab rows that scroll show it. */
+  .has-tabbar .bdv-tabrow .tabs { mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+
+  /* Deal: the next step wraps instead of clipping. */
+  .has-tabbar .sl-nextb { flex-wrap: wrap; row-gap: 4px; }
+  .has-tabbar .sl-nextb input { flex: 1 1 100%; order: 2; }
+}
+@media (max-width: 760px) {
+  /* Small controls keep their look but get a finger-sized hit area. */
+  .has-tabbar .sl-ck, .has-tabbar .bdv-more, .has-tabbar .sl-saved button, .has-tabbar .sl-saved > a, .has-tabbar .kb-sort, .has-tabbar th button { position: relative; }
+  .has-tabbar .sl-ck::after, .has-tabbar .bdv-more::after, .has-tabbar th button::after { content: ''; position: absolute; inset: -12px; }
+  .has-tabbar .chip.sl-sv { height: 34px; padding: 0 2px 0 10px; }
+  .has-tabbar .chip.sl-sv button:last-child { width: 32px; height: 34px; display: grid; place-items: center; }
+  .has-tabbar .chip.sl-sv button:first-child { height: 34px; display: inline-flex; align-items: center; gap: 5px; }
+  .has-tabbar .bdv-more { padding: 8px 0; }
+}
