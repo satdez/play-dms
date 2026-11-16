@@ -602,7 +602,7 @@ export function MomentRow({ m }) {
             <span className="grow">{late ? <>Brief this week: creators need about two weeks, and {m.name} is {fmtDays(d).toLowerCase()}.</> : <>Pitch by <b>{fmt.date(brief)}</b> so creators have two weeks before {m.name}.</>}</span>
             <Src s="AI" />
           </div>
-          <div className="bdv-mo-h"><span className="grow">{m.brands.length} {m.brands.length === 1 ? 'brand fits' : 'brands fit'} · hottest first</span><span className="mute xs">{[...new Set(m.cats)].join(' · ')}</span></div>
+          <div className="bdv-mo-h"><span className="grow">{m.brands.length} {m.brands.length === 1 ? 'brand fits' : 'brands fit'}</span><span className="mute xs">Hottest first</span></div>
           <div className="list">
             {list.map((c) => (
               <div key={c.id} className="li bdv-mo-r">

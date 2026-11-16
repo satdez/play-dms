@@ -186,15 +186,22 @@ export function AskDialog() {
     <AnimatePresence>
       {open && (
         <>
-          <motion.div className="sl-ask-scrim" onClick={() => setOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} />
-          <motion.div className="sl-ask" role="dialog" aria-label="Ask" initial={{ opacity: 0, y: -8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.12 } }} transition={{ duration: 0.2, ease: EASE }}>
-            <form className="sl-ask-in" onSubmit={(e) => { e.preventDefault(); ask(q) }}>
+          <motion.div className="sl-ask-scrim" onClick={() => setOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} />
+          <motion.aside className="sl-ask" role="dialog" aria-label="Ask" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%', transition: { duration: 0.2, ease: EASE } }} transition={{ duration: 0.32, ease: DRAWER }}>
+            <div className="sl-ask-hd">
               <MessageCircleQuestion size={16} className="mute" />
-              <input ref={inp} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask about any brand" aria-label="Ask about any brand" />
-              <button className="b ink icon sm" type="submit" disabled={!q.trim()} aria-label="Ask"><ArrowUp size={14} /></button>
-            </form>
+              <b className="grow">Ask</b>
+              {thread.length > 0 && <button className="b sm ghost" onClick={() => setThread([])}>New chat</button>}
+              <button className="b ghost icon sm" onClick={() => setOpen(false)} aria-label="Close"><X size={15} /></button>
+            </div>
             <div className="sl-ask-body">
-              {!thread.length && <div className="sl-ask-sug">{SUGGEST.map((x) => <button key={x} className="chip" onClick={() => ask(x)}>{x}</button>)}</div>}
+              {!thread.length && (
+                <div className="sl-ask-empty">
+                  <div className="sl-ask-et">Ask about any brand</div>
+                  <div className="mute xs">Answers come from what we already hold. Every fact shows its source; anything we don’t know says Unknown.</div>
+                  <div className="sl-ask-sug">{SUGGEST.map((x) => <button key={x} className="chip" onClick={() => ask(x)}>{x}</button>)}</div>
+                </div>
+              )}
               {thread.map((m) => (
                 <div key={m.id} className="sl-ask-m">
                   <div className="sl-ask-q">{m.q}</div>
@@ -207,7 +214,11 @@ export function AskDialog() {
               ))}
               <div ref={end} />
             </div>
-          </motion.div>
+            <form className="sl-ask-in" onSubmit={(e) => { e.preventDefault(); ask(q) }}>
+              <input ref={inp} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask about any brand" aria-label="Ask about any brand" />
+              <button className="b ink icon sm" type="submit" disabled={!q.trim()} aria-label="Ask"><ArrowUp size={14} /></button>
+            </form>
+          </motion.aside>
         </>
       )}
     </AnimatePresence>,

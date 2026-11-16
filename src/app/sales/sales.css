@@ -376,3 +376,16 @@ html[data-motion='reduced'] .sl-tabnew { animation: none; }
 .sl-board2.panning * { cursor: grabbing !important; }
 .sl-board2::-webkit-scrollbar { height: 8px; }
 .sl-board2::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 8px; }
+
+/* ───── Ask: a panel on the right ───── */
+.sl-ask-scrim { background: color-mix(in oklab, #000 18%, transparent); }
+.sl-ask { top: 0; right: 0; bottom: 0; left: auto; width: min(460px, 100vw); margin: 0; max-height: none; border-radius: 0; display: flex; flex-direction: column; background: var(--surface); box-shadow: -1px 0 0 var(--line), -24px 0 60px -24px rgba(0,0,0,.35); }
+.sl-ask-hd { display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 12px 0 18px; border-bottom: 1px solid var(--line); flex: none; }
+.sl-ask-hd b { font-weight: 600; font-size: 14px; }
+.sl-ask-body { flex: 1; min-height: 0; overflow: auto; padding: 16px 18px 18px; }
+.sl-ask-empty { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+.sl-ask-et { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+.sl-ask-empty .sl-ask-sug { margin-top: 8px; }
+.sl-ask-in { flex: none; margin: 0 12px 12px; padding: 6px 6px 6px 14px; border: 0; border-radius: 12px; background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line); }
+.sl-ask-in:focus-within { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-2), 0 0 0 3px color-mix(in oklab, var(--fg) 7%, transparent); }
+@media (max-width: 760px) { .sl-ask { width: 100vw; } }
