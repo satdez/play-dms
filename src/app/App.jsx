@@ -328,7 +328,12 @@ function Shell({ path }) {
   }, [])
   const scrim = <div className={'m-scrim' + (navOpen ? ' on' : '')} onClick={() => setNavOpen(false)} aria-hidden />
 
-  const switchRole = (r) => { if (r === role) return; setRole(r); go(r === 'bd' ? BD_HOME[BDL] : '/home') }
+  const switchRole = (r) => {
+    const home = r === 'bd' ? BD_HOME[BDL] : '/home'
+    // Already this workspace: from Home or Settings, the click still takes you in; inside it, nothing changes.
+    if (r === role) { if (mod !== r && mod !== 'home') go(home); return }
+    setRole(r); go(home)
+  }
   // BD has no Inbox: its home is the layout's first page (the Daily Feed in Sources).
   useEffect(() => { if (mod === 'home' && role === 'bd') location.replace('#' + BD_HOME[BDL]) }, [mod, role])
   // A page another BD layout owns lands on this layout's home, so the sidebar always shows where you are.
