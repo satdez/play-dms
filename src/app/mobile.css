@@ -300,7 +300,7 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .sl-sig-d, .sl-brief > div, .sl-notes > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .sl-dh { flex-wrap: wrap; }
   .sl-dh .sl-step { width: 100%; }
-  .sl-filters > .seg { max-width: 100%; overflow-x: auto; }
+  .sl-filters > .seg { flex: none; max-width: 100%; overflow-x: auto; }
   .sl-dec-a, .sl-dec-n { justify-content: flex-start; }
   .sl-dec-n .grow { flex-basis: 100%; }
   .sl-mail-a { flex-wrap: wrap; }
