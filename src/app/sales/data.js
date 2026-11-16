@@ -78,26 +78,90 @@ const CITY = { Delhi: 'Delhi NCR', Gurugram: 'Delhi NCR', Mumbai: 'Mumbai', Beng
 const KNOWN = { 'Ather Energy': [0], Mokobara: [0], Licious: [1], 'Cult.fit': [0, 2], 'Rare Rabbit': [1], PhonePe: [0], Lenskart: [0, 1], Zepto: [0, 1], boAt: [0], Mamaearth: [0], Nykaa: [0], CRED: [0], Myntra: [0, 1], Groww: [0], Noise: [0], 'Sugar Cosmetics': [0], Blinkit: [0], Dream11: [0], 'Urban Company': [1], Bisleri: [0], Spinny: [1], 'Tata Neu': [0], 'Nothing India': [0], Swiggy: [0], Meesho: [0], 'Bira 91': [0], Ixigo: [0], Wakefit: [0], 'Bombay Shaving Company': [0], 'Kotak 811': [1] }
 const MOVED = { 'Ather Energy': ['Zepto', 0], Mokobara: ['Myntra', 0], 'Third Wave Coffee': ['Swiggy Instamart', 1], Spinny: ['CRED', 1] }
 
-export const brands = BRANDS.map((b, i) => {
+/** One brand record with its people. `known`/`moved` say who we already know; `n` how many people Apollo lists. */
+function mkBrand(b, i, { known = KNOWN, moved = MOVED, n } = {}) {
   const id = slug(b.name)
   const dom = domainOf(b.name)
-  const people = Array.from({ length: 3 + (i % 3 === 0 ? 1 : 0) }, (_, k) => {
+  const count = n ? n(i) : 3 + (i % 3 === 0 ? 1 : 0)
+  const people = Array.from({ length: count }, (_, k) => {
     const first = FIRST[(i * 5 + k * 7) % FIRST.length], last = LAST[(i * 3 + k * 11) % LAST.length]
     const title = k === 0 ? TITLES[(i + 1) % 3] : TITLES[(i + k * 2) % TITLES.length]
     return {
       id: id + '-' + k, name: `${first} ${last}`, title, brand: b.name,
       email: `${first.toLowerCase()}${k % 2 ? '.' + last.toLowerCase() : ''}@${dom}`,
       phone: k === 0 ? '+91 98' + String(10000000 + ((i * 7919 + k * 104729) % 89999999)).slice(0, 8) : null,
-      onFile: (KNOWN[b.name] || []).includes(k),
-      moved: MOVED[b.name]?.[1] === k ? MOVED[b.name][0] : null,
+      onFile: (known[b.name] || []).includes(k),
+      moved: moved[b.name]?.[1] === k ? moved[b.name][0] : null,
       city: CITY[b.hq] || b.hq,
     }
   })
-  return { ...b, id, domain: dom, people }
-})
-export const brandByName = Object.fromEntries(brands.map((b) => [b.name.toLowerCase(), b]))
+  return { ...b, id, domain: dom, people, funding: fundOf(b.stage) }
+}
+/** Funding bucket used by the global filter. */
+export const FUNDING = ['Seed', 'Series A', 'Series B', 'C+', 'Public', 'Bootstrapped']
+function fundOf(stage = '') {
+  if (/^Series [AB]$/.test(stage)) return stage
+  if (/^Seed/.test(stage)) return 'Seed'
+  if (/Bootstrapped|^Private/.test(stage)) return 'Bootstrapped'
+  if (/Public|unit|Acquired|merger/.test(stage)) return 'Public'
+  return 'C+'
+}
+export const brands = BRANDS.map((b, i) => mkBrand(b, i))
+
+/* ───────── More companies in our DB (prospecting) ─────────
+   Smaller D2C brands the signals engine picked up. Kept out of `brands` so the Sources Discover table stays as it was. */
+const EXTRA_RAW = [
+  B('Foxtale', 'Beauty', 'Mumbai', 140, 1.1e9, 'Series B', '#f26b3a', 'Skincare for Gen Z, sunscreen-led.', ['Minimalist', 'Dot & Key', 'Pilgrim']),
+  B('Farmley', 'Food', 'Delhi', 160, 2.2e9, 'Series B', '#5b8c2a', 'Healthy snacking: dry fruit, makhana, date bites.', ['Happilo', 'Nutraj', 'Yoga Bar']),
+  B('Rage Coffee', 'Beverage', 'Delhi', 110, 7.5e8, 'Series B', '#1c1c1c', 'Plant-based instant coffee, loud packaging.', ['Sleepy Owl', 'Nescafé', 'Blue Tokai']),
+  B('Zouk', 'Fashion', 'Mumbai', 150, 9.0e8, 'Series B', '#a4343a', 'Vegan bags and footwear with Indian prints.', ['Hidesign', 'Caprese', 'Mokobara']),
+  B('Bombay Shirt Company', 'Fashion', 'Mumbai', 190, 1.4e9, 'Series B', '#20304f', 'Made-to-measure shirts, stores in 12 cities.', ['Rare Rabbit', 'Andamen', 'Snitch']),
+  B('Super You', 'Food', 'Mumbai', 70, 3.5e8, 'Series A', '#ff5a1f', 'Protein wafers and chips, celebrity-founded.', ['The Whole Truth', 'Yoga Bar', 'RiteBite']),
+  B('Perfora', 'Personal care', 'Gurugram', 80, 4.0e8, 'Series A', '#2bb3a3', 'Oral care: electric brushes and gentle pastes.', ['Colgate', 'Oral-B', 'Bombay Shaving Company']),
+  B('Bummer', 'Fashion', 'Bengaluru', 60, 2.0e8, 'Series A', '#ffd23f', 'Loud-print innerwear and loungewear.', ['XYXX', 'Jockey', 'Bewakoof']),
+  B('Lahori Zeera', 'Beverage', 'Chandigarh', 180, 3.0e9, 'Series A', '#c8102e', 'Desi soft drinks, zeera and shikanji.', ['Paper Boat', 'Bisleri', 'Coca-Cola']),
+  B('Traya', 'Personal care', 'Mumbai', 600, 2.5e9, 'Series B', '#3c2a4d', 'Hair-fall treatment with doctors and diet.', ['Mamaearth', 'Man Matters', 'Bombay Shaving Company']),
+  B('Giva', 'Jewellery', 'Bengaluru', 900, 3.2e9, 'Series C', '#1f1f1f', 'Silver and lab-grown diamond jewellery.', ['Tanishq', 'CaratLane', 'Palmonas']),
+  B('The Souled Store', 'Fashion', 'Mumbai', 400, 3.6e9, 'Series B', '#d7282f', 'Pop-culture merch and casualwear.', ['Bewakoof', 'Redwolf', 'Snitch']),
+]
+const KNOWN_X = { Traya: [1], 'The Souled Store': [0], Perfora: [0] }
+const MOVED_X = { Foxtale: ['Nykaa', 1], Traya: ['Mamaearth', 0] }
+export const extras = EXTRA_RAW.map((b, i) => mkBrand(b, i + 50, { known: KNOWN_X, moved: MOVED_X }))
+
+/* ───────── Apollo (simulated): companies and people we don't have yet ─────────
+   Search beyond our DB and Discover fetches move them into our DB for good. */
+const APOLLO_RAW = [
+  B('Snackible', 'Food', 'Mumbai', 90, 3.0e8, 'Series A', '#e94e1b', 'Baked snacks and healthy namkeen.', []),
+  B('Wow! Momo', 'Food', 'Kolkata', 4000, 4.5e9, 'Series D', '#e2001a', 'Momo chain, 600+ outlets.', []),
+  B('Chumbak', 'Home', 'Bengaluru', 450, 1.2e9, 'Series C', '#ef4b6c', 'Quirky home décor and accessories.', []),
+  B('Mylo', 'Personal care', 'Gurugram', 180, 6.0e8, 'Series B', '#6c3fb4', 'Parenting app and baby care products.', []),
+  B('Sirona', 'Personal care', 'Delhi', 120, 4.5e8, 'Series B', '#e84b8a', 'Feminine hygiene, intimate care.', []),
+  B('Pee Safe', 'Personal care', 'Gurugram', 150, 5.0e8, 'Series B', '#00a3e0', 'Hygiene and wellness essentials.', []),
+  B('Beardo', 'Personal care', 'Ahmedabad', 200, 1.1e9, 'Acquired', '#111111', 'Men’s grooming, beard first.', []),
+  B('The Man Company', 'Personal care', 'Gurugram', 170, 1.5e9, 'Series B', '#1b1b1b', 'Premium men’s grooming.', []),
+  B('Yoga Bar', 'Food', 'Bengaluru', 300, 1.6e9, 'Acquired', '#f5a623', 'Protein bars and muesli, now ITC.', []),
+  B('Epigamia', 'Food', 'Mumbai', 550, 1.8e9, 'Series C', '#d6006e', 'Greek yogurt and dairy snacks.', []),
+  B('Paper Boat', 'Beverage', 'Bengaluru', 700, 4.2e9, 'Series D', '#8bc5e6', 'Nostalgic Indian drinks.', []),
+  B('Swiss Beauty', 'Beauty', 'Delhi', 380, 2.0e9, 'Bootstrapped', '#111111', 'Affordable colour cosmetics.', []),
+  B('Dot & Key', 'Beauty', 'Kolkata', 160, 1.8e9, 'Acquired', '#ff7eb6', 'Fruit-led skincare, a Nykaa brand.', []),
+  B('mCaffeine', 'Beauty', 'Mumbai', 190, 1.9e9, 'Series C', '#5a3825', 'Caffeinated personal care.', []),
+  B('Neeman’s', 'Fashion', 'Hyderabad', 140, 6.5e8, 'Series B', '#2d4a3e', 'Sustainable everyday footwear.', []),
+  B('Uppercase', 'Travel', 'Mumbai', 110, 7.0e8, 'Series B', '#ff6f00', 'Recycled-plastic luggage and backpacks.', []),
+  B('Clovia', 'Fashion', 'Gurugram', 600, 2.8e9, 'Acquired', '#e4007c', 'Lingerie and sleepwear.', []),
+  B('Libas', 'Fashion', 'Delhi', 350, 5.0e9, 'Series B', '#7a2048', 'Ethnic wear for women.', []),
+  B('Suta', 'Fashion', 'Mumbai', 130, 6.0e8, 'Series A', '#b5651d', 'Handwoven sarees and everyday ethnic.', []),
+  B('Nua', 'Personal care', 'Mumbai', 95, 4.0e8, 'Series B', '#f04e98', 'Period care by subscription.', []),
+  B('BlueStone', 'Jewellery', 'Bengaluru', 2200, 7.7e9, 'Pre-IPO', '#1a3c6e', 'Diamond and gold jewellery.', []),
+  B('Kuku FM', 'OTT', 'Mumbai', 400, 1.6e9, 'Series C', '#ff4d4d', 'Audio stories and audiobooks.', []),
+  B('Pocket FM', 'OTT', 'Bengaluru', 1100, 1.0e10, 'Series D', '#ff5a36', 'Audio series in Indian languages.', []),
+  B('The Ayurveda Co', 'Beauty', 'Delhi', 160, 8.0e8, 'Series B', '#3d6b35', 'Ayurvedic skincare for everyday use.', []),
+  B('Boheco', 'Personal care', 'Mumbai', 45, null, 'Seed', '#2f6b3c', 'Hemp-based wellness.', []),
+]
+export const apollo = APOLLO_RAW.map((b, i) => mkBrand(b, i + 90, { known: {}, moved: {}, n: (k) => 2 + (k % 2) }))
+
+export const brandByName = Object.fromEntries([...brands, ...extras, ...apollo].map((b) => [b.name.toLowerCase(), b]))
 export const brandOf = (name) => (name ? brandByName[String(name).toLowerCase()] : null)
-export const brandById = (id) => brands.find((b) => b.id === id)
+export const brandById = (id) => brands.find((b) => b.id === id) || extras.find((b) => b.id === id) || apollo.find((b) => b.id === id)
 
 /** Budget estimate worked out from revenue: marketing share by category, then the creator/social slice. */
 const MKT = { Beauty: 0.14, Fashion: 0.1, Beverage: 0.12, Food: 0.08, 'Personal care': 0.13, EdTech: 0.18, Fintech: 0.09, Electronics: 0.08, Travel: 0.07, Mobility: 0.05, Jewellery: 0.04, Home: 0.07, Fitness: 0.09, Services: 0.08, 'Food delivery': 0.06, 'E-commerce': 0.06, Auto: 0.04, Eyewear: 0.08, 'Quick commerce': 0.05, Gaming: 0.12, OTT: 0.15 }
@@ -138,7 +202,7 @@ export function proofFor(brandName, n = 2) {
 /* ───────── Daily Feed signals ───────── */
 const S = (id, brand, kind, title, at, why, angle, rel) => ({ id, brand, kind, title, at, why, angle, rel, rating: null, status: 'new' })
 export const SIGNAL_KIND = { funding: 'Funding', launch: 'Launch', leadership: 'Leadership', expansion: 'Expansion', hiring: 'Hiring', spend: 'Spend' }
-const signals = [
+const signals0 = [
   S('g1', 'Ather Energy', 'launch', 'Rizta rolls out in 12 new cities', ago(0, 2), 'New cities need local awareness fast; launches are when creator budgets open.', 'City-by-city creator relay, Rapido proof for mobility.', { kind: 'moved', note: 'Ex-Zepto contact is now Head of Brand' }),
   S('g2', 'Sleepy Owl', 'funding', 'Raised ₹120Cr Series C', ago(0, 5), 'Fresh money usually goes to brand and distribution in the next two quarters.', 'Own late-night cravings, Zepto Café proof.', { kind: 'cold' }),
   S('g3', 'Mokobara', 'leadership', 'New CMO joins from Myntra', ago(0, 7), 'A new CMO reviews agencies in the first 90 days.', 'Lead with the Myntra EORS case they already know.', { kind: 'moved', note: 'Their new CMO worked with us at Myntra' }),
@@ -153,6 +217,104 @@ const signals = [
   S('g12', 'Bira 91', 'launch', 'New summer variant announced', ago(4), 'Seasonal launch with a short window.', 'Summer meme takeover; Netflix-scale reach.', { kind: 'known', note: 'One contact on file' }),
   S('g13', 'Wakefit', 'funding', 'Files for IPO', ago(5), 'Pre-IPO brands invest in brand recall.', 'Sleep memes, always-on.', { kind: 'known', note: 'One contact on file' }),
 ]
+/* Base enrichment for every signal: intent, service fit, BD relevance, likely deal size, a pitch line, and who to talk to.
+   `born` is a person the signal itself introduced (a new CMO): it lands in People on its own. */
+const E = (intent, fit, relevance, dealSize, pitch, peopleIds = [], born = null) => ({ intent, fit, relevance, dealSize, pitch, peopleIds, born })
+const ENRICH = {
+  g1: E('Awareness for city launches', ['inf', 'amp'], 'high', 45e5, 'Rizta: one creator per new city, live in 10 days.', ['ather-energy-0']),
+  g2: E('Brand push after funding', ['memd', 'amp'], 'high', 30e5, 'Own the 11pm craving before Diwali.', ['sleepy-owl-0', 'sleepy-owl-1']),
+  g3: E('Agency review under a new CMO', ['inf', 'amp'], 'high', 28e5, 'Myntra EORS, now for luggage.', ['mokobara-0']),
+  g4: E('Quick festive wins', ['memd', 'inf'], 'med', 38e5, null, [], { name: 'Ritika Bhandari', title: 'Head of Brand' }),
+  g5: E('Visibility in quick commerce', ['memd', 'amp'], 'med', 18e5, 'Late-night snack memes, Zepto Café style.', ['the-whole-truth-0']),
+  g6: E('Retention; renewal at risk', ['memd', 'inf'], 'high', 60e5, 'Blu Zero sequel before the renewal call.', ['lenskart-0']),
+  g7: E('More drops, more creators', ['inf', 'amp'], 'high', 24e5, 'A meme for every weekly drop.', ['snitch-0']),
+  g8: E('Local launches in tier-2', ['inf', 'solo'], 'med', 32e5, null, ['cult-fit-0', 'cult-fit-2']),
+  g9: E('Always-on café openings', ['inf', 'amp'], 'med', 20e5, 'One opening, one creator, every week.', ['blue-tokai-0']),
+  g10: E('Building in-house social', ['memd', 'tt'], 'low', 25e5, null, ['duolingo-india-0']),
+  g11: E('Warm path to a first brief', ['memd', 'inf'], 'high', 15e5, 'Instamart Diwali playbook for café launches.', ['third-wave-coffee-1']),
+  g12: E('Seasonal launch window', ['memd', 'amp'], 'med', 22e5, null, ['bira-91-0']),
+  g13: E('Brand recall before IPO', ['memd', 'amp'], 'med', 28e5, null, ['wakefit-0']),
+}
+const SX = (id, brand, kind, title, at, why, angle, rel, en) => ({ ...S(id, brand, kind, title, at, why, angle, rel), ...en })
+const COLD = { kind: 'cold' }
+const signalsNew = [
+  SX('g14', 'Foxtale', 'funding', 'Raised ₹150Cr Series B', ago(2, 3), 'Series B skincare brands double creator spend within two quarters.', 'Sunscreen memes for the Gen Z shelf.', { kind: 'moved', note: 'Ex-Nykaa contact is now Head of Brand' }, E('Scale brand after funding', ['inf', 'memd', 'amp'], 'high', 35e5, 'Make SPF the meme of the winter.', ['foxtale-0', 'foxtale-1'])),
+  SX('g15', 'Foxtale', 'leadership', 'Hires a Head of Brand from Nykaa', ago(4), 'She ran Pink Friday with us; first 90 days decide the agency roster.', 'Lead with Pink Friday numbers.', { kind: 'moved', note: 'Worked with us at Nykaa' }, E('New brand head, roster review', ['inf', 'amp'], 'high', 30e5, 'Pink Friday, now for Foxtale.', ['foxtale-1'])),
+  SX('g16', 'Foxtale', 'launch', 'Sunscreen range goes to Blinkit and Zepto', ago(6), 'Quick commerce shelves reward impulse; memes drive the impulse.', 'Zepto Café late-night playbook.', COLD, E('Visibility in quick commerce', ['memd', 'amp'], 'med', 18e5, null, ['foxtale-0'])),
+  SX('g17', 'Foxtale', 'hiring', 'Hiring 6 roles in social and creator marketing', ago(9), 'A growing in-house team still outsources scale.', 'Offer the creator bench, not the strategy.', COLD, E('Build creator programme', ['inf', 'cc'], 'med', 20e5, null, ['foxtale-2'])),
+  SX('g18', 'Foxtale', 'expansion', 'Enters the Middle East through Noon', ago(12), 'New market, no local voice yet.', 'Gulf Indian-diaspora creators.', COLD, E('Launch in a new market', ['inf'], 'low', 15e5, null)),
+  SX('g19', 'Farmley', 'funding', 'Raised ₹80Cr Series B', ago(1, 4), 'Snacking brands put new money into festive gifting.', 'Diwali gifting memes plus creator unboxings.', COLD, E('Festive push after funding', ['inf', 'memd'], 'high', 26e5, 'Make makhana the Diwali flex.', ['farmley-0'])),
+  SX('g20', 'Farmley', 'launch', 'Makhana range launches for Diwali gifting', ago(3, 2), 'Five days to Diwali; gifting decisions happen on Instagram.', 'Unboxing relay with 30 nano creators.', COLD, E('Gifting window', ['inf', 'amp'], 'high', 18e5, null, ['farmley-1'])),
+  SX('g21', 'Farmley', 'leadership', 'New CMO joins from Paper Boat', ago(7), 'New CMOs reset agencies; Paper Boat ran meme-led nostalgia.', 'Nostalgia memes for dry fruit.', COLD, E('Agency review under a new CMO', ['memd', 'amp'], 'high', 30e5, 'Nostalgia, but for snacks.', [], { name: 'Harsh Vardhan', title: 'CMO' })),
+  SX('g22', 'Farmley', 'expansion', 'Opens 3 warehouses in the south', ago(11), 'Faster delivery in the south; awareness lags supply.', 'Tamil and Kannada meme pages.', COLD, E('Regional awareness', ['memd'], 'low', 12e5, null)),
+  SX('g23', 'Sleepy Owl', 'launch', 'Ready-to-drink cans in 8 cities', ago(4, 6), 'RTD launches need trial at scale in week one.', 'Late-night can drops with campus creators.', COLD, E('Trial for a new format', ['inf', 'amp'], 'high', 22e5, 'A can for every 11pm.', ['sleepy-owl-0'])),
+  SX('g24', 'Sleepy Owl', 'hiring', 'Hiring a brand partnerships lead', ago(8), 'The partnerships lead will own agency relationships.', 'Get in before the hire lands.', COLD, E('Agency roster forming', ['inf'], 'med', 15e5, null, ['sleepy-owl-2'])),
+  SX('g25', 'Sleepy Owl', 'spend', 'Meta ad spend up 3× in October', ago(10), 'Paid is scaling; organic and creator layers usually follow.', 'Creator layer on top of paid.', COLD, E('Paid scaling, organic gap', ['amp', 'cc'], 'med', 20e5, null)),
+  SX('g26', 'Snitch', 'expansion', 'Opens 10 stores in tier-2 cities', ago(5), 'Store openings need local footfall fast.', 'City creator pods for each opening.', COLD, E('Footfall for new stores', ['inf', 'solo'], 'med', 18e5, null, ['snitch-1'])),
+  SX('g27', 'Snitch', 'leadership', 'New VP Marketing from Myntra', ago(9), 'He bought EORS from us; a warm intro.', 'EORS countdown, menswear cut.', { kind: 'moved', note: 'Worked with us at Myntra' }, E('Warm path through Myntra', ['inf', 'amp'], 'high', 32e5, 'EORS, now for Snitch drops.', [], { name: 'Aman Kohli', title: 'VP Marketing', moved: 'Myntra' })),
+  SX('g28', 'Snitch', 'spend', 'Running 40+ Meta ads for the winter drop', ago(2, 8), 'Heavy paid with thin organic; creators lower their CAC.', 'Creator cuts of their best ads.', COLD, E('Lower CAC with creators', ['cc', 'amp'], 'med', 20e5, null)),
+  SX('g29', 'Rage Coffee', 'funding', 'Raised ₹60Cr Series B', ago(6, 2), 'Coffee D2C after funding: quick commerce and campus.', 'Campus meme pages.', COLD, E('Brand push after funding', ['memd', 'inf'], 'high', 22e5, 'Loud coffee deserves loud memes.', ['rage-coffee-0'])),
+  SX('g30', 'Rage Coffee', 'launch', 'Instant sachets launch in quick commerce', ago(8), 'Sachets are impulse buys; visibility is everything.', 'Exam-season memes.', COLD, E('Visibility in quick commerce', ['memd', 'amp'], 'med', 14e5, null)),
+  SX('g31', 'Rage Coffee', 'leadership', 'Appoints a marketing director', ago(13), 'A new director sets the 2027 plan in December.', 'Get on the 2027 plan.', COLD, E('2027 planning', ['memd'], 'med', 18e5, null, [], { name: 'Kavya Sethi', title: 'Marketing Director' })),
+  SX('g32', 'Zouk', 'expansion', 'Opens a flagship store in Bengaluru', ago(5, 5), 'Flagship launches want a city-wide moment.', 'Bengaluru creator walk-in day.', COLD, E('City launch moment', ['inf', 'off'], 'med', 12e5, null, ['zouk-0'])),
+  SX('g33', 'Zouk', 'funding', 'Series B extension of ₹40Cr', ago(11), 'Extension rounds fund marketing, not hiring.', 'Print-led memes.', COLD, E('Marketing after funding', ['memd', 'inf'], 'med', 16e5, null, ['zouk-1'])),
+  SX('g34', 'Bombay Shirt Company', 'launch', 'Launches a womenswear line', ago(3, 7), 'A new audience needs new voices.', 'Women creators who style menswear.', COLD, E('New audience launch', ['inf', 'amp'], 'high', 20e5, 'Shirts, borrowed and owned.', ['bombay-shirt-company-0'])),
+  SX('g35', 'Bombay Shirt Company', 'hiring', 'Hiring a head of social', ago(10), 'Until the hire lands, agencies fill the gap.', 'Interim always-on.', COLD, E('Interim social cover', ['memd', 'tt'], 'low', 10e5, null)),
+  SX('g36', 'Super You', 'funding', 'Raised ₹30Cr Series A', ago(2, 1), 'Celebrity-founded brands still need creator proof.', 'Gym creators with protein wafers.', COLD, E('Brand push after funding', ['inf'], 'med', 12e5, null, ['super-you-0'])),
+  SX('g37', 'Perfora', 'launch', 'Electric toothbrush 2.0 launch', ago(7, 3), 'Gadget launches live on unboxings.', 'boAt Airdopes playbook.', { kind: 'known', note: 'One contact on file' }, E('Launch reach', ['inf', 'amp'], 'med', 14e5, null, ['perfora-0'])),
+  SX('g38', 'Traya', 'leadership', 'New CMO joins from Mamaearth', ago(1, 9), 'He knows our onion-hair work first hand.', 'Mamaearth onion stories, for hair fall.', { kind: 'moved', note: 'Their new CMO worked with us at Mamaearth' }, E('Warm path through Mamaearth', ['inf', 'cc'], 'high', 40e5, 'Onion stories, now for Traya.', ['traya-0'])),
+  SX('g39', 'Lahori Zeera', 'expansion', 'Enters Maharashtra and Gujarat', ago(6, 8), 'A desi drink in new states needs local humour.', 'Marathi and Gujarati meme pages.', COLD, E('Regional launch', ['memd'], 'med', 24e5, null, ['lahori-zeera-0'])),
+  SX('g40', 'Mokobara', 'launch', 'Launches a kids luggage line', ago(8, 4), 'Holiday travel season is the window.', 'Parent creators for winter breaks.', { kind: 'moved', note: 'Their new CMO worked with us at Myntra' }, E('Seasonal launch', ['inf'], 'med', 15e5, null, ['mokobara-1'])),
+  SX('g41', 'Giva', 'funding', 'Raised ₹530Cr Series C', ago(12), 'Jewellery D2C heads into wedding season with cash.', 'Wedding-season creators.', COLD, E('Wedding season push', ['inf', 'amp'], 'high', 45e5, 'Silver for every sangeet.', ['giva-0'])),
+  SX('g42', 'The Souled Store', 'launch', 'Drops Pushpa 2 merch', ago(13, 2), 'Movie merch rides the release week.', 'Fan-page memes on release day.', { kind: 'known', note: 'One contact on file' }, E('Release-week reach', ['memd', 'tt'], 'med', 12e5, null, ['the-souled-store-0'])),
+]
+const signals = [...signals0.map((g) => ({ ...g, ...ENRICH[g.id] })), ...signalsNew]
+
+/* ───────── Upcoming moments: festivals and days that open briefs ───────── */
+const MO = (id, name, date, cats, region) => ({ id, name, at: new Date(date + 'T09:00:00'), cats, region })
+export const moments = [
+  MO('m-diwali', 'Diwali', '2026-11-08', ['Jewellery', 'Home', 'Food', 'Beverage', 'Fashion', 'Beauty', 'E-commerce', 'Electronics', 'Personal care'], 'India'),
+  MO('m-1111', 'Singles Day 11.11', '2026-11-11', ['E-commerce', 'Fashion', 'Beauty', 'Electronics'], 'Global'),
+  MO('m-kids', 'Children’s Day', '2026-11-14', ['EdTech', 'Food', 'Travel'], 'India'),
+  MO('m-wed', 'Wedding season', '2026-11-20', ['Jewellery', 'Fashion', 'Beauty', 'Travel'], 'India'),
+  MO('m-bf', 'Black Friday', '2026-11-27', ['E-commerce', 'Fashion', 'Electronics', 'Beauty', 'Travel', 'Home'], 'Global'),
+  MO('m-xmas', 'Christmas', '2026-12-25', ['Food', 'Beverage', 'Fashion', 'E-commerce', 'Home'], 'Global'),
+  MO('m-ny', 'New Year', '2027-01-01', ['Beverage', 'Food', 'Travel', 'Fitness', 'Food delivery', 'Quick commerce'], 'Global'),
+  MO('m-rday', 'Republic Day sales', '2027-01-26', ['E-commerce', 'Electronics', 'Auto', 'Fashion'], 'India'),
+  MO('m-val', 'Valentine’s Day', '2027-02-14', ['Jewellery', 'Beauty', 'Fashion', 'Food', 'Travel', 'Personal care'], 'Global'),
+  MO('m-wd', 'Women’s Day', '2027-03-08', ['Beauty', 'Fintech', 'Fashion', 'Personal care', 'Mobility'], 'Global'),
+  MO('m-ipl', 'IPL opening', '2027-03-19', ['Gaming', 'Beverage', 'Food delivery', 'Quick commerce', 'Fintech', 'Electronics', 'OTT'], 'India'),
+  MO('m-holi', 'Holi', '2027-03-22', ['Beverage', 'Beauty', 'Personal care', 'Food', 'Quick commerce'], 'India'),
+  MO('m-pride', 'Pride Month', '2027-06-01', ['Fashion', 'Beauty', 'OTT', 'Personal care'], 'Global'),
+  MO('m-books', 'Book Lovers Day', '2027-08-09', ['EdTech', 'OTT'], 'Niche'),
+  MO('m-rakhi', 'Raksha Bandhan', '2027-08-17', ['Jewellery', 'Food', 'E-commerce', 'Fashion'], 'India'),
+  MO('m-coffee', 'World Coffee Day', '2027-10-01', ['Beverage'], 'Niche'),
+  MO('m-hallo', 'Halloween', '2027-10-31', ['Food', 'Beverage', 'OTT', 'Fashion', 'Gaming'], 'Global'),
+]
+
+/* ───────── Meta Ads brand watch (simulated) ─────────
+   2–4 live ads for most brands we know; some have none on record, which shows as Unknown. */
+const AD_FMT = ['Reel', 'Carousel', 'Image', 'Video']
+const AD_HEAD = {
+  Beauty: ['Glow that lasts all day', 'Your winter skin fix', 'Dermat-tested, Gen Z-approved', 'Buy 2, get 1 on bestsellers'],
+  Fashion: ['The winter drop is live', 'New in: knitwear', 'Sale ends Sunday', 'Built for every day'],
+  Food: ['Snack smarter this Diwali', 'Gift boxes, delivered in 10 minutes', 'Protein you’ll actually crave', '20% off your first order'],
+  Beverage: ['Your 11pm fix', 'Cold, fast, everywhere', 'New flavour, same kick', 'Stock up for the weekend'],
+  'Personal care': ['Results in 8 weeks', 'Doctor-backed care', 'Gentle on you, hard on germs', 'Free consult today'],
+  Jewellery: ['Wedding-season edit', 'Silver for every sangeet', 'Lab-grown, lifetime shine', 'Gifts under ₹2,999'],
+}
+const AD_DEF = ['Diwali offers are live', 'Download the app', 'New launch: see what’s new', 'Limited-time deal']
+const hash = (t) => [...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7)
+export function adsFor(b) {
+  if (!b) return null
+  const h = hash(b.name)
+  if (h % 6 === 0) return null // nothing on record
+  const heads = AD_HEAD[b.cat] || AD_DEF
+  return Array.from({ length: 2 + (h % 3) }, (_, k) => ({
+    id: b.id + '-ad' + k, format: AD_FMT[(h + k) % 4], headline: heads[(h + k) % heads.length], started: ago(2 + ((h >> (k + 2)) % 26)),
+    platforms: ['Instagram', 'Facebook', 'Messenger', 'Audience Network'].slice(0, 1 + ((h >> k) % 3)),
+  }))
+}
 
 /* ───────── Inbound (Gmail + web form) ───────── */
 const inbound = [
@@ -296,8 +458,20 @@ const savedSearches = [
   { id: 'ss2', label: 'Funded D2C, warm', q: '', f: { cat: 'all', city: 'all', rel: 'warm', size: 'mid' } },
 ]
 
+/* Saved views: a name plus a global filter. One may auto-apply when the portal opens. */
+export const F_EMPTY = { q: '', funding: [], size: [], cat: [], city: [], kind: [], recency: '', rel: [], fit: [], relevance: [], deal: [], role: [], types: [], owner: '' }
+const V = (id, label, f, auto = false) => ({ id, label, f: { ...F_EMPTY, ...f }, auto })
+const views = [
+  V('v1', 'Fresh · 14 days', { recency: '14d' }, true),
+  V('v2', 'Funded D2C', { kind: ['funding'], funding: ['Series A', 'Series B', 'C+'] }),
+  V('v3', 'New CMOs', { kind: ['leadership'], role: ['CXO', 'Head'] }),
+  V('v4', 'Unclaimed inbound', { types: ['inbound'], owner: 'unclaimed' }),
+  V('v5', 'Moments this month', { types: ['moment'], recency: '30d' }),
+  V('v6', 'My accounts at risk', { types: ['alert'], owner: 'mine' }),
+]
+
 export const seed = () => ({
-  v: 1,
+  v: 2,
   signals: signals.map((x) => ({ ...x })),
   inbound: inbound.map((x) => ({ ...x })),
   accounts: accounts.map((x) => ({ ...x })),
@@ -307,6 +481,11 @@ export const seed = () => ({
   saved: savedSearches.map((x) => ({ ...x })),
   revealed: [],
   credits: 48,
+  // Prospecting (all four BD layouts share these)
+  views: views.map((x) => ({ ...x, f: { ...x.f } })),
+  db: { co: [], pe: [], stubs: [] }, // what Apollo fetches moved into our DB: company ids, person ids, unknown-name stubs
+  pins: [], // pinned company names
+  hidden: [], // stream cards dismissed or snoozed: { id, until }
 })
 /** JSON reviver: ISO strings back to Dates. */
 export function revive(_, v) { return typeof v === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v) ? new Date(v) : v }

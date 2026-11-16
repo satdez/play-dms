@@ -314,3 +314,59 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .sl-callrow { flex-wrap: wrap; }
   .sl-thumb { width: 88px; }
 }
+
+/* BD layouts (sales/bdv.css): Prospecting, Companies first, Stream, Discover, pipeline Timeline */
+@media (max-width: 1080px) {
+  .bdv-stream { grid-template-columns: minmax(0, 720px); }
+  .bdv-rail { display: none; }
+  .bdv-cp-g { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+@media (max-width: 960px) {
+  .bdv-mf-g { grid-template-columns: 300px minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .bdv-q { width: auto; flex: 1 1 100%; }
+  .bdv-cred { display: none; }
+  .bdv-fbar .bdv-vlab { max-width: 110px; }
+  .bdv-stream { padding: 8px 16px 80px; }
+  .bdv-strip { margin: 0 -16px 8px; padding: 10px 16px; }
+  .bdv-mf { height: auto; }
+  .bdv-mf-top { padding: 12px 16px 0; }
+  .bdv-mf-g { display: block; }
+  .bdv-mf-l, .bdv-mf-r { overflow: visible; }
+  .bdv-mf-l { border-right: 0; padding: 4px 16px 40px; }
+  .bdv-mf-r { padding: 12px 16px 60px; }
+  .bdv-mf.has-cur .bdv-mf-l, .bdv-mf.has-cur .bdv-mf-top { display: none; }
+  .bdv-mf:not(.has-cur) .bdv-mf-r { display: none; }
+  .bdv-dos-k { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .bdv-dos-a { grid-column: 1 / -1; justify-self: stretch; }
+  .bdv-dos-a .b { width: 100%; justify-content: center; }
+  .bdv-sig { flex-wrap: wrap; gap: 10px; }
+  .bdv-sig-l .brand-logo, .bdv-sig-l .logo { width: 28px !important; height: 28px !important; }
+  .bdv-sig-a { width: 100%; padding-left: 42px; }
+  .bdv-en-i { max-width: 100%; flex-basis: 100%; }
+  .bdv-heat { min-width: 0; gap: 6px; }
+  .bdv-co-r .bdv-bar, .bdv-mf-l .bdv-bar { width: 32px; }
+  .bdv-tl-i { grid-template-columns: 34px 14px minmax(0, 1fr); gap: 6px; }
+  .bdv-tl-i::after { left: 46px; }
+  .bdv-hot { grid-template-columns: minmax(0, 1fr); }
+  .bdv-beyond-q .grow { flex-basis: 100%; }
+  .bdv-head { flex-wrap: wrap; }
+  .bdv-cp .bdv-head > .b.ink { flex: 1 1 100%; justify-content: center; }
+  .bdv-sinp { height: 46px; }
+  .bdv-tlv-h { grid-template-columns: minmax(0, 1fr); }
+  .bdv-tlv-h > .bdv-tlv-n { display: none; }
+  .bdv-tlv-r { grid-template-columns: minmax(0, 1fr); height: auto; padding: 8px 0; row-gap: 6px; }
+  .bdv-tlv-r > .bdv-tlv-s { height: 22px; }
+  .bdv-tlv-bar { top: 1px; bottom: 1px; }
+  .st-modes.bdv-lays { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .bdv-fetch > .grow { flex: 1 1 calc(100% - 40px); }
+  .bdv-fetch > .b { flex: 1 1 100%; justify-content: center; }
+}
+@media (max-width: 760px) {
+  .bdv-tlv-w.odd { display: none; }
+  .bdv-dos-k > div { min-width: 0; }
+  .bdv-dos-k .sl-rel { white-space: normal; font-size: 11.5px; }
+}

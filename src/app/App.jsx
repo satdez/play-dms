@@ -23,7 +23,14 @@ import { Feed, Discover, Inbound as SalesInbound, Accounts, Contacts, Pipeline, 
 import { DealPage } from './sales/Deal'
 import { AskButton, AskDialog, AddLeadSheet, SalesBell, openAddLead, openAsk } from './sales/ui'
 import { isOpen } from './sales/state'
-import { Radar, Compass, BookUser, Kanban, Library, RotateCcw, MessageCircleQuestion } from 'lucide-react'
+import { Prospect } from './sales/Prospecting'
+import { CompaniesFirst } from './sales/Companies'
+import { Stream } from './sales/Stream'
+import { CompanySearch } from './sales/Search'
+import { LAYOUTS as BD_LAYOUTS, BD_HOME, BD_PAGES, setBdLayout } from './sales/prospect'
+import { brandOf as salesBrandOf } from './sales/data'
+import './sales/bdv.css'
+import { Radar, Compass, BookUser, Kanban, Library, RotateCcw, MessageCircleQuestion, Filter, Flame, Rows3, Handshake } from 'lucide-react'
 import { toast } from 'sonner'
 import './sales/sales.css'
 import Knowledge from './pages/Knowledge'
@@ -83,6 +90,16 @@ const HomeGlyph = ({ id }) => (
     {id === 'dock' && <><path d="M14 1v14" stroke="currentColor" opacity=".45" /><rect x="3" y="3" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="8" y="3" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="3" y="8.5" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="8" y="8.5" width="4" height="4" rx=".8" fill="currentColor" opacity=".35" /><rect x="15.5" y="11" width="4.5" height="2" rx="1" stroke="currentColor" /></>}
   </svg>
 )
+/** Tiny wireframe of each BD layout. */
+const BdGlyph = ({ id }) => (
+  <svg width="22" height="16" viewBox="0 0 22 16" fill="none" style={{ flex: 'none' }} aria-hidden>
+    <rect x=".5" y=".5" width="21" height="15" rx="3" stroke="currentColor" opacity=".45" />
+    {id === 'sources' && <><path d="M6.5 1v14" stroke="currentColor" opacity=".45" /><path d="M2.5 4h2M2.5 6.5h2M2.5 9h2M2.5 11.5h2" stroke="currentColor" strokeLinecap="round" opacity=".6" /><path d="M9 5h9M9 8h9M9 11h6" stroke="currentColor" strokeLinecap="round" /></>}
+    {id === 'prospect' && <><rect x="3" y="3" width="16" height="2.5" rx="1.2" fill="currentColor" opacity=".35" /><path d="M3.5 8h3M8 8h3M12.5 8h3" stroke="currentColor" strokeLinecap="round" /><path d="M3.5 11.5h15" stroke="currentColor" strokeLinecap="round" opacity=".5" /></>}
+    {id === 'accounts' && <><path d="M9 1v14" stroke="currentColor" opacity=".45" /><path d="M3 4h4M3 6.5h4M3 9h4M3 11.5h3" stroke="currentColor" strokeLinecap="round" opacity=".6" /><rect x="11" y="3" width="8" height="2.5" rx="1" fill="currentColor" opacity=".35" /><path d="M11.5 8.5h7M11.5 11h5" stroke="currentColor" strokeLinecap="round" /></>}
+    {id === 'stream' && <><rect x="6" y="2.5" width="10" height="3" rx="1" stroke="currentColor" /><rect x="6" y="7" width="10" height="3" rx="1" stroke="currentColor" /><rect x="6" y="11.5" width="10" height="2" rx="1" fill="currentColor" opacity=".35" /></>}
+  </svg>
+)
 const read = (k, d) => { try { return localStorage.getItem(k) || d } catch { return d } }
 
 const ROLE_KEY = 'wldd-role'
@@ -92,10 +109,12 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'sources', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
+/** BD layout (Settings › Preferences › BD layout). Shell sets it every render, like VIEW. */
+let BDL = 'sources'
 /** Workspaces the current persona can open, in ⌥1–3 order. */
 const seen = () => ROLES.filter((r) => VIEW.roles.includes(r.id))
 
@@ -121,7 +140,7 @@ function navFor(role, s) {
       { to: '/finance/requests', label: 'Requests', icon: FileSignature, n: s.requests.length },
       { to: '/finance/vendors', label: 'Vendors', icon: Store },
     ],
-    bd: [
+    bd: BDL !== 'sources' ? bdNav(BDL, s) : [
       { to: '/bd/feed', label: 'Feed', icon: Radar, n: s.sales.signals.filter((x) => x.status === 'new').length },
       { to: '/bd/discover', label: 'Discover', icon: Compass },
       { to: '/bd/inbound', label: 'Inbound', icon: MailOpen, n: s.sales.inbound.filter((x) => x.status === 'open' && !x.owner).length },
@@ -132,6 +151,23 @@ function navFor(role, s) {
       { to: '/bd/kb', label: 'Knowledge base', icon: BookOpen },
     ],
   }[role]
+}
+
+/** The other BD layouts share Discover, Accounts, Pipeline, Case Library and the knowledge base. */
+function bdNav(l, s) {
+  const first = {
+    prospect: { to: '/bd/prospect', label: 'Prospecting', icon: Filter, n: s.sales.signals.filter((x) => x.status === 'new').length },
+    accounts: { to: '/bd/companies', label: 'Companies', icon: Flame },
+    stream: { to: '/bd/stream', label: 'Stream', icon: Rows3, n: s.sales.inbound.filter((x) => x.status === 'open' && !x.owner).length },
+  }[l]
+  return [
+    first,
+    { to: '/bd/discover', label: 'Discover', icon: Compass },
+    { to: '/bd/accounts', label: 'Accounts', icon: Building2 },
+    { to: '/bd/pipeline', label: 'Pipeline', icon: Kanban },
+    { to: '/bd/cases', label: 'Case Library', icon: Library },
+    { to: '/bd/kb', label: 'Knowledge base', icon: BookOpen },
+  ]
 }
 
 export default function DmsApp({ path }) {
@@ -154,6 +190,7 @@ function Shell({ path }) {
   const [prefs, setPrefsRaw] = useState(() => { try { return { ...PREF_DEFAULTS, ...JSON.parse(read('wldd-prefs', '{}')) } } catch { return PREF_DEFAULTS } })
   const setPrefs = (p) => { setPrefsRaw(p); try { localStorage.setItem('wldd-prefs', JSON.stringify(p)) } catch {} }
   VIEW = personaOf(prefs.viewAs); setView(VIEW)
+  BDL = BD_HOME[prefs.bd] ? prefs.bd : 'sources'; setBdLayout(BDL)
   const [role, setRole] = useState(() => {
     const m = path.split('/').filter(Boolean)[0]
     if (['pod', 'finance', 'bd'].includes(m)) return m // deep link decides — no switch animation on load
@@ -288,9 +325,11 @@ function Shell({ path }) {
   }, [])
   const scrim = <div className={'m-scrim' + (navOpen ? ' on' : '')} onClick={() => setNavOpen(false)} aria-hidden />
 
-  const switchRole = (r) => { if (r === role) return; setRole(r); go(r === 'bd' ? '/bd/feed' : '/home') }
-  // Sales has no Inbox: its home is the Daily Feed.
-  useEffect(() => { if (mod === 'home' && role === 'bd') location.replace('#/bd/feed') }, [mod, role])
+  const switchRole = (r) => { if (r === role) return; setRole(r); go(r === 'bd' ? BD_HOME[BDL] : '/home') }
+  // BD has no Inbox: its home is the layout's first page (the Daily Feed in Sources).
+  useEffect(() => { if (mod === 'home' && role === 'bd') location.replace('#' + BD_HOME[BDL]) }, [mod, role])
+  // A page another BD layout owns lands on this layout's home, so the sidebar always shows where you are.
+  useEffect(() => { if (mod === 'bd' && parts[1] && !BD_PAGES[BDL].includes(parts[1])) location.replace('#' + BD_HOME[BDL]) }, [mod, parts[1], BDL]) // eslint-disable-line
 
   let page = null
   if (mod === 'hub') page = <Hub layout={prefs.home} />
@@ -307,11 +346,13 @@ function Shell({ path }) {
   } else if (mod === 'bd') {
     // The old Dashboard/Outreach/Proposals pages fold into the Pipeline.
     if (parts[1] === 'pipeline' && parts[2]) page = <DealPage id={parts[2]} tab={parts[3]} />
-    else page = { feed: <Feed />, discover: <Discover id={parts[2]} />, inbound: <SalesInbound />, accounts: <Accounts id={parts[2]} />, contacts: <Contacts />, pipeline: <Pipeline />, cases: <Cases id={parts[2]} />, dashboard: <Pipeline />, outreach: <Pipeline />, proposals: <Pipeline />, kb: <Knowledge base="/bd/kb" id={parts[2]} /> }[parts[1]] || <Feed />
+    else if (BDL !== 'sources' && parts[1] === 'discover') page = <CompanySearch id={parts[2]} />
+    else if (BDL !== 'sources' && (!parts[1] || !BD_PAGES[BDL].includes(parts[1]))) page = { prospect: <Prospect />, accounts: <CompaniesFirst />, stream: <Stream /> }[BDL]
+    else page = { prospect: <Prospect />, companies: <CompaniesFirst id={parts[2]} />, stream: <Stream />, feed: <Feed />, discover: <Discover id={parts[2]} />, inbound: <SalesInbound />, accounts: <Accounts id={parts[2]} />, contacts: <Contacts />, pipeline: <Pipeline />, cases: <Cases id={parts[2]} />, dashboard: <Pipeline />, outreach: <Pipeline />, proposals: <Pipeline />, kb: <Knowledge base="/bd/kb" id={parts[2]} /> }[parts[1]] || <Feed />
   }
 
   const cmdk = <><AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />{VIEW.roles.includes('bd') && <><AskDialog /><AddLeadSheet /></>}</>
-  const scroll = <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}><div className="d-scroll" key={mod === 'settings' ? 'settings' : mod + '/' + (parts[1] || '') + '/' + (mod === 'bd' && ['discover', 'accounts', 'cases'].includes(parts[1]) ? '' : parts[2] || '')}>{page}</div></MotionConfig>
+  const scroll = <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}><div className="d-scroll" key={mod === 'settings' ? 'settings' : mod + '/' + (parts[1] || '') + '/' + (mod === 'bd' && ['discover', 'accounts', 'cases', 'companies'].includes(parts[1]) ? '' : parts[2] || '')}>{page}</div></MotionConfig>
   // Docking is opt-in: without it the page tree is exactly what it was.
   const reduced = prefs.motion === 'reduced' || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
   const body = prefs.peek === 'docked' || prefs.assistant === 'docked'
@@ -369,6 +410,18 @@ function Appearance({ look, close }) {
           <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{look.prefs.home === x.value && <Check size={14} />}{i === 0 && <kbd className="k">{ALT}H</kbd>}</span>
         </button>
       ))}
+      {VIEW.roles.includes('bd') && (
+        <>
+          <div className="pop-sep" />
+          <div className="pop-h">BD layout</div>
+          {BD_LAYOUTS.map((x) => (
+            <button key={x.value} onClick={() => { look.setPrefs({ ...look.prefs, bd: x.value }); go(BD_HOME[x.value]); close() }}>
+              <BdGlyph id={x.value} /> {x.label}
+              <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{look.prefs.bd === x.value && <Check size={14} />}</span>
+            </button>
+          ))}
+        </>
+      )}
       <div className="pop-sep" />
       <div className="pop-h">Style</div>
       {STYLES.map((x, i) => (
@@ -613,6 +666,24 @@ function NavItems({ nav, active, tips }) {
   })
 }
 
+/** Companies pinned from a dossier (prospecting layouts). Same look as pinned campaigns. */
+function BdPinned({ path }) {
+  const s = useStore()
+  if (BDL === 'sources' || !s.sales.pins.length) return null
+  const list = s.sales.pins.map((n) => salesBrandOf(n) || s.sales.db.stubs.find((x) => x.name === n)).filter(Boolean)
+  const base = BDL === 'accounts' ? '/bd/companies/' : '/bd/discover/'
+  return (
+    <>
+      <div className="d-sec">Pinned companies</div>
+      {list.map((c) => (
+        <a key={c.id} href={'#' + base + c.id} className={'d-item d-pin' + (path === base + c.id ? ' on' : '')}>
+          <BrandLogo name={c.name} size={16} radius={4} /><span className="ell d-lbl">{c.name}</span>
+        </a>
+      ))}
+    </>
+  )
+}
+
 function Pinned({ pinned, path, tips }) {
   if (!pinned.length) return null
   return (
@@ -699,6 +770,7 @@ function PanelSidebar({ role, switchRole, path, look, open }) {
       <SlidePanel k={role} index={idx} className="d-nav-wrap">
         <nav className="d-nav"><NavItems nav={nav} active={active} /></nav>
         {role === 'pod' && <Pinned pinned={pinned} path={path} />}
+        {role === 'bd' && <BdPinned path={path} />}
       </SlidePanel>
 
       <div className="d-side-f">
@@ -842,6 +914,7 @@ function StackSidebar({ role, switchRole, path, look, open }) {
         </nav>
         {/* One shared Pinned list, outside any workspace: it stays put when you switch. */}
         {VIEW.roles.includes('pod') && <div className="sb-pins"><Pinned pinned={pinned} path={path} /></div>}
+        {role === 'bd' && BDL !== 'sources' && s.sales.pins.length > 0 && <div className="sb-pins"><BdPinned path={path} /></div>}
       </div>
       <div className="d-side-f">
         <Avatar />
@@ -922,7 +995,7 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
 const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
 
 /* ───────── Top bar ───────── */
-const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'BD', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Case Library' }
+const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'BD', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Case Library', prospect: 'Prospecting', companies: 'Companies', stream: 'Stream' }
 /** The page title lives here only — pages don't repeat it. Icon + live count make the space useful. */
 function usePageMeta(parts, role) {
   const s = useStore()
@@ -933,14 +1006,14 @@ function usePageMeta(parts, role) {
   }
   if (parts[0] === 'hub') return { title: 'Home', icon: House, to: '/hub' }
   const home = !parts.length || parts[0] === 'home'
-  const raw = home ? 'home' : parts[1] || (parts[0] === 'bd' ? 'feed' : 'campaigns')
+  const raw = home ? 'home' : parts[1] || (parts[0] === 'bd' ? BD_HOME[BDL].split('/')[2] : 'campaigns')
   const sec = parts[0] === 'bd' && ['dashboard', 'outreach', 'proposals'].includes(raw) ? 'pipeline' : raw
   const to = home ? '/home' : `/${parts[0]}/${sec}`
   const item = nav.find((n) => n.to === to)
   const count = {
     campaigns: s.campaigns.length, kb: kbTotal, invoices: s.invoices.length, payments: s.invoices.filter((x) => x.stage === 'scheduled').length,
     requests: s.requests.length, vendors: s.vendors.length, inbound: s.inbound.length,
-    ...(parts[0] === 'bd' && { feed: s.sales.signals.filter((x) => x.status === 'new').length, accounts: s.sales.accounts.length, contacts: s.sales.contacts.length, pipeline: s.sales.deals.filter(isOpen).length }),
+    ...(parts[0] === 'bd' && { feed: s.sales.signals.filter((x) => x.status === 'new').length, accounts: s.sales.accounts.length, contacts: s.sales.contacts.length, pipeline: s.sales.deals.filter(isOpen).length, prospect: s.sales.signals.filter((x) => x.status !== 'dismissed').length }),
     approvals: s.invoices.filter((x) => x.stage === 'lead').length,
   }[sec]
   const c = parts[0] !== 'bd' && parts[2] && s.campaigns.find((x) => x.id === parts[2])
@@ -1017,7 +1090,8 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
           <Command.Group heading="BD">
             <Command.Item value="add lead to pipeline" onSelect={run(() => { if (role !== 'bd') switchRole('bd'); setTimeout(() => openAddLead({ source: 'Discover' }), 0) })}><Plus size={15} /> Add lead<span className="cmdk-meta">BD</span></Command.Item>
             <Command.Item value="ask about a brand" onSelect={run(() => setTimeout(() => openAsk(), 0))}><MessageCircleQuestion size={15} /> Ask about a brand<span className="cmdk-meta">BD</span></Command.Item>
-            {[['feed', 'Feed', Radar], ['discover', 'Discover', Compass], ['inbound', 'Inbound', MailOpen], ['accounts', 'Accounts', Building2], ['contacts', 'Contacts', BookUser], ['pipeline', 'Pipeline', Kanban], ['cases', 'Case Library', Library]].map(([id, l, I]) => (
+            {(BDL === 'sources' ? [['feed', 'Feed', Radar], ['discover', 'Discover', Compass], ['inbound', 'Inbound', MailOpen], ['accounts', 'Accounts', Building2], ['contacts', 'Contacts', BookUser], ['pipeline', 'Pipeline', Kanban], ['cases', 'Case Library', Library]]
+              : bdNav(BDL, s).filter((n) => !n.to.endsWith('/kb')).map((n) => [n.to.split('/')[2], n.label, n.icon])).map(([id, l, I]) => (
               <Command.Item key={id} value={'bd business development sales ' + l} onSelect={run(() => go('/bd/' + id))}><I size={15} /> {l}<span className="cmdk-meta">BD</span></Command.Item>
             ))}
             {q && s.sales.deals.map((d) => <Command.Item key={d.id} value={'deal ' + d.brand + ' ' + d.code} onSelect={run(() => go('/bd/pipeline/' + d.id))}><BrandLogo name={d.brand} size={16} radius={4} /> <span className="cmdk-t">{d.brand}</span><span className="cmdk-meta">{d.code}</span></Command.Item>)}
@@ -1035,6 +1109,11 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         <Command.Group heading="Home layout">
           {HOME_LAYOUTS.map((x) => <Command.Item key={x.value} value={'home layout ' + x.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, home: x.value }); go('/hub') })}><HomeGlyph id={x.value} /> {x.label}{look.prefs.home === x.value && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
+        {VIEW.roles.includes('bd') && (
+          <Command.Group heading="BD layout">
+            {BD_LAYOUTS.map((x) => <Command.Item key={x.value} value={'bd layout business development ' + x.label + ' ' + x.desc} onSelect={run(() => { look.setPrefs({ ...look.prefs, bd: x.value }); go(BD_HOME[x.value]) })}><BdGlyph id={x.value} /> {x.label}<span className="cmdk-meta">{x.desc}</span>{look.prefs.bd === x.value && <Check size={14} style={{ marginLeft: 8 }} />}</Command.Item>)}
+          </Command.Group>
+        )}
         <Command.Group heading="Desk">
           <Command.Item value="noir desk preset" onSelect={run(() => look.setDesk(true))}><Swatch id="noir" prefs={look.prefs} /> Noir desk{deskIsOn(look) && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>
           <Command.Item value="back to default look" onSelect={run(() => look.setDesk(false))}><Swatch id="paper" /> Back to default</Command.Item>

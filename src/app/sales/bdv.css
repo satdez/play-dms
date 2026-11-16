@@ -1,0 +1,232 @@
+/* BD layouts (Prospecting, Companies first, Stream) + the shared Discover, Timeline and kit.
+   Every class is bdv-prefixed; tokens only, so styles and themes repaint it. Phone rules live in mobile.css. */
+
+/* ───── Filter bar ───── */
+.bdv-fbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.bdv-q { width: 230px; }
+.bdv-q button { display: grid; place-items: center; color: var(--muted); }
+.bdv-fc { display: inline-flex; align-items: center; height: 28px; border-radius: 8px; color: var(--fg-2); background: color-mix(in oklab, var(--fg) 4.5%, transparent); font-size: 12.5px; font-weight: 500; transition: background 120ms, color 120ms; }
+.bdv-fc:hover, .bdv-fc.open { background: color-mix(in oklab, var(--fg) 9%, transparent); color: var(--fg); }
+.bdv-fc.on { background: color-mix(in oklab, var(--fg) 11%, transparent); color: var(--fg); }
+.bdv-fc.on:hover { background: color-mix(in oklab, var(--fg) 15%, transparent); }
+.bdv-fc-b { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 9px; color: inherit; white-space: nowrap; }
+.bdv-fc-b b { font-weight: 600; }
+.bdv-fc-x { display: grid; place-items: center; width: 22px; height: 28px; margin-left: -6px; color: inherit; opacity: .7; }
+.bdv-fc-x:hover { opacity: 1; }
+.bdv-pop-l { max-height: 320px; overflow: auto; }
+.bdv-cred { margin-left: auto; }
+.bdv-vlab { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Views popover */
+.bdv-views { padding-bottom: 4px; }
+.bdv-vrow { display: flex; align-items: center; gap: 4px; padding-right: 4px; border-radius: 8px; }
+.bdv-vrow:hover { background: var(--hover); }
+.pop .bdv-vrow .bdv-vgo { flex: 1; min-width: 0; }
+.pop .bdv-vrow .bdv-vgo:hover { background: none; }
+.bdv-vrow.on .bdv-vgo { color: var(--fg); }
+.bdv-auto { display: inline-flex; align-items: center; gap: 6px; }
+.pop .bdv-vx { width: 24px; height: 24px; padding: 0; justify-content: center; color: var(--muted); }
+.bdv-vsave { display: flex; gap: 6px; padding: 6px; }
+.bdv-vsave .inp { flex: 1; height: 30px; }
+.pop .bdv-vsave .b { width: auto; height: 30px; }
+
+/* Filter sheet */
+.bdv-fsheet { display: flex; flex-direction: column; gap: 14px; }
+.bdv-fsheet > .row b { font-size: 16px; }
+.bdv-fsheet-a { position: sticky; bottom: -28px; display: flex; justify-content: flex-end; padding: 12px 0 0; background: var(--surface); }
+
+/* Stream's view strip */
+.bdv-strip { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 6px; padding: 10px 0; margin-bottom: 8px; background: var(--surface); box-shadow: 0 1px 0 var(--line); }
+.bdv-strip-s { display: flex; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.bdv-strip-s::-webkit-scrollbar { display: none; }
+.bdv-strip .chip.sl-tog { flex: none; }
+.bdv-plus { color: var(--muted); }
+.bdv-newv { display: flex; gap: 6px; flex: none; }
+.bdv-newv .inp { width: 170px; height: 26px; }
+.bdv-newv .b { height: 26px; }
+
+/* Bottom sheet */
+.bdv-bs { position: fixed; z-index: 61; left: 0; right: 0; bottom: 0; max-height: 86vh; display: flex; flex-direction: column; background: var(--surface); border-radius: 18px 18px 0 0; box-shadow: var(--shadow-pop); color: var(--fg); font-family: var(--font); font-size: 13.5px; }
+.bdv-bs.tall { height: 92vh; max-height: 92vh; }
+.bdv-bs-h { display: grid; place-items: center; height: 18px; flex: none; touch-action: none; }
+.bdv-bs-h i { width: 36px; height: 4px; border-radius: 4px; background: var(--line-2); }
+.bdv-bs-b { overflow: auto; padding: 8px 16px calc(24px + env(safe-area-inset-bottom)); flex: 1; min-height: 0; }
+.bdv-bs .sheet-x { top: 10px; right: 10px; }
+
+/* ───── Small pieces ───── */
+.bdv-rt { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; color: var(--fg-2); white-space: nowrap; }
+.bdv-rt i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.bdv-rt.r-high i { background: var(--green); }
+.bdv-rt.r-med i { background: var(--yellow); }
+.bdv-en { margin-top: 8px; min-width: 0; }
+.bdv-en-r { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; row-gap: 4px; font-size: 12.5px; }
+.bdv-en-i { color: var(--fg-2); max-width: 280px; }
+.bdv-en-d { font-weight: 600; color: var(--fg); }
+.bdv-pitch { margin-top: 6px; font-size: 13px; color: var(--fg-2); font-style: italic; }
+.bdv-meta { display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 12px; color: var(--muted); min-width: 0; }
+.bdv-meta > span + span::before { content: '·'; margin-right: 10px; color: var(--faint); }
+.bdv-new { height: 18px; font-size: 11px; padding: 0 6px; flex: none; }
+.bdv-born { height: 20px; font-size: 11px; }
+.bdv-co { color: inherit; text-decoration: none; }
+.bdv-co:hover { text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.bdv-co-m { display: flex; flex-direction: column; gap: 2px; min-width: 0; text-align: left; }
+.bdv-ic { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--sunken); color: var(--muted); flex: none; }
+.bdv-ic.lg { width: 40px; height: 40px; border-radius: 11px; }
+.bdv-bar { position: relative; display: inline-block; width: 56px; height: 5px; border-radius: 3px; background: color-mix(in oklab, var(--fg) 8%, transparent); overflow: hidden; }
+.bdv-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--fg-2); }
+.bdv-heat { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-2); min-width: 86px; justify-content: flex-end; }
+.bdv-logos { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+
+/* ───── Page shells ───── */
+.bdv-page .d-head { margin-bottom: 8px; min-height: 0; }
+.bdv-tabrow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.bdv-tabrow .tabs { flex: 1; min-width: 0; margin-bottom: 0; }
+.bdv-list { margin-top: 4px; }
+.bdv-lh { display: flex; align-items: center; gap: 8px; height: 34px; font-size: 12px; color: var(--muted); font-weight: 500; }
+.bdv-arr-r { display: flex; align-items: center; gap: 2px; padding: 2px 4px 2px 10px; font-weight: 500; color: var(--fg-2); }
+.pop .bdv-arr-r .b { width: 28px; height: 28px; padding: 0; justify-content: center; }
+
+/* Signal rows */
+.bdv-sig { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.bdv-sig-l { flex: none; }
+.bdv-sig-b { min-width: 0; flex: 1; }
+.bdv-sig-h { flex-wrap: wrap; row-gap: 4px; }
+.bdv-sig-t { font-size: 14.5px; font-weight: 600; margin-top: 4px; letter-spacing: -0.01em; }
+.bdv-sig-a { flex: none; align-self: flex-start; }
+
+/* Rows */
+.bdv-co-r { min-height: 56px; width: 100%; text-align: left; }
+.bdv-co-r.sel { background: var(--sunken); }
+.bdv-co-r.sel::before, .bdv-co-r.sel + .li::before { opacity: 0; }
+.bdv-p { min-height: 56px; }
+.bdv-p.sel { background: var(--sunken); }
+.bdv-p > .sl-ck, .bdv-ck-s { flex: none; width: 16px; }
+.bdv-inb, .bdv-mo, .bdv-proof { min-height: 58px; }
+.bdv-date { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 10px; background: var(--sunken); flex: none; line-height: 1.05; }
+.bdv-date b { font-size: 15px; font-weight: 600; }
+.bdv-date span { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+/* Search beyond our DB */
+.bdv-beyond { margin-top: 6px; border-top: 1px dashed var(--line-2); padding-top: 6px; }
+.bdv-beyond-b { width: 100%; text-align: left; }
+.bdv-beyond-q { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; background: var(--sunken); flex-wrap: wrap; }
+
+/* Bulk reveal */
+.bdv-bulk { display: flex; align-items: center; gap: 8px; height: 40px; }
+
+/* ───── Dossier ───── */
+.bdv-head { display: flex; align-items: center; gap: 12px; }
+.bdv-h2 { font-size: 20px; }
+.bdv-dos { min-width: 0; }
+.bdv-dos-k { display: grid; grid-template-columns: repeat(3, minmax(0, auto)) 1fr; align-items: center; gap: 24px; margin: 16px 0 12px; }
+.bdv-dos-k > div:not(.bdv-dos-a) { display: flex; flex-direction: column; gap: 4px; }
+.bdv-dos-k span:first-child { font-size: 12px; color: var(--muted); font-weight: 500; }
+.bdv-dos-k b { font-size: 15px; font-weight: 600; }
+.bdv-dos-a { justify-self: end; }
+.bdv-dos-b { min-height: 120px; }
+.bdv-back { margin: 0 0 10px -8px; }
+
+/* Signals timeline */
+.bdv-tl { display: flex; flex-direction: column; }
+.bdv-tl-i { position: relative; display: grid; grid-template-columns: 56px 14px minmax(0, 1fr); gap: 8px; padding: 12px 0; }
+.bdv-tl-i::after { content: ''; position: absolute; left: 70px; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.bdv-tl-i:first-child::after { top: 18px; } .bdv-tl-i:last-child::after { bottom: calc(100% - 18px); }
+.bdv-tl-d { padding-top: 2px; text-align: right; }
+.bdv-tl-dot { position: relative; z-index: 1; width: 9px; height: 9px; margin: 5px 0 0 2.5px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 2px var(--fg-2); }
+.bdv-tl-dot.in { box-shadow: inset 0 0 0 2px var(--yellow); }
+.bdv-tl-t { font-weight: 600; }
+
+/* Meta ads */
+.bdv-ads-h { margin-bottom: 8px; }
+.bdv-ads-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.bdv-ad { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); }
+.bdv-ad-t { font-weight: 600; font-size: 13px; }
+.bdv-ads-e { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+
+/* ───── Companies first: master–detail ───── */
+.bdv-mf { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.bdv-mf-top { padding: 16px 24px 0; border-bottom: 1px solid var(--line); }
+.bdv-mf-top .d-head { margin-bottom: 0; min-height: 0; }
+.bdv-mf-top .bdv-fbar { margin-bottom: 12px; }
+.bdv-mf-g { flex: 1; min-height: 0; display: grid; grid-template-columns: 380px minmax(0, 1fr); }
+.bdv-mf-l, .bdv-mf-r { overflow: auto; min-height: 0; }
+.bdv-mf-l { border-right: 1px solid var(--line); padding: 4px 16px 40px; }
+.bdv-mf-l .bdv-heat { min-width: 70px; }
+.bdv-mf-l .bdv-bar { width: 40px; }
+.bdv-mf-r { padding: 22px 32px 60px; }
+.bdv-mf-r .bdv-dos { max-width: 860px; }
+
+/* ───── Stream ───── */
+.bdv-stream { display: grid; grid-template-columns: minmax(0, 720px) 272px; justify-content: center; gap: 36px; padding: 20px 32px 96px; align-items: start; }
+.bdv-st-main { min-width: 0; }
+.bdv-st-main .d-head { margin: 0; min-height: 0; }
+.bdv-cards { display: flex; flex-direction: column; }
+.bdv-card-w { position: relative; margin-bottom: 10px; }
+.bdv-under { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 18px; border-radius: 14px; background: var(--sunken); font-weight: 600; font-size: 13px; }
+.bdv-u-add, .bdv-u-x { display: inline-flex; align-items: center; gap: 6px; }
+.bdv-u-add { color: var(--green); } .bdv-u-x { color: var(--pink); }
+.bdv-card { position: relative; background: var(--surface); border-radius: 14px; box-shadow: 0 0 0 1px var(--line), var(--shadow-1); padding: 12px 14px; cursor: pointer; touch-action: pan-y; }
+.bdv-card:hover { box-shadow: 0 0 0 1px var(--line-2), var(--shadow-1); }
+.bdv-card-h { gap: 8px; min-width: 0; }
+.bdv-type { display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11.5px; font-weight: 600; color: var(--fg-2); background: color-mix(in oklab, var(--fg) 6%, transparent); flex: none; }
+.bdv-type.t-alert { background: var(--pink-soft); color: color-mix(in oklab, var(--pink) 55%, var(--fg)); }
+.bdv-type.t-follow { background: var(--yellow-soft); color: color-mix(in oklab, var(--yellow) 55%, var(--fg)); }
+.bdv-card-co { gap: 6px; min-width: 0; }
+.bdv-card-co b { font-weight: 600; }
+.bdv-card-t { margin-top: 8px; font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+.bdv-card-s { margin-top: 6px; }
+.bdv-card-a { margin-top: 10px; gap: 4px; }
+.bdv-rail { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 12px; }
+.bdv-rc { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 14px; box-shadow: 0 0 0 1px var(--line); color: inherit; text-decoration: none; }
+.bdv-rc-l:hover { background: var(--hover); }
+.bdv-rc .li { min-height: 36px; }
+.bdv-due { font-size: 12.5px; }
+.bdv-mini { display: flex; flex-direction: column; gap: 6px; }
+.bdv-mini-r { display: grid; grid-template-columns: 100px minmax(0, 1fr) 20px; align-items: center; gap: 8px; font-size: 12px; }
+.bdv-mini-r .bdv-bar { width: 100%; }
+.bdv-mini-r .num { text-align: right; }
+
+/* ───── Discover (company search) ───── */
+.bdv-sbox { position: relative; max-width: 640px; margin: 4px 0 8px; }
+.bdv-sinp { height: 44px; padding: 0 8px 0 14px; border-radius: 12px; font-size: 15px; }
+.bdv-sug { position: absolute; z-index: 20; left: 0; right: 0; top: 50px; padding: 4px; border-radius: 12px; background: var(--pop); box-shadow: var(--shadow-pop); }
+.bdv-sug-r { display: flex; align-items: center; gap: 10px; width: 100%; height: 40px; padding: 0 10px; border-radius: 8px; text-align: left; color: var(--fg-2); }
+.bdv-sug-r b { color: var(--fg); font-weight: 600; }
+.bdv-sug-r.on { background: var(--hover); color: var(--fg); }
+.bdv-hot { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.bdv-hot-c { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); color: inherit; text-decoration: none; min-width: 0; }
+.bdv-hot-c:hover { background: var(--hover); }
+.bdv-fetch { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 14px 16px; border-radius: 12px; background: var(--sunken); flex-wrap: wrap; }
+.bdv-cp { margin-top: 18px; }
+.bdv-cp .bdv-head .b { flex: none; }
+.bdv-about { margin: 12px 0 0; max-width: 720px; }
+.bdv-cp-g { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 40px; align-items: start; }
+.bdv-sec { min-width: 0; }
+
+/* ───── Pipeline · Timeline ───── */
+.bdv-tlv { --n: 220px; position: relative; }
+.bdv-tlv-h { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: var(--n) minmax(0, 1fr); height: 30px; background: var(--surface); box-shadow: 0 1px 0 var(--line); }
+.bdv-tlv-s { position: relative; display: block; height: 100%; }
+.bdv-tlv-w { position: absolute; top: 8px; padding-left: 5px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.bdv-tlv-today { position: absolute; top: 7px; transform: translateX(-50%); padding: 0 5px; border-radius: 5px; font-size: 11px; font-weight: 600; color: var(--surface); background: var(--pink); white-space: nowrap; }
+.bdv-tlv-r { display: grid; grid-template-columns: var(--n) minmax(0, 1fr); width: 100%; height: 40px; align-items: center; text-align: left; border-bottom: 1px solid var(--line); }
+.bdv-tlv-r:hover { background: var(--hover); }
+.bdv-tlv-n { display: flex; align-items: center; gap: 8px; padding-right: 12px; min-width: 0; }
+.bdv-tlv-n .ell { flex: 0 1 auto; min-width: 0; }
+.bdv-tlv-n .num { margin-left: auto; }
+.bdv-tlv-g { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.bdv-tlv-t { position: absolute; top: 0; bottom: 0; left: var(--today); width: 1.5px; background: var(--pink); z-index: 1; }
+.bdv-tlv-bar { --c: var(--faint); position: absolute; top: 9px; bottom: 9px; border-radius: 6px; background: color-mix(in oklab, var(--c) 24%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c) 50%, transparent); overflow: hidden; }
+.bdv-tlv-bar > .tipw { display: block; height: 100%; }
+.bdv-tlv-fill { display: flex; align-items: center; height: 100%; padding: 0 8px; font-size: 11.5px; font-weight: 500; color: var(--fg-2); }
+.bdv-tlv-bar.s-brief { --c: var(--violet); }
+.bdv-tlv-bar.s-negotiation { --c: var(--yellow); }
+.bdv-tlv-bar.s-pitch { --c: var(--pink); }
+.bdv-tlv-bar.s-won { --c: var(--green); }
+.bdv-tlv-bar.s-lost { --c: var(--muted); background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); }
+
+/* Settings › BD layout */
+.st-modes.bdv-lays { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.st-mode.bdv-lay { height: auto; min-height: 56px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; padding: 10px 14px; text-align: left; }
+.st-mode.bdv-lay b { font-weight: 600; color: var(--fg); }
+.st-mode.bdv-lay span { font-size: 12px; color: var(--muted); font-weight: 400; }

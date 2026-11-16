@@ -15,6 +15,7 @@ import { team, me, PODS, BRAND, campaigns, fmt, TODAY } from '../data'
 import { PopTuner, THEMES, themeActive } from '../popTune'
 import { PERSONAS } from '../personas'
 import { HOME_LAYOUTS } from './Hub'
+import { LAYOUTS as BD_LAYOUTS } from '../sales/prospect'
 import { NoirTuner, DeskPreset } from '../noir'
 
 /* ───────── sections ───────── */
@@ -313,6 +314,13 @@ function Preferences({ look }) {
         </Row>
         <Row label="Experience" tip={'Shell and navigation model · ' + ALT + 'E'}><Seg id="st-exp" value={exp} onChange={setExp} options={exps.map((x) => ({ value: x.id, label: x.label }))} /></Row>
         <Row label="Home" tip={'Stack: dashboard over chat · Split: chat with a KPI column · Focus: chat first · Dock: dashboard with a chat panel · ' + ALT + 'H'}><Seg id="st-home" value={prefs.home} onChange={set('home')} options={HOME_LAYOUTS} /></Row>
+        <Row label="BD layout" tip="How the BD portal is organised. Every layout shares the same signals, companies, credits, views and deals, so switching never loses work." stack>
+          <div className="st-modes bdv-lays">
+            {BD_LAYOUTS.map((x) => (
+              <button key={x.value} className={'st-mode bdv-lay' + (prefs.bd === x.value ? ' on' : '')} onClick={() => set('bd')(x.value)} aria-pressed={prefs.bd === x.value}><b>{x.label}</b><span>{x.desc}</span></button>
+            ))}
+          </div>
+        </Row>
         {exp !== 'vercel' && <Row label="Sidebar" tip="Panel · Rail: workspaces on a rail · Icons: collapsed · Stacked: every workspace in one list · Sections: Work, Company and your pods as flat lists"><Seg id="st-sidebar" value={prefs.sidebar} onChange={set('sidebar')} options={SIDEBARS} /></Row>}
         <Row label="Record peek" tip="Overlay: a sheet over the page (Attio) or the full page · Docked: the record opens in a panel beside the list, which shrinks to fit"><Seg id="st-peek" value={prefs.peek} onChange={set('peek')} options={[{ value: 'overlay', label: 'Overlay' }, { value: 'docked', label: 'Docked' }]} /></Row>
         <Row label="Assistant" tip={'Docked: Ask WLDD in the top bar opens a chat panel on any page · ' + MOD + 'J'}><Seg id="st-assistant" value={prefs.assistant} onChange={set('assistant')} options={[{ value: 'off', label: 'Off' }, { value: 'docked', label: 'Docked' }]} /></Row>

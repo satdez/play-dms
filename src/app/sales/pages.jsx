@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, ThumbsUp, ThumbsDown, ArrowRight, ArrowUpRight, Hourglass, Mail, Globe, Check, Bookmark, Plus, KeyRound, UserCheck,
-  ClipboardPaste, Wand2, Presentation, LayoutGrid, List as ListIcon, CalendarDays, TrendingDown, RefreshCw, Sparkle, Ban, Clock,
+  ClipboardPaste, Wand2, Presentation, LayoutGrid, List as ListIcon, GanttChart, CalendarDays, TrendingDown, RefreshCw, Sparkle, Ban, Clock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
@@ -17,6 +17,7 @@ import { brands, brandById, brandOf, budgetOf, repOf, REPS, cases, caseById, DEA
 import { relOf, factsFor, parseNotes, isOpen, isStale, staleDays, stageLabel, RELL } from './state'
 import { Src, Rel, Val, Facts, CaseChip, openAddLead, dueOf, DeckViewer, credsDeck } from './ui'
 import { Board } from './Board'
+import { DealTimeline } from './Timeline'
 
 const mine = (x) => x.owner === me.id
 const SrcRow = ({ children }) => <span className="sl-srcrow">{children}</span>
@@ -532,15 +533,15 @@ export function Pipeline() {
         <button className={'metric sl-mbtn' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><span className="metric-l">Stale</span><span className="metric-v num"><Ticker value={open.filter(isStale).length} /></span></button>
       </div>
       <div className="sl-filters" style={{ marginTop: 16 }}>
-        <Seg id="pview" value={view} onChange={setV} options={[{ value: 'board', label: <span className="row" style={{ gap: 5 }}><LayoutGrid size={13} />Board</span> }, { value: 'list', label: <span className="row" style={{ gap: 5 }}><ListIcon size={13} />List</span> }]} />
+        <Seg id="pview" value={view} onChange={setV} options={[{ value: 'board', label: <span className="row" style={{ gap: 5 }}><LayoutGrid size={13} />Board</span> }, { value: 'list', label: <span className="row" style={{ gap: 5 }}><ListIcon size={13} />List</span> }, { value: 'timeline', label: <span className="row" style={{ gap: 5 }}><GanttChart size={13} />Timeline</span> }]} />
         <Select align="left" value={who} onChange={setWho} options={[{ id: 'all', label: 'Everyone' }, { id: 'mine', label: 'Mine' }, ...REPS.slice(1).map((u) => ({ id: u.id, label: u.short }))]} />
         <button className={'b sm' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><Hourglass size={13} />Stale only</button>
         {view === 'board' && <><span className="grow" /><Select value={sort} onChange={setS} width={170} options={[{ id: 'manual', label: 'Manual order' }, { id: 'value', label: 'Highest value' }, { id: 'due', label: 'Due soonest' }, { id: 'updated', label: 'Recently updated' }]} /></>}
       </div>
-      <SlidePanel k={view} index={view === 'board' ? 0 : 1} style={{ marginTop: 14 }}>
+      <SlidePanel k={view} index={['board', 'list', 'timeline'].indexOf(view)} style={{ marginTop: 14 }}>
         {view === 'board' ? (
           <Board st={st} deals={deals} sort={sort} />
-        ) : (
+        ) : view === 'timeline' ? <DealTimeline deals={deals} /> : (
           <table className="tbl sl-tbl">
             <thead><tr><th>Brand</th><th>Stage</th><th className="r">Value</th><th>Owner</th><th>Next step</th><th>Due</th><th>Updated</th></tr></thead>
             <tbody>

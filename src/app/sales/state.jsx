@@ -1,14 +1,28 @@
 // Sales slice: one localStorage-backed state for the whole Sales portal, plus the actions every flow uses.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { seed, revive, now, ahead, brandOf, repOf, budgetOf, DEAL_STAGES, stageIx, proofFor, caseById, SIGNAL_KIND, brands } from './data'
+import { seed, revive, now, ahead, brandOf, repOf, budgetOf, DEAL_STAGES, stageIx, proofFor, caseById, SIGNAL_KIND, brands, F_EMPTY } from './data'
 import { me, fmt, TODAY } from '../data'
 import { go } from '../ui'
 
 const KEY = 'wldd-sales-v1'
+/** v1 saves (before prospecting) keep their work; new seeds and fields are merged in. */
+function upgrade(v) {
+  const fresh = seed()
+  const old = Object.fromEntries((v.signals || []).map((g) => [g.id, g]))
+  const signals = fresh.signals.map((g) => (old[g.id] ? { ...g, status: old[g.id].status, rating: old[g.id].rating, deal: old[g.id].deal } : g))
+  return { ...fresh, ...v, v: 2, signals }
+}
+/** The global filter starts from the saved view marked auto-apply, or clear. */
+export const autoView = (s) => s.views?.find((x) => x.auto) || null
+const start = (s) => ({ ...s, filter: { ...F_EMPTY, ...(autoView(s)?.f || {}) } })
 const load = () => {
-  try { const v = JSON.parse(localStorage.getItem(KEY) || 'null', revive); if (v?.v === 1) return v } catch {}
-  return seed()
+  try {
+    const v = JSON.parse(localStorage.getItem(KEY) || 'null', revive)
+    if (v?.v === 2) return start(v)
+    if (v?.v === 1) return start(upgrade(v))
+  } catch {}
+  return start(seed())
 }
 const uid = (p) => p + Math.random().toString(36).slice(2, 7)
 
@@ -91,7 +105,7 @@ export function useSalesState() {
   }, [patchDeal, notify])
 
   const claim = useCallback((id) => setSt((s) => ({ ...s, inbound: s.inbound.map((x) => (x.id === id ? { ...x, owner: me.id } : x)) })), [])
-  const reset = useCallback(() => { timers.current.forEach(clearTimeout); const fresh = seed(); setSt(fresh); try { localStorage.setItem(KEY, JSON.stringify(fresh)) } catch {} }, [])
+  const reset = useCallback(() => { timers.current.forEach(clearTimeout); const fresh = start(seed()); setSt(fresh); try { localStorage.setItem(KEY, JSON.stringify(fresh)) } catch {} }, [])
 
   return useMemo(() => ({ ...st, set, patchDeal, log, notify, dupOf, addDeal, moveDeal, simulateReply, claim, reset }), [st, set, patchDeal, log, notify, dupOf, addDeal, moveDeal, simulateReply, claim, reset])
 }

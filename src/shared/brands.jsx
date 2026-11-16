@@ -22,6 +22,14 @@ export const BRAND_DOMAINS = {
   'Ather Energy': 'atherenergy.com', 'Duolingo India': 'duolingo.com', Swiggy: 'swiggy.com', Meesho: 'meesho.com', Spinny: 'spinny.com',
   'Tata Neu': 'tataneu.com', 'Bombay Shaving Company': 'bombayshavingcompany.com', 'Third Wave Coffee': 'thirdwavecoffee.in', Plum: 'plumgoodness.com',
   Bewakoof: 'bewakoof.com', Atomberg: 'atomberg.com', 'Country Delight': 'countrydelight.in',
+  // Prospecting: more D2C in our DB, and the simulated Apollo pool
+  Foxtale: 'foxtale.in', Farmley: 'farmley.com', 'Rage Coffee': 'ragecoffee.com', Zouk: 'zouk.co.in', 'Bombay Shirt Company': 'bombayshirts.com',
+  'Super You': 'superyou.in', Perfora: 'perforacare.com', Bummer: 'bummer.in', 'Lahori Zeera': 'lahorizeera.com', Traya: 'traya.health', Giva: 'giva.co',
+  'The Souled Store': 'thesouledstore.com', Snackible: 'snackible.com', 'Wow! Momo': 'wowmomo.com', Chumbak: 'chumbak.com', Mylo: 'mylofamily.com',
+  Sirona: 'sironahygiene.com', 'Pee Safe': 'peesafe.in', Beardo: 'beardo.in', 'The Man Company': 'themancompany.com', 'Yoga Bar': 'yogabars.in',
+  Epigamia: 'epigamia.com', 'Paper Boat': 'paperboatdrinks.com', 'Swiss Beauty': 'swissbeauty.in', 'Dot & Key': 'dotandkey.com', mCaffeine: 'mcaffeine.com',
+  'Neeman’s': 'neemans.com', Uppercase: 'uppercase.co.in', Clovia: 'clovia.com', Libas: 'libas.in', Suta: 'suta.in', Nua: 'nuawoman.com',
+  BlueStone: 'bluestone.com', 'Kuku FM': 'kukufm.com', 'Pocket FM': 'pocketfm.com', 'The Ayurveda Co': 'theayurvedaco.com', Boheco: 'boheco.com',
   // Integrations
   'Zoho People': 'zoho.com', 'Google Workspace': 'workspace.google.com', Slack: 'slack.com', 'Google Drive': 'drive.google.com',
   Instagram: 'instagram.com', RazorpayX: 'razorpay.com', 'Tally Prime': 'tallysolutions.com', 'WhatsApp Business': 'whatsapp.com',
