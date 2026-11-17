@@ -19,6 +19,7 @@ import { refFor, resolve, Answer, suggestFor } from '../pages/Hub'
 import { now, ahead, brandOf, repOf, caseById, proofFor, budgetOf, brands } from './data'
 import { factsFor, relOf, brandIn, stageLabel, RELL } from './state'
 import { TodoBellRows, dueMine } from '../todo/ui'
+import { Wldd } from '../../loaders/Wldd'
 
 /* ───────── Source chips ───────── */
 const SRC_ICON = { Gmail: Mail, Apollo: Database, LinkedIn: Network, 'Google Calendar': CalendarDays, 'Google Meet': Video, Gemini: NotebookPen, 'Signals engine': Radar, AI: Wand2, 'Case Library': Library, DMS: Layers }
@@ -168,7 +169,7 @@ export function AskDialog() {
     const id = Math.random().toString(36).slice(2)
     setThread((l) => [...l, { id, q: t, busy: true }])
     setQ('')
-    setTimeout(() => setThread((l) => l.map((x) => (x.id === id ? { ...x, busy: false } : x))), prefersReduced() ? 120 : 420)
+    setTimeout(() => setThread((l) => l.map((x) => (x.id === id ? { ...x, busy: false } : x))), prefersReduced() ? 150 : 900)
   }
   useEffect(() => {
     const on = (e) => { setOpen(true); if (e.detail?.q) ask(e.detail.q) }
@@ -206,7 +207,7 @@ export function AskDialog() {
               {thread.map((m) => (
                 <div key={m.id} className="sl-ask-m">
                   <div className="sl-ask-q">{m.q}</div>
-                  {m.busy ? <div className="sl-think"><i /><i /><i /></div> : (
+                  {m.busy ? <div className="sl-ask-think" role="status" aria-label="Thinking"><Wldd mode="cycle" size={26} tight label="Thinking" /></div> : (
                     <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: EASE }}>
                       <AskAnswer text={m.q} st={st} s={s} ask={ask} close={() => setOpen(false)} />
                     </motion.div>
