@@ -5,11 +5,11 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, Check, ChevronDown, SlidersHorizontal, Bookmark, Plus, KeyRound, UserCheck, Database, Radar, Pin, PinOff, Megaphone, ArrowUpRight,
-  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, PanelRight, Building2, User, CornerDownLeft, Layers3, Flame,
+  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, PanelRight, Info, Building2, User, CornerDownLeft, Layers3, Flame,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
-import { fmt, me, TODAY } from '../data'
+import { fmt, me, TODAY, SERVICES } from '../data'
 import { Tip, AutoHeight, EASE, DRAWER } from '../../shared/motion'
 import { Avatar } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
@@ -196,35 +196,79 @@ export const setFilterMode = (mode) => window.dispatchEvent(new CustomEvent('bd:
 
 /* ───────── Side panel ─────────
    Search, saved views, then every filter grouped by what it narrows, each option with a live count. */
-function Facet({ def, f, setF, counts, st, open: open0 }) {
+/** One filter in the panel, drawn for its kind of data:
+    one-of (Within, Contact, Owner) → a segmented switch with Any;
+    a handful of options → chips with counts, always visible;
+    long lists (companies, industries, cities) → search + checkboxes, folded, showing what's picked when folded. */
+function Facet({ def, f, setF, counts, st }) {
   const v = f[def.id] ?? (def.single ? '' : [])
   const act = isOn(v)
-  const [open, setOpen] = useState(open0 || act)
-  const [q, setQ] = useState('')
-  const [all, setAll] = useState(false)
   const opts = optsOf(def, st)
   const c = counts?.[def.id]
+  const name = def.pl || def.label
+  const clear = () => setF({ ...f, [def.id]: def.single ? '' : [] })
+  const head = (
+    <div className="bdv-fq-h">
+      <span className="grow">{name}</span>
+      {act && <button className="bdv-fq-x" onClick={clear} aria-label={'Clear ' + name}>Clear</button>}
+    </div>
+  )
+  if (def.single && def.seg) {
+    return (
+      <div className="bdv-fq">
+        {head}
+        <Seg id={'fq-' + def.id} value={v || ''} onChange={(k) => setF({ ...f, [def.id]: k })} options={[{ value: '', label: 'Any' }, ...opts.map(([k]) => ({ value: k, label: def.seg[k] || k }))]} />
+      </div>
+    )
+  }
+  if (!def.search && opts.length <= 8) {
+    return (
+      <div className="bdv-fq">
+        {head}
+        <div className="bdv-fq-c">
+          {opts.map(([k, l]) => {
+            const sel = !!isSel(def, v, k)
+            const n = c ? c[k] || 0 : null
+            return (
+              <button key={k} title={def.id === 'fit' ? l : undefined} className={'bdv-fqc' + (sel ? ' on' : '') + (n === 0 && !sel ? ' zero' : '')} aria-pressed={sel} onClick={() => setF(togOf(def, f, k))}>
+                {def.id === 'fit' ? <span className="bdv-fqc-m">{SERVICES[k]?.short || k.toUpperCase()}</span> : null}
+                {def.id === 'fit' ? null : l}
+                {n != null && <span className="num bdv-fqc-n">{n}</span>}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+  return <FacetList def={def} f={f} setF={setF} c={c} opts={opts} v={v} act={act} name={name} clear={clear} />
+}
+function FacetList({ def, f, setF, c, opts, v, act, name, clear }) {
+  const [open, setOpen] = useState(false)
+  const [q, setQ] = useState('')
+  const [all, setAll] = useState(false)
   let list = q ? opts.filter((o) => o[1].toLowerCase().includes(q.toLowerCase())) : opts
-  if (c && !q && opts.length > 8) list = [...list].sort((a, b) => (isSel(def, v, b[0]) - isSel(def, v, a[0])) || ((c[b[0]] || 0) - (c[a[0]] || 0)))
+  if (c && !q) list = [...list].sort((a, b) => (isSel(def, v, b[0]) - isSel(def, v, a[0])) || ((c[b[0]] || 0) - (c[a[0]] || 0)))
   const long = list.length > 6 && !all && !q
   const shown = long ? list.slice(0, 6) : list.slice(0, 80)
+  const lab = (k) => opts.find((o) => o[0] === k)?.[1] || k
+  const picked = Array.isArray(v) ? v.map(lab) : v ? [lab(v)] : []
   return (
-    <div className={'bdv-fx' + (open ? ' open' : '')}>
-      <button className="bdv-fx-h" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <span className="grow">{def.label}</span>
-        {act && <span className="bdv-fx-n num">{Array.isArray(v) ? v.length : 1}</span>}
-        {act && <span className="bdv-fx-c" role="button" tabIndex={0} aria-label={'Clear ' + def.label} onClick={(e) => { e.stopPropagation(); setF({ ...f, [def.id]: def.single ? '' : [] }) }}><X size={11} /></span>}
+    <div className={'bdv-fq bdv-fql' + (open ? ' open' : '')}>
+      <button className="bdv-fql-h" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="bdv-fql-n">{name}</span>
+        <span className={'grow ell bdv-fql-v' + (picked.length ? ' set' : '')}>{picked.length ? picked.join(', ') : 'Any'}</span>
         <ChevronDown size={13} className="mute bdv-fx-i" />
       </button>
       {open && (
         <div className="bdv-fx-b">
-          {(def.search || opts.length > 10) && <div className="inp bdv-fsrch"><Search size={13} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={'Find ' + def.label.toLowerCase()} aria-label={'Find ' + def.label} /></div>}
+          <div className="inp bdv-fsrch"><Search size={13} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={'Find ' + name.toLowerCase()} aria-label={'Find ' + name} /></div>
           {shown.map(([k, l]) => {
             const sel = isSel(def, v, k)
             const n = c ? c[k] || 0 : null
             return (
-              <button key={k} className={'bdv-fo' + (sel ? ' on' : '') + (n === 0 && !sel ? ' zero' : '')} role={def.single ? 'radio' : 'checkbox'} aria-checked={!!sel} onClick={() => setF(togOf(def, f, k))}>
-                <span className={'bdv-ck' + (def.single ? ' r' : '')}>{sel ? <Check size={10} strokeWidth={3} /> : null}</span>
+              <button key={k} className={'bdv-fo' + (sel ? ' on' : '') + (n === 0 && !sel ? ' zero' : '')} role="checkbox" aria-checked={!!sel} onClick={() => setF(togOf(def, f, k))}>
+                <span className="bdv-ck">{sel ? <Check size={10} strokeWidth={3} /> : null}</span>
                 {def.id === 'co' && <BrandLogo name={l} size={16} />}
                 <span className="grow ell">{l}</span>
                 {n != null && <span className="num bdv-fo-n">{n}</span>}
@@ -232,7 +276,8 @@ function Facet({ def, f, setF, counts, st, open: open0 }) {
             )
           })}
           {long && <button className="bdv-more" onClick={() => setAll(true)}>Show all {list.length}</button>}
-          {!list.length && <div className="mute xs" style={{ padding: '4px 8px' }}>No match</div>}
+          {!list.length && <div className="mute xs" style={{ padding: '4px 0' }}>No match</div>}
+          {act && <button className="bdv-fq-x" style={{ alignSelf: 'flex-start', marginTop: 4 }} onClick={clear}>Clear {name.toLowerCase()}</button>}
         </div>
       )}
     </div>
@@ -264,16 +309,24 @@ export function FilterBody({ sheet, onDone }) {
           ))}
         </div>
       </div>
-      {GROUPS.map((g) => (
-        <div key={g.id} className="bdv-fb-sec">
-          <button className="bdv-fb-gh" onClick={() => setShut((x) => ({ ...x, [g.id]: !x[g.id] }))} aria-expanded={!shut[g.id]}>
-            <span className="grow">{g.label}</span>
-            <Tip label={g.hint}><span className="bdv-fb-hint">{g.id === 'company' ? 'All tabs' : g.id === 'signal' ? 'Signals' : g.id === 'people' ? 'People' : 'Stream'}</span></Tip>
-            <ChevronDown size={13} className="mute bdv-fx-i" style={{ transform: shut[g.id] ? 'rotate(-90deg)' : '' }} />
-          </button>
-          {!shut[g.id] && FILTERS.filter((d) => d.group === g.id).map((d, i) => <Facet key={d.id} def={d} f={f} setF={setF} counts={counts} st={st} open={g.id !== 'activity' && i < 2 && d.id !== 'co'} />)}
-        </div>
-      ))}
+      {GROUPS.map((g) => {
+        const defs = FILTERS.filter((d) => d.group === g.id)
+        const on = defs.filter((d) => isOn(f[d.id])).length
+        return (
+          <div key={g.id} className="bdv-fb-sec">
+            <div className="bdv-fb-gh">
+              <button className="bdv-fb-gt" onClick={() => setShut((x) => ({ ...x, [g.id]: !x[g.id] }))} aria-expanded={!shut[g.id]}>
+                {g.label}{on > 0 && <span className="bdv-fb-gn num">{on}</span>}
+              </button>
+              <Tip label={g.hint}><span className="bdv-fb-gi" aria-label={g.hint}><Info size={12} /></span></Tip>
+              <span className="grow" />
+              {on > 0 && <button className="bdv-fq-x" onClick={() => setF({ ...f, ...Object.fromEntries(defs.map((d) => [d.id, d.single ? '' : []])) })}>Clear</button>}
+              <button className="bdv-fb-gc" onClick={() => setShut((x) => ({ ...x, [g.id]: !x[g.id] }))} aria-label={(shut[g.id] ? 'Show ' : 'Hide ') + g.label}><ChevronDown size={13} className="mute" style={{ transform: shut[g.id] ? 'rotate(-90deg)' : '' }} /></button>
+            </div>
+            {!shut[g.id] && <div className="bdv-fb-gb">{defs.map((d) => <Facet key={d.id} def={d} f={f} setF={setF} counts={counts} st={st} />)}</div>}
+          </div>
+        )
+      })}
       <div className="bdv-fb-f">
         <span className="grow mute xs num">{res.signals.length} signals · {res.companies.length} companies · {res.people.length} people</span>
         {sheet && <button className="b ink" onClick={onDone}><Check size={14} />Show</button>}

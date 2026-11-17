@@ -37,29 +37,29 @@ export const DEPTS = ['Marketing', 'Brand', 'Growth', 'Digital & social', 'Found
 /** Filter groups, so a reader knows what each filter narrows. Company facts reach every tab; the rest narrow their own entity
     and, through it, the companies behind it (one global filter). */
 export const GROUPS = [
-  { id: 'company', label: 'Company', hint: 'Applies to every tab' },
-  { id: 'signal', label: 'Signals', hint: 'Narrows signals, and the companies behind them' },
-  { id: 'people', label: 'People', hint: 'Narrows people, and the companies they work at' },
-  { id: 'activity', label: 'Activity', hint: 'Inbound, moments, alerts and follow-ups' },
+  { id: 'company', label: 'Company', hint: 'Company facts. They narrow every tab.' },
+  { id: 'signal', label: 'Signals', hint: 'Narrow signals, and the companies behind them.' },
+  { id: 'people', label: 'People', hint: 'Narrow people, and the companies they work at.' },
+  { id: 'activity', label: 'Activity', hint: 'What shows in Stream: inbound, moments, alerts and follow-ups.' },
 ]
 export const FILTERS = [
-  { id: 'co', label: 'Company', group: 'company', search: true, opts: [] }, // options come from our DB (optsOf)
-  { id: 'funding', label: 'Funding', group: 'company', opts: FUNDING.map((x) => [x, x]) },
-  { id: 'size', label: 'Employees', group: 'company', opts: [['1-50', '1–50'], ['50-200', '50–200'], ['200-1000', '200–1,000'], ['1000-5000', '1,000–5,000'], ['5000+', '5,000+']] },
-  { id: 'cat', label: 'Industry', group: 'company', search: true, opts: ALL_CATS.map((x) => [x, x]) },
-  { id: 'city', label: 'City', group: 'company', search: true, opts: ALL_CITIES.map((x) => [x, x]) },
-  { id: 'rel', label: 'Relationship', group: 'company', opts: [['client', 'Client'], ['warm', 'Warm'], ['cold', 'Cold']] },
-  { id: 'kind', label: 'Signal', group: 'signal', opts: Object.entries(SIGNAL_KIND) },
-  { id: 'recency', label: 'Recency', group: 'signal', single: true, opts: [['1d', 'Last day'], ['7d', 'Last week'], ['14d', 'Last 2 weeks'], ['30d', 'Last 30 days']] },
-  { id: 'fit', label: 'Service fit', group: 'signal', opts: ['memd', 'inf', 'amp', 'cc', 'tt', 'solo', 'off'].map((k) => [k, SERVICES[k].label]) },
-  { id: 'relevance', label: 'BD relevance', group: 'signal', opts: [['high', 'High'], ['med', 'Medium'], ['low', 'Low']] },
-  { id: 'deal', label: 'Deal size', group: 'signal', opts: [['lt10', 'Under ₹10L'], ['10-25', '₹10–25L'], ['25-50', '₹25–50L'], ['50+', '₹50L+']] },
-  { id: 'role', label: 'Seniority', group: 'people', opts: ROLES_P.map((x) => [x, x]) },
-  { id: 'dept', label: 'Department', group: 'people', opts: DEPTS.map((x) => [x, x]) },
-  { id: 'contact', label: 'Contact', group: 'people', single: true, opts: [['known', 'On file · free'], ['locked', 'Needs a reveal']] },
-  { id: 'pflag', label: 'Movement', group: 'people', opts: [['new', 'New in role'], ['moved', 'Moved in from a brand']] },
-  { id: 'types', label: 'Type', group: 'activity', opts: [['signal', 'Signals'], ['inbound', 'Inbound'], ['moment', 'Moments'], ['alert', 'Account alerts'], ['follow', 'Follow-ups']] },
-  { id: 'owner', label: 'Owner', group: 'activity', single: true, opts: [['mine', 'Mine'], ['unclaimed', 'Unclaimed']] },
+  { id: 'co', pl: 'Specific companies', label: 'Company', group: 'company', search: true, opts: [] }, // options come from our DB (optsOf)
+  { id: 'funding', pl: 'Funding', label: 'Funding', group: 'company', opts: FUNDING.map((x) => [x, x]) },
+  { id: 'size', pl: 'Team size', label: 'Employees', group: 'company', opts: [['1-50', '1–50'], ['50-200', '50–200'], ['200-1000', '200–1,000'], ['1000-5000', '1,000–5,000'], ['5000+', '5,000+']] },
+  { id: 'cat', pl: 'Industry', label: 'Industry', group: 'company', search: true, opts: ALL_CATS.map((x) => [x, x]) },
+  { id: 'city', pl: 'City', label: 'City', group: 'company', search: true, opts: ALL_CITIES.map((x) => [x, x]) },
+  { id: 'rel', pl: 'Relationship', label: 'Relationship', group: 'company', opts: [['client', 'Client'], ['warm', 'Warm'], ['cold', 'Cold']] },
+  { id: 'kind', pl: 'Type', label: 'Signal', group: 'signal', opts: Object.entries(SIGNAL_KIND) },
+  { id: 'recency', pl: 'Within', seg: { '1d': 'Day', '7d': 'Week', '14d': '2 weeks', '30d': 'Month' }, label: 'Recency', group: 'signal', single: true, opts: [['1d', 'Last day'], ['7d', 'Last week'], ['14d', 'Last 2 weeks'], ['30d', 'Last 30 days']] },
+  { id: 'fit', pl: 'Service fit', label: 'Service fit', group: 'signal', opts: ['memd', 'inf', 'amp', 'cc', 'tt', 'solo', 'off'].map((k) => [k, SERVICES[k].label]) },
+  { id: 'relevance', pl: 'Relevance', label: 'BD relevance', group: 'signal', opts: [['high', 'High'], ['med', 'Medium'], ['low', 'Low']] },
+  { id: 'deal', pl: 'Deal size', label: 'Deal size', group: 'signal', opts: [['lt10', 'Under ₹10L'], ['10-25', '₹10–25L'], ['25-50', '₹25–50L'], ['50+', '₹50L+']] },
+  { id: 'role', pl: 'Seniority', label: 'Seniority', group: 'people', opts: ROLES_P.map((x) => [x, x]) },
+  { id: 'dept', pl: 'Department', label: 'Department', group: 'people', opts: DEPTS.map((x) => [x, x]) },
+  { id: 'contact', pl: 'Contact', seg: { known: 'On file', locked: 'Needs reveal' }, label: 'Contact', group: 'people', single: true, opts: [['known', 'On file · free'], ['locked', 'Needs a reveal']] },
+  { id: 'pflag', pl: 'Movement', label: 'Movement', group: 'people', opts: [['new', 'New in role'], ['moved', 'Moved in from a brand']] },
+  { id: 'types', pl: 'Show', label: 'Type', group: 'activity', opts: [['signal', 'Signals'], ['inbound', 'Inbound'], ['moment', 'Moments'], ['alert', 'Account alerts'], ['follow', 'Follow-ups']] },
+  { id: 'owner', pl: 'Owner', seg: { mine: 'Mine', unclaimed: 'Unclaimed' }, label: 'Owner', group: 'activity', single: true, opts: [['mine', 'Mine'], ['unclaimed', 'Unclaimed']] },
 ]
 /** Search scopes: what the search box looks at. */
 export const SCOPES = [['all', 'All'], ['companies', 'Companies'], ['people', 'People'], ['signals', 'Signals']]
@@ -221,15 +221,15 @@ export function facetCounts(st, f) {
         else if (def.id === 'cat') bump(c.cat)
         else if (def.id === 'city') bump(c.hq)
         else if (def.id === 'rel') bump(relKind(c, st))
-        else if (def.id === 'size') for (const k of Object.keys(SIZE_B)) if (c.size != null && c.size >= SIZE_B[k][0] && c.size <= SIZE_B[k][1]) bump(k)
+        else if (def.id === 'size') { for (const k of Object.keys(SIZE_B)) { if (c.size != null && c.size >= SIZE_B[k][0] && c.size <= SIZE_B[k][1]) bump(k) } }
       }
     } else if (def.group === 'signal') {
       for (const g of base.signals) {
         if (def.id === 'kind') bump(g.kind)
         else if (def.id === 'relevance') bump(g.relevance)
         else if (def.id === 'fit') (g.fit || []).forEach(bump)
-        else if (def.id === 'recency') for (const k of Object.keys(REC)) if (daysAgo(g.at) <= REC[k]) bump(k)
-        else if (def.id === 'deal') for (const k of Object.keys(DEAL_B)) if (inB(g.dealSize, DEAL_B[k])) bump(k)
+        else if (def.id === 'recency') { for (const k of Object.keys(REC)) { if (daysAgo(g.at) <= REC[k]) bump(k) } }
+        else if (def.id === 'deal') { for (const k of Object.keys(DEAL_B)) { if (inB(g.dealSize, DEAL_B[k])) bump(k) } }
       }
     } else if (def.group === 'people') {
       for (const p of base.people) {

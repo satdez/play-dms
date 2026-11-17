@@ -409,3 +409,34 @@ button.li.bdv-mo { width: 100%; text-align: left; cursor: pointer; color: inheri
 .bdv-ctx button { display: flex; align-items: center; gap: 9px; width: 100%; height: 32px; padding: 0 10px; border-radius: 7px; font-size: 13px; color: var(--fg); text-align: left; }
 .bdv-ctx button:hover, .bdv-ctx button:focus-visible { background: var(--hover); outline: none; }
 .bdv-ctx button svg:first-child { color: var(--muted); }
+
+/* ───── Filter panel: each filter drawn for its kind of data ───── */
+.bdv-fb-gh { height: 32px; }
+.bdv-fb-gt { display: inline-flex; align-items: center; gap: 6px; height: 28px; font-size: 11.5px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--fg-2); }
+.bdv-fb-gn { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; display: inline-grid; place-items: center; font-size: 10.5px; letter-spacing: 0; color: var(--surface); background: var(--fg); }
+.bdv-fb-gi { display: inline-grid; place-items: center; width: 20px; height: 20px; color: var(--faint); cursor: help; }
+.bdv-fb-gi:hover { color: var(--fg-2); }
+.bdv-fb-gc { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; }
+.bdv-fb-gc:hover { background: var(--hover); }
+.bdv-fb-gb { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 14px; }
+.bdv-fq { display: flex; flex-direction: column; gap: 7px; }
+.bdv-fq-h { display: flex; align-items: center; min-height: 18px; font-size: 12.5px; font-weight: 500; color: var(--fg-2); }
+.bdv-fq-x { font-size: 12px; color: var(--muted); padding: 0 2px; border-radius: 4px; }
+.bdv-fq-x:hover { color: var(--fg); text-decoration: underline; }
+.bdv-fq > .seg { display: flex; width: 100%; }
+.bdv-fq > .seg button { flex: 1; justify-content: center; padding: 0 4px; font-size: 12px; }
+.bdv-fq-c { display: flex; flex-wrap: wrap; gap: 5px; }
+.bdv-fqc { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 9px; border-radius: 8px; font-size: 12.5px; font-weight: 500; color: var(--fg-2); background: color-mix(in oklab, var(--fg) 5%, transparent); box-shadow: inset 0 0 0 1px transparent; transition: background-color 120ms ease, color 120ms ease; }
+.bdv-fqc:hover { background: color-mix(in oklab, var(--fg) 9%, transparent); color: var(--fg); }
+.bdv-fqc.on { background: var(--fg); color: var(--surface); }
+.bdv-fqc.zero { opacity: .45; }
+.bdv-fqc-n { font-size: 11px; opacity: .6; }
+.bdv-fqc-m { font-family: var(--mono); font-size: 11px; letter-spacing: .02em; }
+.bdv-fql-h { display: flex; align-items: center; gap: 8px; width: 100%; height: 34px; margin: 0 -8px; padding: 0 8px; width: calc(100% + 16px); border-radius: 8px; text-align: left; font-size: 13px; }
+.bdv-fql-h:hover { background: var(--hover); }
+.bdv-fql-n { color: var(--fg-2); font-weight: 500; flex: none; }
+.bdv-fql-v { text-align: right; color: var(--muted); }
+.bdv-fql-v.set { color: var(--fg); }
+.bdv-fql.open .bdv-fx-i { transform: none; }
+.bdv-fql .bdv-fx-b { padding: 4px 0 2px; }
+@media (max-width: 760px) { .bdv-fqc { height: 36px; padding: 0 12px; } .bdv-fql-h { height: 44px; } .bdv-fq > .seg button { height: 36px; } }
