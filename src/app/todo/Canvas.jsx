@@ -10,7 +10,7 @@ import { Popover, Seg } from '../ui'
 import { team } from '../data'
 import { useNarrow } from '../sales/kit'
 import { brandOfItem, colorOf, meId } from './logic'
-import { Composer, TodoText, Tick, DueChip, StyleMenu } from './ui'
+import { Composer, TodoText, Tick, DueChip, StyleMenu, useGoing } from './ui'
 
 const W = 232, GX = 256, GY = 200
 const SWATCH = [null, '#f2bd2f', '#5fcf86', '#c46bf0', '#f0506e', '#7c8cff']
@@ -130,6 +130,7 @@ function headsOf(list) {
 }
 
 function Note({ t, free, zoom = 1 }) {
+  const going = useGoing(t.id)
   const s = useStore()
   const b = brandOfItem(t)
   const c = t.color || colorOf(b)
@@ -153,7 +154,7 @@ function Note({ t, free, zoom = 1 }) {
     e.preventDefault()
   }
   return (
-    <div className={'td-note' + (t.done ? ' done' : '') + (free ? ' free' : '') + (c ? ' tinted' : '')} data-id={t.id} style={{ ...(free ? { left: t.x ?? 0, top: t.y ?? 0 } : null), ...(c ? { '--c': c } : null) }}>
+    <div className={'td-note' + (t.done ? ' done' : '') + (free ? ' free' : '') + (c ? ' tinted' : '') + (going ? ' td-going' : '')} data-id={t.id} style={{ ...(free ? { left: t.x ?? 0, top: t.y ?? 0 } : null), ...(c ? { '--c': c } : null) }}>
       <div className="td-note-h" onPointerDown={grip}>
         {free && <GripHorizontal size={14} className="td-note-g" />}
         {b ? <><BrandLogo name={b} size={16} radius={4} /><span className="ell td-note-b">{b}</span></> : <span className="td-note-b mute">Note</span>}

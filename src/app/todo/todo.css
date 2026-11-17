@@ -20,10 +20,6 @@ a.td-chip:hover { background: color-mix(in oklab, var(--fg) 11%, transparent); }
 .td-ck svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 12; stroke-dashoffset: 12; }
 .td-ck.on { background: var(--ink); box-shadow: none; }
 .td-ck.on svg { stroke-dashoffset: 0; }
-.td-ck.pop { animation: td-tick 260ms cubic-bezier(.23,1,.32,1); }
-.td-ck.pop svg { transition: stroke-dashoffset 200ms cubic-bezier(.23,1,.32,1) 40ms; }
-@keyframes td-tick { 0% { transform: scale(.93); } 55% { transform: scale(1.12); } 100% { transform: scale(1); } }
-html[data-motion='reduced'] .td-ck.pop { animation: none; }
 
 /* ───────── Rows ───────── */
 .td-rows { position: relative; display: flex; flex-direction: column; }
@@ -254,3 +250,17 @@ html[data-variant='app'] .td-in:focus-visible, html[data-variant='app'] .td-edit
 @media (max-width: 760px) {
   .has-tabbar .td-cvpage { padding-bottom: 0; }
 }
+
+/* ───── Ticking off (feedback + state; transitions only, so a quick second tap retargets cleanly) ───── */
+.td-ck { transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1), transform 100ms ease-out; }
+.td-ck:active { transform: scale(.88); }
+.td-ck svg { transition: stroke-dashoffset 220ms cubic-bezier(0.23, 1, 0.32, 1) 40ms; }
+/* The strike draws left to right through the text (wraps with it), and the text dims. */
+.td-tx { background-image: linear-gradient(currentColor, currentColor); background-repeat: no-repeat; background-position: 0 58%; background-size: 0% 1.5px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+/* Ticking off: each run of text gets its own strike, drawn left to right in a quick sequence; chips stay clean. */
+.td-going .td-text { color: var(--muted); transition: color 200ms ease 60ms; }
+.td-going .td-tx { background-size: 100% 1.5px; transition: background-size 200ms cubic-bezier(0.23, 1, 0.32, 1); transition-delay: calc(60ms + var(--i, 0) * 45ms); }
+.td-going .td-chip, .td-going .td-due, .td-going .td-av { opacity: .55; transition: opacity 200ms ease 60ms; }
+@media (prefers-reduced-motion: reduce) { .td-ck, .td-ck svg, .td-going .td-text, .td-going .td-tx { transition-duration: 0ms; } .td-ck:active { transform: none; } }
+html[data-motion='reduced'] .td-ck, html[data-motion='reduced'] .td-ck svg, html[data-motion='reduced'] .td-going .td-text, .td-going .td-tx { transition-duration: 0ms; }
+html[data-motion='reduced'] .td-ck:active { transform: none; }

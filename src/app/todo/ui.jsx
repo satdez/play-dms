@@ -43,7 +43,7 @@ export function TodoText({ t, clamp }) {
   const named = (l) => l.kind === 'phone' && l.person && t.links.some((x) => x.kind === 'person' && x.id === l.person.id) ? { ...l, person: null, tip: l.person.name } : l
   return (
     <span className={'td-text' + (clamp ? ' clamp' : '')}>
-      {parts.map((p, i) => (typeof p === 'string' ? <span key={i}>{p}</span> : <LinkChip key={i} l={named(p)} />))}
+      {parts.map((p, i) => (typeof p === 'string' ? <span key={i} className="td-tx" style={{ '--i': i }}>{p}</span> : <LinkChip key={i} l={named(p)} />))}
       {trail.map((l, i) => <LinkChip key={'t' + i} l={named(l)} />)}
     </span>
   )
@@ -51,21 +51,62 @@ export function TodoText({ t, clamp }) {
 
 export const DueChip = ({ t }) => (t.due ? <span className={'td-due b-' + bucketOf({ ...t, done: false })}>{dueLabel(t.due)}</span> : null)
 
-/** The tick. A click plays it, then the item moves; the keyboard ticks at once. */
+/** The tick. A click: the box fills and the check draws, a strike runs through the text, a beat, then the row
+    closes and the item moves to Done. Keyboard ticks at once; reduced motion just fades.
+    "Going" lives outside React state so every place showing the item (panel, Home strip, a record block) plays it,
+    and a row that re-renders mid-way keeps it. */
+const EASE_OUT = 'cubic-bezier(0.23, 1, 0.32, 1)'
+const reducedMotion = () => document.documentElement.dataset.motion === 'reduced' || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+const GOING = new Set()
+const ARRIVING = new Set() // just ticked: its new row in Done opens in instead of popping in
+const ping = () => window.dispatchEvent(new Event('td:going'))
+/** True while this item is being ticked off; rows add `td-going` with it. */
+export const isGoing = (id) => GOING.has(id)
+export function useGoing(id) {
+  const [, bump] = useState(0)
+  useEffect(() => { const on = () => bump((n) => n + 1); window.addEventListener('td:going', on); return () => window.removeEventListener('td:going', on) }, [])
+  return GOING.has(id)
+}
+const elsOf = (id) => [...document.querySelectorAll(`[data-id="${id}"]`)].filter((el) => el.matches('.td-row, .td-note, .td-scard'))
 export function Tick({ t, size }) {
   const s = useStore()
-  const [pop, setPop] = useState(false)
-  const timer = useRef()
-  useEffect(() => () => clearTimeout(timer.current), [])
+  const going = useGoing(t.id)
   const on = (e) => {
     e.stopPropagation()
-    if (e.detail === 0 || t.done || document.documentElement.dataset.motion === 'reduced') { s.todo.toggle(t.id); return }
-    setPop(true)
-    timer.current = setTimeout(() => { setPop(false); s.todo.toggle(t.id) }, 260)
+    if (GOING.has(t.id)) return
+    if (e.detail === 0 || t.done) { s.todo.toggle(t.id); return } // keyboard, or un-ticking: instant
+    GOING.add(t.id); ping()
+    let anims = []
+    const finish = () => {
+      if (!GOING.has(t.id)) return
+      anims.forEach((a) => a.cancel()) // nothing stays hidden if the element is reused (Undo, Canvas keeps done notes)
+      elsOf(t.id).forEach((el) => { el.style.overflow = '' })
+      GOING.delete(t.id); ping()
+      if (!reducedMotion()) ARRIVING.add(t.id)
+      s.todo.toggle(t.id)
+      setTimeout(() => ARRIVING.delete(t.id), 400)
+    }
+    const leave = () => {
+      const els = elsOf(t.id)
+      if (!els.length) return finish()
+      anims = els.map((el) => {
+        if (reducedMotion()) return el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: 'ease', fill: 'forwards' })
+        if (el.classList.contains('td-note')) return el.animate([{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(0.96)' }], { duration: 200, easing: EASE_OUT, fill: 'forwards' })
+        // A list row closes up (height has no transform equivalent here), fading as it goes.
+        const h = el.getBoundingClientRect().height, cs = getComputedStyle(el)
+        el.style.overflow = 'hidden'
+        return el.animate([
+          { height: h + 'px', opacity: 1, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom },
+          { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px' },
+        ], { duration: 220, easing: EASE_OUT, fill: 'forwards' })
+      })
+      Promise.all(anims.map((a) => a.finished)).then(finish, finish)
+    }
+    setTimeout(leave, reducedMotion() ? 120 : 380) // a beat to read the strike
   }
-  const checked = t.done || pop
+  const checked = t.done || going
   return (
-    <button className={'td-ck' + (checked ? ' on' : '') + (pop ? ' pop' : '') + (size === 'lg' ? ' lg' : '')} role="checkbox" aria-checked={checked} aria-label={checked ? 'Mark not done' : 'Mark done'} onClick={on}>
+    <button className={'td-ck' + (checked ? ' on' : '') + (size === 'lg' ? ' lg' : '')} role="checkbox" aria-checked={checked} aria-label={checked ? 'Mark not done' : 'Mark done'} onClick={on}>
       <svg viewBox="0 0 16 16" aria-hidden><path d="M4 8.4l2.6 2.6L12 5.4" /></svg>
     </button>
   )
@@ -74,12 +115,27 @@ export function Tick({ t, size }) {
 /** One to-do. `edit`: click the text to edit it in place. `grip`: a drag handle (the List page passes one). */
 export function TodoRow({ t, edit, grip, by = true, clamp, actions = true }) {
   const s = useStore()
+  const going = useGoing(t.id)
+  const self = useRef(null)
+  // Arriving in Done: open to its height and fade in, so the list below slides instead of jumping.
+  useLayoutEffect(() => {
+    const el = self.current
+    if (!el || !t.done || !ARRIVING.has(t.id)) return
+    ARRIVING.delete(t.id)
+    const h = el.getBoundingClientRect().height, cs = getComputedStyle(el)
+    el.style.overflow = 'hidden'
+    const a = el.animate([
+      { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px' },
+      { height: h + 'px', opacity: 1, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom },
+    ], { duration: 220, easing: EASE_OUT })
+    a.finished.then(() => { el.style.overflow = '' }, () => { el.style.overflow = '' })
+  }, [t.done]) // eslint-disable-line react-hooks/exhaustive-deps
   const [ed, setEd] = useState(false)
   const [v, setV] = useState(t.text)
   const who = t.by !== meId() && userOf(t.by)
   const save = () => { const x = v.trim(); if (x && x !== t.text) s.todo.patch(t.id, { text: x }); setEd(false) }
   return (
-    <div className={'td-row' + (t.done ? ' done' : '') + (bucketOf(t) === 'overdue' ? ' late' : '')} data-id={t.id}>
+    <div ref={self} className={'td-row' + (t.done ? ' done' : '') + (bucketOf(t) === 'overdue' ? ' late' : '') + (going ? ' td-going' : '')} data-id={t.id}>
       {grip}
       <Tick t={t} />
       <div className="td-body grow" onClick={(e) => { if (edit && !ed && !t.done && !e.target.closest('a,button')) { setV(t.text); setEd(true) } }}>

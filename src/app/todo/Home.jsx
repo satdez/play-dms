@@ -6,7 +6,7 @@ import { Tip, AutoHeight } from '../../shared/motion'
 import { BrandLogo } from '../../shared/brands'
 import { bucketOf, dueLabel, brandOfItem, hrefOf, dayDiff } from './logic'
 import { openTodos, openTodoAdd } from './state'
-import { TodoRow, TodoText, Tick, dueMine, openMine } from './ui'
+import { TodoRow, TodoText, Tick, dueMine, openMine, useGoing, isGoing } from './ui'
 
 /** Strip: one quiet line above the KPIs that opens into today's list. */
 export function TodoStrip() {
@@ -95,13 +95,14 @@ export function HomeTodos({ mode, at, kind }) {
 /** Stream (In context): to-dos as cards at the head of the stream, mine, due within the week. */
 export function StreamTodos() {
   const s = useStore()
+  useGoing(null) // re-render when an item starts or stops ticking off
   const list = openMine(s.todo.items).filter((t) => t.due && ['overdue', 'today', 'upcoming'].includes(bucketOf(t)) && dayDiff(t.due) < 7).sort((a, b) => a.due - b.due).slice(0, 4)
   return list.map((t) => {
     const b = brandOfItem(t)
     const l = t.links.find((x) => x.kind !== 'phone' && hrefOf(x))
     return (
       <div key={t.id} className="bdv-card-w">
-        <article className={'bdv-card td-scard' + (bucketOf(t) === 'overdue' ? ' late' : '')}>
+        <article className={'bdv-card td-scard' + (bucketOf(t) === 'overdue' ? ' late' : '') + (isGoing(t.id) ? ' td-going' : '')} data-id={t.id}>
           <div className="row bdv-card-h">
             <span className="bdv-type td-stype"><ListChecks size={12} />To-do</span>
             {b && <span className="row bdv-card-co"><BrandLogo name={b} size={18} /><b className="ell">{b}</b></span>}
