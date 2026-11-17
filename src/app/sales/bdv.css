@@ -271,7 +271,7 @@
 .bdv-fb { display: flex; flex-direction: column; gap: 10px; }
 .bdv-fb-h { display: flex; align-items: center; gap: 6px; min-height: 30px; }
 .bdv-fb-h b { font-size: 14px; font-weight: 600; }
-.bdv-fb.sheet .bdv-fb-h b { font-size: 16px; }
+.bdv-fb.in-sheet .bdv-fb-h b { font-size: 16px; }
 .bdv-fb-sec { display: flex; flex-direction: column; padding-top: 6px; border-top: 1px solid var(--line); }
 .bdv-fb-gh { display: flex; align-items: center; gap: 6px; width: 100%; height: 30px; text-align: left; font-size: 11.5px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--muted); }
 .bdv-fb-gh .b.icon.sm { width: 24px; height: 24px; }
@@ -300,7 +300,7 @@
 .bdv-more { align-self: flex-start; margin: 2px 0 0 32px; font-size: 12.5px; color: var(--muted); }
 .bdv-more:hover { color: var(--fg); text-decoration: underline; }
 .bdv-fb-f { position: sticky; bottom: -40px; display: flex; align-items: center; gap: 8px; padding: 10px 0; background: var(--bg); border-top: 1px solid var(--line); }
-.bdv-fb.sheet .bdv-fb-f { bottom: -28px; background: var(--surface); }
+.bdv-fb.in-sheet .bdv-fb-f { bottom: -28px; background: var(--surface); }
 .bdv-act { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 32px; margin-bottom: 14px; }
 .bdv-mf-top .bdv-act { margin-bottom: 12px; }
 @media (max-width: 760px) { .bdv-fbar-1 { flex-wrap: wrap; } .bdv-sb { flex: 1 1 100%; max-width: none; flex-direction: column; align-items: stretch; } .bdv-sb > .seg { display: flex; } .bdv-sb > .seg button { flex: 1; justify-content: center; } .bdv-sb-pop { width: 100%; } }
@@ -401,3 +401,11 @@ button.li.bdv-mo { width: 100%; text-align: left; cursor: pointer; color: inheri
 .bdv-fp { padding-bottom: 0; }
 .bdv-fp .bdv-fb-f { bottom: 0; margin: 4px 0 0; padding: 10px 0 14px; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -12px 12px -12px color-mix(in oklab, var(--surface) 90%, transparent); }
 .bdv-fp .bdv-fb-f .xs { font-size: 12px; }
+
+/* Filter panel docked on the right; the right-click menu. */
+.bdv-wp.right { grid-template-columns: minmax(0, 1fr) 268px; }
+.bdv-wp.right > .bdv-fp { order: 2; border-right: 0; border-left: 1px solid var(--line); }
+.bdv-ctx { position: fixed; z-index: 120; min-width: 200px; padding: 4px; }
+.bdv-ctx button { display: flex; align-items: center; gap: 9px; width: 100%; height: 32px; padding: 0 10px; border-radius: 7px; font-size: 13px; color: var(--fg); text-align: left; }
+.bdv-ctx button:hover, .bdv-ctx button:focus-visible { background: var(--hover); outline: none; }
+.bdv-ctx button svg:first-child { color: var(--muted); }

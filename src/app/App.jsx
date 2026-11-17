@@ -28,7 +28,7 @@ import { Prospect } from './sales/Prospecting'
 import { CompaniesFirst } from './sales/Companies'
 import { Stream } from './sales/Stream'
 import { CompanySearch } from './sales/Search'
-import { LAYOUTS as BD_LAYOUTS, BD_HOME, BD_PAGES, setBdLayout, setBdFilters, companyById } from './sales/prospect'
+import { LAYOUTS as BD_LAYOUTS, BD_HOME, BD_PAGES, setBdLayout, setBdFilters, setBdFilterSide, companyById } from './sales/prospect'
 import { brandOf as salesBrandOf } from './sales/data'
 import './sales/bdv.css'
 import { Radar, Compass, BookUser, Kanban, Library, RotateCcw, MessageCircleQuestion, Filter, Flame, Rows3, Handshake } from 'lucide-react'
@@ -116,7 +116,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'sources', bdFilters: 'bar', todo: 'panel', todoHome: 'strip', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'sources', bdFilters: 'bar', bdFilterSide: 'left', todo: 'panel', todoHome: 'strip', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -226,12 +226,12 @@ function Shell({ path }) {
   const [prefs, setPrefsRaw] = useState(() => { try { return { ...PREF_DEFAULTS, ...JSON.parse(read('wldd-prefs', '{}')) } } catch { return PREF_DEFAULTS } })
   const setPrefs = (p) => { setPrefsRaw(p); try { localStorage.setItem('wldd-prefs', JSON.stringify(p)) } catch {} }
   VIEW = personaOf(prefs.viewAs); setView(VIEW)
-  BDL = BD_HOME[prefs.bd] ? prefs.bd : 'sources'; setBdLayout(BDL); setBdFilters(prefs.bdFilters)
+  BDL = BD_HOME[prefs.bd] ? prefs.bd : 'sources'; setBdLayout(BDL); setBdFilters(prefs.bdFilters); setBdFilterSide(prefs.bdFilterSide)
   setTodoStyle(prefs.todo)
   // Pages switch the to-do variation or Home slot with the same preference Settings writes.
   useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, [e.detail.key]: e.detail.value }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('todo:pref', on); return () => window.removeEventListener('todo:pref', on) }, [])
   // The in-page "side panel / bar" switch writes the same preference as Settings.
-  useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, bdFilters: e.detail.mode }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('bd:filters', on); return () => window.removeEventListener('bd:filters', on) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, ...(e.detail.mode && { bdFilters: e.detail.mode }), ...(e.detail.side && { bdFilterSide: e.detail.side }) }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('bd:filters', on); return () => window.removeEventListener('bd:filters', on) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [role, setRole] = useState(() => {
     const m = path.split('/').filter(Boolean)[0]
     if (['pod', 'finance', 'bd'].includes(m)) return m // deep link decides — no switch animation on load

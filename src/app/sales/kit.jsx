@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, Check, ChevronDown, SlidersHorizontal, Bookmark, Plus, KeyRound, UserCheck, Database, Radar, Pin, PinOff, Megaphone, ArrowUpRight,
-  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, Building2, User, CornerDownLeft, Layers3, Flame,
+  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, PanelRight, Building2, User, CornerDownLeft, Layers3, Flame,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
@@ -21,7 +21,7 @@ import { Src, Rel, Val, CaseChip, openAddLead } from './ui'
 import { TodoBlock } from '../todo/ui'
 import {
   FILTERS, filterById, activeCount, describe, run, companyHref, inDb, peopleOf, isKnown, sigsOf, apolloFind, apolloFetch, revealPeople,
-  roleOf, FRESH, kbOf, heat, fmtDays, GROUPS, SCOPES, optsOf, facetCounts, quickFind, bdFilters, fetchName, companyByName, searchScope,
+  roleOf, FRESH, kbOf, heat, fmtDays, GROUPS, SCOPES, optsOf, facetCounts, quickFind, bdFilters, bdFilterSide, fetchName, companyByName, searchScope,
 } from './prospect'
 
 /* ───────── Hooks ───────── */
@@ -247,7 +247,7 @@ export function FilterBody({ sheet, onDone }) {
   const n = activeCount(f)
   const cur = st.views.find((v) => same(v.f, f))
   return (
-    <div className={'bdv-fb' + (sheet ? ' sheet' : '')}>
+    <div className={'bdv-fb' + (sheet ? ' in-sheet' : '')}>
       <div className="bdv-fb-h">
         <b className="grow">Filters{n > 0 && <span className="num mute"> {n}</span>}</b>
         {n > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear all</button>}
@@ -285,13 +285,39 @@ export function FilterBody({ sheet, onDone }) {
 /** Filters around a layout: the side panel on desktop when chosen, otherwise the bar (or the sheet on phones). */
 export function FilterFrame({ children, className = '' }) {
   const narrow = useNarrow()
+  const [menu, setMenu] = useState(null) // { x, y } of a right-click on the panel
   const panel = bdFilters() === 'panel' && !narrow
   if (!panel) return children
+  const right = bdFilterSide() === 'right'
   return (
-    <div className={'bdv-wp ' + className}>
-      <aside className="bdv-fp" aria-label="Filters"><FilterBody /></aside>
+    <div className={'bdv-wp ' + className + (right ? ' right' : '')}>
+      <aside className="bdv-fp" aria-label="Filters" onContextMenu={(e) => { if (e.target.closest('input, textarea')) return; e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }) }}><FilterBody /></aside>
       <div className="bdv-wp-m">{children}</div>
+      {menu && <PanelMenu at={menu} right={right} onClose={() => setMenu(null)} />}
     </div>
+  )
+}
+/** Right-click on the filter panel: dock it left or right, or go back to the bar. */
+function PanelMenu({ at, right, onClose }) {
+  const box = useRef(null)
+  useEffect(() => {
+    const out = (e) => { if (!box.current?.contains(e.target)) onClose() }
+    const key = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('pointerdown', out, true); window.addEventListener('keydown', key); window.addEventListener('blur', onClose); window.addEventListener('resize', onClose)
+    box.current?.querySelector('button')?.focus({ preventScroll: true })
+    return () => { window.removeEventListener('pointerdown', out, true); window.removeEventListener('keydown', key); window.removeEventListener('blur', onClose); window.removeEventListener('resize', onClose) }
+  }, [onClose])
+  const pick = (detail) => { window.dispatchEvent(new CustomEvent('bd:filters', { detail })); onClose() }
+  const x = Math.min(at.x, window.innerWidth - 220), y = Math.min(at.y, window.innerHeight - 150)
+  return createPortal(
+    <div ref={box} className="pop bdv-ctx" role="menu" aria-label="Filter panel" style={{ left: x, top: y }}>
+      <div className="pop-h">Filter panel</div>
+      <button role="menuitemradio" aria-checked={!right} onClick={() => pick({ side: 'left' })}><PanelLeft size={14} />Dock on left{!right && <Check size={14} style={{ marginLeft: 'auto' }} />}</button>
+      <button role="menuitemradio" aria-checked={right} onClick={() => pick({ side: 'right' })}><PanelRight size={14} />Dock on right{right && <Check size={14} style={{ marginLeft: 'auto' }} />}</button>
+      <div className="pop-sep" />
+      <button role="menuitem" onClick={() => pick({ mode: 'bar' })}><PanelLeftClose size={14} />Show as a bar</button>
+    </div>,
+    document.body,
   )
 }
 /** The top of a layout: the filter bar, or (with the side panel) just the active filters as removable chips. */

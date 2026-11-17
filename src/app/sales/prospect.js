@@ -69,6 +69,9 @@ export const optsOf = (def, st) => (def.id === 'co' ? dbCompanies(st).map((c) =>
 let fmode = 'bar'
 export const setBdFilters = (v) => { fmode = v === 'panel' ? 'panel' : 'bar' }
 export const bdFilters = () => fmode
+let fside = 'left'
+export const setBdFilterSide = (v) => { fside = v === 'right' ? 'right' : 'left' }
+export const bdFilterSide = () => fside
 /** What a new search looks at: the Prospecting tab you are on, otherwise everything. A search keeps the scope it was made in. */
 let sscope = 'all'
 export const setSearchScope = (v) => { sscope = v || 'all' }
