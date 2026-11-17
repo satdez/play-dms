@@ -152,7 +152,7 @@ function BdTabBar({ path, openNav }) {
 function useNav(role, s) {
   return navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to))
 }
-/** List and Canvas have a To-do page; it sits at the end of every workspace's pages (and BD's phone More). */
+/** List has a To-do page; it sits at the end of every workspace's pages (and BD's phone More). */
 function navFor(role, s) {
   const base = navBase(role, s)
   return hasPage() ? [...base, { to: '/todo', label: 'To-do', icon: ListChecks, n: dueMine(s.todo.items).length, todo: true }] : base

@@ -20,30 +20,27 @@ export function TodoHost({ path }) {
   const s = useStore()
   const [panel, setPanel] = useState(null) // { links, n } — links null = this page's record
   const [quick, setQuick] = useState(null) // { links }
-  const [all, setAll] = useState(false)
   const ctx = useMemo(() => pageCtx(path, s), [path, s.sales.deals, s.campaigns]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const add = (e) => {
       const links = e.detail?.links?.length ? e.detail.links : null
       if (todoStyle() === 'panel') setPanel((p) => ({ links, n: (p?.n || 0) + 1 }))
-      else { setAll(false); setQuick({ links }) }
+      else setQuick({ links })
     }
     const open = () => {
       const v = todoStyle()
       if (v === 'panel') setPanel((p) => (p ? null : { links: null, n: 0 }))
-      else if (v === 'context') setAll((x) => !x)
       else go('/todo')
     }
     window.addEventListener('todo:add', add); window.addEventListener('todo:open', open)
     return () => { window.removeEventListener('todo:add', add); window.removeEventListener('todo:open', open) }
   }, [])
   const style = todoStyle()
-  useEffect(() => { setPanel(null); setAll(false) }, [style])
+  useEffect(() => { setPanel(null) }, [style])
   return (
     <>
       <Panel open={!!panel && style === 'panel'} onClose={() => setPanel(null)} pre={panel?.links} focusKey={panel?.n} ctx={ctx} />
       <QuickAdd open={!!quick} onClose={() => setQuick(null)} pre={quick?.links || ctx?.links || []} />
-      <AllTodos open={all && style === 'context'} onClose={() => setAll(false)} />
     </>
   )
 }
@@ -154,40 +151,3 @@ function QuickAdd({ open, onClose, pre }) {
 }
 
 /* ───────── In context: every to-do, grouped by company ───────── */
-function AllTodos({ open, onClose }) {
-  const narrow = useNarrow()
-  const body = <AllBody />
-  return narrow ? <BottomSheet open={open} onClose={onClose} tall>{body}</BottomSheet> : <Sheet open={open} onClose={onClose} width={520}>{body}</Sheet>
-}
-function AllBody() {
-  const s = useStore()
-  const [showDone, setShowDone] = useState(false)
-  const open = s.todo.items.filter((t) => !t.done)
-  const groups = {}
-  open.forEach((t) => { const b = brandOfItem(t) || ''; (groups[b] ||= []).push(t) })
-  const keys = Object.keys(groups).sort((a, b) => (!a) - (!b) || groups[b].length - groups[a].length || a.localeCompare(b))
-  const done = s.todo.items.filter((t) => t.done)
-  return (
-    <div className="td-all">
-      <div className="td-all-h">
-        <b>All to-dos</b><span className="mute num">{open.length}</span>
-        <span className="grow" />
-        <StyleMenu />
-        <Tip label="Add a to-do" kbd="T"><button className="b sm ink" onClick={() => openTodoAdd()}><Plus size={14} />Add</button></Tip>
-      </div>
-      {keys.map((k) => (
-        <section key={k || 'none'} className="td-psec">
-          <div className="td-psec-h">{k ? <BrandLogo name={k} size={18} radius={5} /> : <ListChecks size={15} className="mute" />}<span className="ell">{k || 'No company'}</span><span className="mute num">{groups[k].length}</span></div>
-          <div className="td-rows">{groups[k].sort(byDue).map((t) => <TodoRow key={t.id} t={t} edit />)}</div>
-        </section>
-      ))}
-      {!open.length && <div className="empty"><ListChecks size={18} /><b>Clear</b></div>}
-      {done.length > 0 && (
-        <section className="td-psec">
-          <button className="td-psec-h td-fold" onClick={() => setShowDone((x) => !x)} aria-expanded={showDone}><span>Done</span><span className="mute num">{done.length}</span><ChevronDown size={14} className={'mute td-chev' + (showDone ? ' on' : '')} /></button>
-          {showDone && <div className="td-rows">{done.map((t) => <TodoRow key={t.id} t={t} />)}</div>}
-        </section>
-      )}
-    </div>
-  )
-}

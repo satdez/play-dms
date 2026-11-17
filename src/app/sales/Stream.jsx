@@ -13,8 +13,6 @@ import { isOpen } from './state'
 import { openAddLead, dueOf } from './ui'
 import { stream, companyByName, peopleOf, isKnown, revealPeople, fmtDays, setSearchScope } from './prospect'
 import { useProspect, useNarrow, useMq, ViewStrip, FilterFrame, Enrich, BottomSheet, Dossier, BeyondRow, addSignal, addCompany } from './kit'
-import { StreamTodos } from '../todo/Home'
-import { todoStyle } from '../todo/state'
 
 const TYPE = { signal: ['Signal', Radar], inbound: ['Inbound', Inbox], moment: ['Moment', CalendarDays], alert: ['Account alert', AlertTriangle], follow: ['Follow-up', Clock] }
 
@@ -39,7 +37,6 @@ export function Stream() {
         <div className="d-head"><h1 className="d-h1">Stream</h1></div>
         <ViewStrip />
         <div className="bdv-cards">
-          {todoStyle() === 'context' && <StreamTodos />}
           <AnimatePresence initial={false}>
             {cards.map((c) => <Card key={c.id} card={c} touch={touch} onOpen={() => { const x = companyByName(c.brand, st); if (x) setCo(x) }} onHide={hide} />)}
           </AnimatePresence>

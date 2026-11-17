@@ -1,4 +1,4 @@
-// #/todo — List (variation 1) or Canvas (variation 3). Panel and In context have no page.
+// #/todo — the List. With Panel there is no page.
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, GripVertical, X, Link2, User, AlarmClock, Check } from 'lucide-react'
 import { useStore } from '../store'
@@ -7,13 +7,11 @@ import { Popover } from '../ui'
 import { bucketOf, mine, brandOfItem } from './logic'
 import { todoStyle, openTodos } from './state'
 import { Composer, TodoRow, StyleMenu } from './ui'
-import { CanvasPage } from './Canvas'
 
 export function TodoPage() {
   const style = todoStyle()
   // No page in Panel or In context: land on Home and open that variation's surface instead.
-  useEffect(() => { if (style !== 'list' && style !== 'canvas') { location.replace('#/hub'); setTimeout(openTodos, 0) } }, [style])
-  if (style === 'canvas') return <CanvasPage />
+  useEffect(() => { if (style !== 'list') { location.replace('#/hub'); setTimeout(openTodos, 0) } }, [style])
   if (style === 'list') return <ListPage />
   return null
 }

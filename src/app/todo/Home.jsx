@@ -1,4 +1,4 @@
-// To-dos where people already look: Home (strip or card, every layout) and BD's Stream (In context).
+// To-dos where people already look: Home (strip or card, in every Home layout).
 import { useState } from 'react'
 import { ListChecks, ChevronDown, Plus, ArrowUpRight, Check } from 'lucide-react'
 import { useStore } from '../store'
@@ -92,31 +92,3 @@ export function HomeTodos({ mode, at, kind }) {
   return null
 }
 
-/** Stream (In context): to-dos as cards at the head of the stream, mine, due within the week. */
-export function StreamTodos() {
-  const s = useStore()
-  useGoing(null) // re-render when an item starts or stops ticking off
-  const list = openMine(s.todo.items).filter((t) => t.due && ['overdue', 'today', 'upcoming'].includes(bucketOf(t)) && dayDiff(t.due) < 7).sort((a, b) => a.due - b.due).slice(0, 4)
-  return list.map((t) => {
-    const b = brandOfItem(t)
-    const l = t.links.find((x) => x.kind !== 'phone' && hrefOf(x))
-    return (
-      <div key={t.id} className="bdv-card-w">
-        <article className={'bdv-card td-scard' + (bucketOf(t) === 'overdue' ? ' late' : '') + (isGoing(t.id) ? ' td-going' : '')} data-id={t.id}>
-          <div className="row bdv-card-h">
-            <span className="bdv-type td-stype"><ListChecks size={12} />To-do</span>
-            {b && <span className="row bdv-card-co"><BrandLogo name={b} size={18} /><b className="ell">{b}</b></span>}
-            <span className="grow" />
-            <span className={'xs td-due b-' + bucketOf(t)}>{dueLabel(t.due)}</span>
-          </div>
-          <div className="bdv-card-t td-scard-t"><Tick t={t} /><TodoText t={t} /></div>
-          <div className="row bdv-card-a">
-            {l && <a className="b sm" href={'#' + hrefOf(l)}><ArrowUpRight size={13} />Open</a>}
-            <span className="grow" />
-            <button className="b sm ghost" onClick={openTodos}>All to-dos</button>
-          </div>
-        </article>
-      </div>
-    )
-  })
-}

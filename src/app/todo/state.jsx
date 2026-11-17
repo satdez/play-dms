@@ -1,4 +1,4 @@
-// To-do slice: one localStorage-backed list shared by every variation (List, Panel, Canvas, In context).
+// To-do slice: one localStorage-backed list shared by every variation (List and Panel).
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { revive } from '../sales/data'
@@ -14,12 +14,10 @@ export const todoStyle = () => STYLE
 export const TODO_STYLES = [
   { value: 'list', label: 'List', desc: 'A Notion-style page: Today, Upcoming, Someday, Done.' },
   { value: 'panel', label: 'Panel', desc: 'Always one tap away: a panel on the right of any page.' },
-  { value: 'canvas', label: 'Canvas', desc: 'Sticky notes on a board you arrange.' },
-  { value: 'context', label: 'In context', desc: 'No to-do page. To-dos live where the work is.' },
 ]
 export const TODO_HOME = [{ value: 'strip', label: 'Strip' }, { value: 'card', label: 'Card' }, { value: 'off', label: 'Off' }]
-/** The pages that exist only in List and Canvas. */
-export const hasPage = () => STYLE === 'list' || STYLE === 'canvas'
+/** The To-do page exists only in List. (A saved Canvas or In context choice falls back to Panel.) */
+export const hasPage = () => STYLE === 'list'
 
 /* Events: any page can ask for capture or the to-do surface; the shell decides what that means for the variation. */
 export const openTodoAdd = (links = []) => window.dispatchEvent(new CustomEvent('todo:add', { detail: { links } }))
