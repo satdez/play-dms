@@ -12,7 +12,7 @@ import { DEAL_STAGES, repOf } from './data'
 import { isOpen } from './state'
 import { openAddLead, dueOf } from './ui'
 import { stream, companyByName, peopleOf, isKnown, revealPeople, fmtDays, setSearchScope } from './prospect'
-import { useProspect, useNarrow, useMq, ViewStrip, FilterFrame, Enrich, BottomSheet, Dossier, BeyondRow, addSignal, addCompany } from './kit'
+import { useProspect, useNarrow, useMq, ViewStrip, FilterFrame, InboundSheet, Enrich, BottomSheet, Dossier, BeyondRow, addSignal, addCompany } from './kit'
 
 const TYPE = { signal: ['Signal', Radar], inbound: ['Inbound', Inbox], moment: ['Moment', CalendarDays], alert: ['Account alert', AlertTriangle], follow: ['Follow-up', Clock] }
 
@@ -21,6 +21,7 @@ export function Stream() {
   setSearchScope('all')
   const cards = useMemo(() => stream(res, st), [res, st.hidden]) // eslint-disable-line react-hooks/exhaustive-deps
   const [co, setCo] = useState(null)
+  const [inb, setInb] = useState(null) // an inbound card opens its message
   const narrow = useNarrow()
   const touch = useMq('(pointer: coarse)')
   const hide = (card, until) => {
@@ -38,13 +39,14 @@ export function Stream() {
         <ViewStrip />
         <div className="bdv-cards">
           <AnimatePresence initial={false}>
-            {cards.map((c) => <Card key={c.id} card={c} touch={touch} onOpen={() => { const x = companyByName(c.brand, st); if (x) setCo(x) }} onHide={hide} />)}
+            {cards.map((c) => <Card key={c.id} card={c} touch={touch} onOpen={() => { if (c.type === 'inbound' && c.x) { setInb(c.x); return } const x = companyByName(c.brand, st); if (x) setCo(x) }} onHide={hide} />)}
           </AnimatePresence>
           {!cards.length && <div className="empty"><Check size={18} /><b>Clear</b></div>}
         </div>
         <BeyondRow kind="companies" list />
       </div>
       <Rail />
+      {inb && <InboundSheet x={inb} open={!!inb} onClose={() => setInb(null)} />}
       {narrow ? <BottomSheet open={!!co} onClose={() => setCo(null)} tall>{dossier}</BottomSheet> : <Sheet open={!!co} onClose={() => setCo(null)} width={620}>{dossier}</Sheet>}
     </div>
     </FilterFrame>

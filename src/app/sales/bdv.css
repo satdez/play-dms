@@ -440,3 +440,26 @@ button.li.bdv-mo { width: 100%; text-align: left; cursor: pointer; color: inheri
 .bdv-fql.open .bdv-fx-i { transform: none; }
 .bdv-fql .bdv-fx-b { padding: 4px 0 2px; }
 @media (max-width: 760px) { .bdv-fqc { height: 36px; padding: 0 12px; } .bdv-fql-h { height: 44px; } .bdv-fq > .seg button { height: 36px; } }
+
+/* ───── Inbound: the row opens the message ───── */
+.bdv-inb-o { cursor: pointer; }
+.bdv-inb-o:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--fg) 22%, transparent); }
+.bdv-inb-src { display: inline-flex; vertical-align: -1px; margin-right: 5px; color: var(--muted); }
+.chip.bdv-inb-r { height: 18px; font-size: 11px; }
+.bdv-ibs { display: flex; flex-direction: column; gap: 16px; }
+.bdv-ibs-h { display: flex; align-items: center; gap: 12px; padding-right: 36px; }
+.bdv-ibs-from { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; background: var(--sunken); }
+.bdv-ibs-from a { color: inherit; }
+.bdv-ibs-bud { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.bdv-ibs-bud b { font-size: 16px; }
+.bdv-ibs-msg { margin: 0; white-space: pre-wrap; font: inherit; font-size: 14px; line-height: 1.6; color: var(--fg); padding: 2px 2px; }
+.bdv-ibs-form { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 8px 12px; margin: 0; padding: 12px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line); font-size: 13.5px; }
+.bdv-ibs-form dt { color: var(--muted); }
+.bdv-ibs-form dd { margin: 0; }
+.bdv-ibs-sec { display: flex; flex-direction: column; }
+.bdv-ibs-sec .group-h { margin: 0 0 6px; }
+.bdv-ibs-kv { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px 12px; font-size: 13.5px; align-items: center; }
+.bdv-ibs-rep { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--line-2); }
+.bdv-ibs-rep textarea { width: 100%; resize: vertical; border: 0; outline: none; background: none; color: var(--fg); font: inherit; font-size: 14px; line-height: 1.55; }
+.bdv-ibs-act { position: sticky; bottom: -28px; display: flex; align-items: center; gap: 6px; padding: 12px 0 4px; background: var(--surface); border-top: 1px solid var(--line); }
+@media (max-width: 760px) { .bdv-ibs-form { grid-template-columns: 1fr; gap: 2px; } .bdv-ibs-form dd { margin-bottom: 8px; } .bdv-ibs-rep textarea { font-size: 16px; } .bdv-ibs-act { flex-wrap: wrap; } }

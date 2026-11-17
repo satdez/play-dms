@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, Check, ChevronDown, SlidersHorizontal, Bookmark, Plus, KeyRound, UserCheck, Database, Radar, Pin, PinOff, Megaphone, ArrowUpRight,
   BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, PanelRight, Info, Building2, User, CornerDownLeft, Layers3, Flame,
+  Mail, Globe,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
@@ -632,21 +633,109 @@ export function PersonRow({ p, picked, onPick }) {
   )
 }
 
+/** An inbound lead: someone who came to us, by email (Gmail) or the website form. The row opens the message. */
 export function InboundRow({ x }) {
   const s = useStore(); const st = s.sales
-  const c = brandOf(x.company) || { name: x.company, id: '' }
-  const add = () => { if (!x.owner) st.claim(x.id); openAddLead({ brand: x.company, source: 'Inbound', value: String(x.budget / 1e5), contact: { name: x.name, title: '', email: x.email }, note: x.summary, ref: { kind: 'inbound', id: x.id } }) }
+  const [open, setOpen] = useState(false)
+  const add = () => addInbound(x, st)
   return (
-    <div className="li bdv-inb">
-      <a href={companyHref(c)}><BrandLogo name={x.company} size={28} /></a>
-      <span className="grow bdv-co-m">
-        <span className="row" style={{ gap: 6 }}><a href={companyHref(c)} className="li-t ell bdv-co">{x.company}</a><span className="mute xs">{x.name} · {fmt.agoShort(x.at)}</span></span>
-        <span className="li-s ell">{x.summary}</span>
-      </span>
-      <span className="num fw5 m-hide">{fmt.inr(x.budget)}</span>
-      {x.owner ? <Tip label={'Owned by ' + repOf(x.owner).short}><span><Avatar user={repOf(x.owner)} size={20} /></span></Tip>
-        : <button className="b sm" onClick={() => { st.claim(x.id); toast('Claimed · ' + x.company) }}><UserCheck size={13} />Claim</button>}
-      {(!x.owner || x.owner === me.id) && <Tip label="Add to pipeline"><button className="b sm icon" aria-label="Add to pipeline" onClick={add}><Plus size={14} /></button></Tip>}
+    <>
+      <div className="li bdv-inb bdv-inb-o" role="button" tabIndex={0} onClick={(e) => { if (!e.target.closest('a,button')) setOpen(true) }} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) setOpen(true) }} aria-label={'Open message from ' + x.name + ', ' + x.company}>
+        <BrandLogo name={x.company} size={28} />
+        <span className="grow bdv-co-m">
+          <span className="row" style={{ gap: 6 }}><span className="li-t ell">{x.company}</span><span className="mute xs ell">{x.name} · {fmt.agoShort(x.at)}</span>{x.replied && <span className="chip g bdv-inb-r">Replied</span>}</span>
+          <span className="li-s ell"><span className="bdv-inb-src">{x.source === 'email' ? <Mail size={11} /> : <Globe size={11} />}</span>{x.summary}</span>
+        </span>
+        <span className="num fw5 m-hide">{fmt.inr(x.budget)}</span>
+        {x.owner ? <Tip label={'Owned by ' + repOf(x.owner).short}><span><Avatar user={repOf(x.owner)} size={20} /></span></Tip>
+          : <button className="b sm" onClick={() => { st.claim(x.id); toast('Claimed · ' + x.company) }}><UserCheck size={13} /><span className="m-hide">Claim</span></button>}
+        {(!x.owner || x.owner === me.id) && <Tip label="Add to pipeline"><button className="b sm icon" aria-label="Add to pipeline" onClick={add}><Plus size={14} /></button></Tip>}
+      </div>
+      <InboundSheet x={x} open={open} onClose={() => setOpen(false)} />
+    </>
+  )
+}
+export const addInbound = (x, st) => { if (!x.owner) st.claim(x.id); openAddLead({ brand: x.company, source: 'Inbound', value: String(x.budget / 1e5), contact: { name: x.name, title: '', email: x.email }, note: x.summary, ref: { kind: 'inbound', id: x.id } }) }
+
+/** The message itself, with who sent it, what we know about them, and what to do next. */
+export function InboundSheet({ x, open, onClose }) {
+  const narrow = useNarrow()
+  const body = open ? <InboundBody x={x} onClose={onClose} /> : null
+  return narrow ? <BottomSheet open={open} onClose={onClose} tall>{body}</BottomSheet> : <Sheet open={open} onClose={onClose} width={560}>{body}</Sheet>
+}
+function InboundBody({ x: x0, onClose }) {
+  const s = useStore(); const st = s.sales
+  const x = st.inbound.find((i) => i.id === x0.id) || x0
+  const c = brandOf(x.company) || companyByName(x.company, st)
+  const deal = st.deals.find((d) => d.brand.toLowerCase() === x.company.toLowerCase() && d.stage !== 'lost')
+  const mineOrFree = !x.owner || x.owner === me.id
+  const first = x.name.split(' ')[0]
+  const [reply, setReply] = useState(null)
+  const draft = `Hi ${first},\n\nThanks for reaching out about ${x.summary.replace(/\.$/, '').toLowerCase()}. This is right up our street. We did something similar recently and I'd love to walk you through it.\n\nWould a 20-minute call on Thursday or Friday work?\n\nBest,\n${me.name.split(' ')[0]}\nWLDD`
+  const send = () => {
+    st.set((y) => ({ inbound: y.inbound.map((i) => (i.id === x.id ? { ...i, replied: true, owner: i.owner || me.id } : i)) }))
+    setReply(null)
+    toast('Reply sent from your Gmail', { description: 'To ' + x.email })
+  }
+  const notFit = () => {
+    st.set((y) => ({ inbound: y.inbound.map((i) => (i.id === x.id ? { ...i, status: 'rejected' } : i)) }))
+    onClose()
+    toast('Marked not a fit · ' + x.company, { action: { label: 'Undo', onClick: () => st.set((y) => ({ inbound: y.inbound.map((i) => (i.id === x.id ? { ...i, status: 'open' } : i)) })) } })
+  }
+  return (
+    <div className="bdv-ibs">
+      <div className="bdv-ibs-h">
+        <BrandLogo name={x.company} size={40} />
+        <div className="grow" style={{ minWidth: 0 }}>
+          <h2 className="d-h1 bdv-h2 ell">{x.company}</h2>
+          <div className="mute xs row" style={{ gap: 6, flexWrap: 'wrap' }}>
+            {x.source === 'email' ? <><Mail size={12} />Email to sales@</> : <><Globe size={12} />Website form</>}<span>·</span><span>{fmt.ago(x.at)}</span>
+            <Src s={x.source === 'email' ? 'Gmail' : 'DMS'} />
+          </div>
+        </div>
+      </div>
+      <div className="bdv-ibs-from">
+        <Avatar user={{ name: x.name, hue: x.name.length * 41 }} size={32} />
+        <div className="grow" style={{ minWidth: 0 }}>
+          <b>{x.name}</b>
+          <div className="mute xs ell"><a className="mono" href={'mailto:' + x.email}>{x.email}</a>{x.phone && <> · <a href={'tel:' + x.phone.replace(/\s/g, '')}>{x.phone}</a></>}</div>
+        </div>
+        <div className="bdv-ibs-bud"><span className="mute xs">Budget</span><b className="num">{fmt.inr(x.budget)}</b></div>
+      </div>
+      {x.body ? <pre className="bdv-ibs-msg">{x.body}</pre> : (
+        <dl className="bdv-ibs-form">
+          <dt>Name</dt><dd>{x.name}</dd>
+          <dt>Company</dt><dd>{x.company}</dd>
+          <dt>Work email</dt><dd className="mono">{x.email}</dd>
+          <dt>Budget</dt><dd>{fmt.inr(x.budget)}</dd>
+          <dt>What do you need?</dt><dd>{x.summary}</dd>
+        </dl>
+      )}
+      <div className="bdv-ibs-sec">
+        <div className="group-h">What we know</div>
+        <div className="bdv-ibs-kv">
+          <span className="mute">Company</span><span>{c ? <CoMeta c={c} short /> : <span className="sl-unk">Unknown</span>}</span>
+          <span className="mute">Pipeline</span><span>{deal ? <a href={'#/bd/pipeline/' + deal.id}>{stageLabel(deal.stage)} · {repOf(deal.owner).short} · {fmt.inr(deal.value)}</a> : 'Not in pipeline'}</span>
+          <span className="mute">Owner</span><span>{x.owner ? <span className="row" style={{ gap: 6 }}><Avatar user={repOf(x.owner)} size={18} />{x.owner === me.id ? 'You' : repOf(x.owner).name}</span> : <span className="chip y">Unclaimed</span>}</span>
+        </div>
+        {c && <a className="b sm ghost" style={{ alignSelf: 'flex-start', marginTop: 6 }} href={companyHref(c)} onClick={onClose}>Open company<ArrowUpRight size={13} /></a>}
+      </div>
+      {reply != null && (
+        <div className="bdv-ibs-rep">
+          <div className="mute xs row" style={{ gap: 6 }}><Mail size={12} />Reply to {x.email}<Src s="Gmail · AI" /></div>
+          <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={8} aria-label="Reply" />
+          <div className="row" style={{ justifyContent: 'flex-end', gap: 6 }}><button className="b sm ghost" onClick={() => setReply(null)}>Cancel</button><button className="b sm ink" onClick={send}><ArrowUpRight size={13} />Send from Gmail</button></div>
+        </div>
+      )}
+      <div className="bdv-ibs-act">
+        <button className="b ghost" onClick={notFit}><X size={14} />Not a fit</button>
+        <span className="grow" />
+        {!x.owner && <button className="b" onClick={() => { st.claim(x.id); toast('Claimed · ' + x.company) }}><UserCheck size={14} />Claim</button>}
+        {mineOrFree && reply == null && <button className="b" onClick={() => setReply(draft)}><Mail size={14} />{x.replied ? 'Reply again' : 'Reply'}</button>}
+        {mineOrFree
+          ? <button className="b ink" onClick={() => { addInbound(x, st); onClose() }}><Plus size={14} />{deal ? 'Add anyway' : 'Add to pipeline'}</button>
+          : <Tip label={'Owned by ' + repOf(x.owner).short}><span className="mute xs">Owned by {repOf(x.owner).short}</span></Tip>}
+      </div>
     </div>
   )
 }
