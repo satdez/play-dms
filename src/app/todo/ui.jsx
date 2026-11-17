@@ -7,10 +7,10 @@ import { Tip } from '../../shared/motion'
 import { Avatar } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
 import { Popover, go } from '../ui'
-import { team } from '../data'
+import { team, TODAY } from '../data'
 import {
   indexOf, search, settled, exact, linkOf, phoneLink, findPhones, parseDate, cut, hrefOf, segments, dueLabel, bucketOf, meId, mine,
-  KIND_LABEL, linkedTo, dayDiff,
+  KIND_LABEL, linkedTo, dayDiff, at,
 } from './logic'
 import { openTodoAdd, openTodos, setTodoPref, todoStyle, TODO_STYLES } from './state'
 
@@ -51,6 +51,32 @@ export function TodoText({ t, clamp }) {
 }
 
 export const DueChip = ({ t }) => (t.due ? <span className={'td-due b-' + bucketOf({ ...t, done: false })}>{dueLabel(t.due)}</span> : null)
+
+/** The date on a row, as a button: Today, Tomorrow, This weekend, Next week, a picked day, or no date.
+    Rows without a date show a quiet "Date" on hover (always on touch). */
+const QUICK_DUE = [['Today', () => at(0)], ['Tomorrow', () => at(1)], ['This weekend', () => at((6 - TODAY.getDay() + 7) % 7 || 7)], ['Next week', () => at(((8 - TODAY.getDay()) % 7) || 7)]]
+const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+export function DueButton({ t }) {
+  const s = useStore()
+  const set = (due, close) => { s.todo.patch(t.id, { due, remind: due }); close?.() }
+  if (t.done) return <DueChip t={t} />
+  return (
+    <Popover align="right" width={220} trigger={({ toggle, open }) => (
+      <button className={'td-dueb' + (t.due ? '' : ' empty') + (open ? ' open' : '')} onClick={(e) => { e.stopPropagation(); toggle() }} aria-label={t.due ? 'Change date, ' + dueLabel(t.due) : 'Add a date'}>
+        {t.due ? <DueChip t={t} /> : <span className="td-due td-due-add"><CalendarDays size={12} />Date</span>}
+      </button>
+    )}>
+      {(close) => (
+        <div className="td-duem" onClick={(e) => e.stopPropagation()}>
+          <div className="pop-h">Due</div>
+          {QUICK_DUE.map(([l, f]) => { const d = f(); return <button key={l} onClick={() => set(d, close)}><span className="grow">{l}</span><span className="mute xs">{dueLabel(d)}</span></button> })}
+          <label className="td-duem-pick"><span className="grow">Pick a day</span><input type="date" defaultValue={t.due ? ymd(t.due) : ''} min={ymd(TODAY)} onChange={(e) => { const [y, mo, d] = e.target.value.split('-').map(Number); if (y) set(new Date(y, mo - 1, d), close) }} /></label>
+          {t.due && <><div className="pop-sep" /><button onClick={() => set(null, close)}><span className="grow">No date</span></button></>}
+        </div>
+      )}
+    </Popover>
+  )
+}
 
 /** The tick, choreographed (lead → detail → support, then one gesture):
       0ms     box presses and fills (lead)
@@ -151,7 +177,7 @@ export function TodoRow({ t, edit, grip, by = true, clamp, actions = true }) {
       </div>
       <span className="td-meta">
         {t.pinned && !t.done && <Pin size={12} className="mute td-pin" />}
-        <DueChip t={t} />
+        <DueButton t={t} />
         {by && who && <Tip label={who.name}><span className="td-by"><Avatar user={who} size={18} /></span></Tip>}
         {actions && <Tip label="Delete"><button className="b ghost icon sm td-del" onClick={(e) => { e.stopPropagation(); s.todo.remove(t.id) }} aria-label="Delete"><Trash2 size={13} /></button></Tip>}
       </span>

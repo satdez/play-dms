@@ -78,7 +78,8 @@ function PanelBody({ onClose, pre, focusKey, ctx }) {
   const here = ctx ? items.filter((t) => !t.done && linkedTo(t, ctx)).sort(byDue) : []
   const rest = items.filter((t) => !here.includes(t))
   const today = rest.filter((t) => ['overdue', 'today'].includes(bucketOf(t))).sort(byDue)
-  const later = rest.filter((t) => ['upcoming', 'someday'].includes(bucketOf(t))).sort(byDue)
+  const later = rest.filter((t) => bucketOf(t) === 'upcoming').sort(byDue)
+  const nodate = rest.filter((t) => bucketOf(t) === 'someday')
   const done = items.filter((t) => t.done).sort((a, b) => b.doneAt - a.doneAt)
   return (
     <>
@@ -98,6 +99,7 @@ function PanelBody({ onClose, pre, focusKey, ctx }) {
         )}
         <Sec title="Today" list={today} />
         <Sec title="Upcoming" list={later} />
+        {nodate.length > 0 && <Sec title="No date" list={nodate} />}
         <section className="td-psec">
           <button className="td-psec-h td-fold" onClick={() => setShowDone((x) => !x)} aria-expanded={showDone}>
             <span>Done</span><span className="mute num">{done.length}</span><ChevronDown size={14} className={'mute td-chev' + (showDone ? ' on' : '')} />

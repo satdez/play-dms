@@ -3,7 +3,7 @@
 
 /* ───────── shared bits ───────── */
 .fw5 { font-weight: 500; }
-.pop { position: fixed; z-index: 70; font-family: var(--font); font-size: 13.5px; color: var(--fg); }
+.pop { position: fixed; z-index: 86; /* above panels (71), sheets and the phone drawer (80), so a menu opened inside them shows */ font-family: var(--font); font-size: 13.5px; color: var(--fg); }
 .b.on { background: var(--sunken); color: var(--fg); }
 .b.ghost.on { background: var(--hover); }
 .pod-dot { width: 8px; height: 8px; border-radius: 3px; flex: none; display: inline-block; background: var(--muted); }

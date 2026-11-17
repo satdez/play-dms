@@ -7,7 +7,7 @@ import { view } from '../personas'
 const D = 864e5
 export const startOf = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
 export const dayDiff = (d) => Math.round((startOf(d) - startOf(TODAY)) / D)
-const at = (days, h = 0, m = 0) => { const x = startOf(TODAY); x.setDate(x.getDate() + days); x.setHours(h, m, 0, 0); return x }
+export const at = (days, h = 0, m = 0) => { const x = startOf(TODAY); x.setDate(x.getDate() + days); x.setHours(h, m, 0, 0); return x }
 export { at as dayAt }
 
 /** Where an item sits: overdue · today · upcoming · someday · done. */
@@ -54,7 +54,15 @@ const DATE_RULES = [
   [/\b(\d{1,2})(?:st|nd|rd|th)? (jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]*\b/, (m) => monthDay(MON[m[2]], +m[1])],
   [/\b(jan|feb|mar|apr|may|jun|jul|aug|sept|sep|oct|nov|dec)[a-z]* (\d{1,2})(?:st|nd|rd|th)?\b/, (m) => monthDay(MON[m[1]], +m[2])],
   [/\b(\d{1,2})\/(\d{1,2})\b/, (m) => monthDay(+m[2] - 1, +m[1])],
+  [/\b(?:the )?(\d{1,2})(?:st|nd|rd|th)\b/, (m) => nthOfMonth(+m[1])],
 ]
+/** "25th" on its own: this month, or next month if the day has passed. */
+function nthOfMonth(d) {
+  if (d < 1 || d > 31) return null
+  const x = new Date(TODAY.getFullYear(), TODAY.getMonth(), d)
+  if (x < startOf(TODAY)) x.setMonth(x.getMonth() + 1)
+  return x
+}
 function monthDay(mo, d) {
   if (mo == null || d < 1 || d > 31) return null
   const x = new Date(TODAY.getFullYear(), mo, d)
