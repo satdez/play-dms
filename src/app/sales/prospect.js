@@ -21,9 +21,9 @@ export const BD_PAGES = {
   accounts: ['companies', 'discover', 'accounts', 'pipeline', 'cases', 'kb'],
   stream: ['stream', 'discover', 'accounts', 'pipeline', 'cases', 'kb'],
 }
-let layout = 'sources'
+let layout = 'prospect'
 /** App sets this every render (like the persona), so links can point at the right company page. */
-export const setBdLayout = (v) => { layout = v || 'sources' }
+export const setBdLayout = (v) => { layout = v || 'prospect' }
 export const companyHref = (c) => '#' + (layout === 'accounts' ? '/bd/companies/' : '/bd/discover/') + c.id
 
 /* ───────── Filter vocabulary ───────── */
