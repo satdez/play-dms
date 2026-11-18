@@ -463,3 +463,7 @@ button.li.bdv-mo { width: 100%; text-align: left; cursor: pointer; color: inheri
 .bdv-ibs-rep textarea { width: 100%; resize: vertical; border: 0; outline: none; background: none; color: var(--fg); font: inherit; font-size: 14px; line-height: 1.55; }
 .bdv-ibs-act { position: sticky; bottom: -28px; display: flex; align-items: center; gap: 6px; padding: 12px 0 4px; background: var(--surface); border-top: 1px solid var(--line); }
 @media (max-width: 760px) { .bdv-ibs-form { grid-template-columns: 1fr; gap: 2px; } .bdv-ibs-form dd { margin-bottom: 8px; } .bdv-ibs-rep textarea { font-size: 16px; } .bdv-ibs-act { flex-wrap: wrap; } }
+/* In the side panel the suggestions stay inside the panel: as wide as the search box, long names trimmed. */
+.bdv-sb.stacked .bdv-sb-pop { width: 100%; max-width: 100%; }
+.bdv-sb.stacked .bdv-sb-r { padding: 4px 8px; }
+.bdv-sb.stacked .bdv-sb-r > .grow { min-width: 0; }
