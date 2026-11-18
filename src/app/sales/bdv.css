@@ -467,3 +467,12 @@ button.li.bdv-mo { width: 100%; text-align: left; cursor: pointer; color: inheri
 .bdv-sb.stacked .bdv-sb-pop { width: 100%; max-width: 100%; }
 .bdv-sb.stacked .bdv-sb-r { padding: 4px 8px; }
 .bdv-sb.stacked .bdv-sb-r > .grow { min-width: 0; }
+/* Resizable filter panel: the handle sits on the panel's inner edge, outside its scrolling area. */
+.bdv-wp { position: relative; grid-template-columns: var(--fpw, 268px) minmax(0, 1fr); }
+.bdv-wp.right { grid-template-columns: minmax(0, 1fr) var(--fpw, 268px); }
+.bdv-fp-rz { position: absolute; top: 0; bottom: 0; left: calc(var(--fpw, 268px) - 4px); width: 8px; cursor: col-resize; z-index: 4; touch-action: none; }
+.bdv-wp.right .bdv-fp-rz { left: auto; right: calc(var(--fpw, 268px) - 4px); }
+.bdv-fp-rz::after { content: ''; position: absolute; top: 0; bottom: 0; left: 3px; width: 2px; border-radius: 2px; background: transparent; transition: background-color 120ms ease; }
+.bdv-fp-rz:hover::after, .bdv-fp-rz:focus-visible::after, html.bdv-resizing .bdv-fp-rz::after { background: color-mix(in oklab, var(--fg) 35%, transparent); }
+.bdv-fp-rz:focus-visible { outline: none; }
+html.bdv-resizing, html.bdv-resizing * { cursor: col-resize !important; user-select: none !important; }

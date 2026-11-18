@@ -337,15 +337,34 @@ export function FilterBody({ sheet, onDone }) {
 }
 
 /** Filters around a layout: the side panel on desktop when chosen, otherwise the bar (or the sheet on phones). */
+const FPW_MIN = 240, FPW_MAX = 480, FPW_DEF = 268
+const readFpw = () => { try { const n = +localStorage.getItem('wldd-bdv-fpw'); return n >= FPW_MIN && n <= FPW_MAX ? n : FPW_DEF } catch { return FPW_DEF } }
 export function FilterFrame({ children, className = '' }) {
   const narrow = useNarrow()
   const [menu, setMenu] = useState(null) // { x, y } of a right-click on the panel
+  // Resizable: drag the inner edge (240–480px), remembered per browser; double-click resets.
+  const [w, setWRaw] = useState(readFpw)
+  const setW = (n) => { const v = Math.round(Math.max(FPW_MIN, Math.min(FPW_MAX, n))); setWRaw(v); try { localStorage.setItem('wldd-bdv-fpw', String(v)) } catch {} }
+  const startResize = (e, right) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    const x0 = e.clientX, w0 = w
+    document.documentElement.classList.add('bdv-resizing')
+    const move = (ev) => setW(w0 + (right ? x0 - ev.clientX : ev.clientX - x0))
+    const up = () => { document.documentElement.classList.remove('bdv-resizing'); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
+  }
   const panel = bdFilters() === 'panel' && !narrow
   if (!panel) return children
   const right = bdFilterSide() === 'right'
   return (
-    <div className={'bdv-wp ' + className + (right ? ' right' : '')}>
-      <aside className="bdv-fp" aria-label="Filters" onContextMenu={(e) => { if (e.target.closest('input, textarea')) return; e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }) }}><FilterBody /></aside>
+    <div className={'bdv-wp ' + className + (right ? ' right' : '')} style={{ '--fpw': w + 'px' }}>
+      <aside className="bdv-fp" aria-label="Filters" onContextMenu={(e) => { if (e.target.closest('input, textarea')) return; e.preventDefault(); setMenu({ x: e.clientX, y: e.clientY }) }}>
+        <FilterBody />
+      </aside>
+      <div className="bdv-fp-rz" role="separator" aria-orientation="vertical" aria-label="Resize filters" aria-valuemin={FPW_MIN} aria-valuemax={FPW_MAX} aria-valuenow={w} tabIndex={0}
+          onPointerDown={(e) => startResize(e, right)} onDoubleClick={() => setW(FPW_DEF)}
+          onKeyDown={(e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); setW(w + ((e.key === 'ArrowRight') !== right ? 16 : -16)) } }} />
       <div className="bdv-wp-m">{children}</div>
       {menu && <PanelMenu at={menu} right={right} onClose={() => setMenu(null)} />}
     </div>
