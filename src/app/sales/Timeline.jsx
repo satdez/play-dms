@@ -37,7 +37,7 @@ export function DealTimeline({ deals }) {
         </div>
       </div>
       {rows.map(({ d, a, b }) => (
-        <button key={d.id} className="bdv-tlv-r" onClick={() => go('/bd/pipeline/' + d.id)}>
+        <button key={d.id} className="bdv-tlv-r" data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })} onClick={() => go('/bd/pipeline/' + d.id)}>
           <span className="bdv-tlv-n"><BrandLogo name={d.brand} size={18} /><span className="ell">{d.brand}</span><span className="mute num xs">{fmt.inr(d.value)}</span></span>
           <span className="bdv-tlv-s">
             {weeks.map((w, i) => <i key={i} className="bdv-tlv-g" style={{ left: pct(w) + '%' }} />)}

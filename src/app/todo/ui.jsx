@@ -1,7 +1,7 @@
 // To-do pieces every variation shares: link chips, the tick, a row, the smart composer, the record block, the top-bar button.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign } from 'lucide-react'
+import { Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
 import { Avatar } from '../../shared/ui'
@@ -10,16 +10,16 @@ import { Popover, go } from '../ui'
 import { team, TODAY } from '../data'
 import {
   indexOf, search, settled, exact, linkOf, phoneLink, findPhones, parseDate, cut, hrefOf, segments, dueLabel, bucketOf, meId, mine,
-  KIND_LABEL, linkedTo, dayDiff, at,
+  KIND_LABEL, linkedTo, dayDiff, at, parseRange, whoOf, spanLabel, top,
 } from './logic'
-import { openTodoAdd, openTodos, setTodoPref, todoStyle, TODO_STYLES } from './state'
+import { openTodoAdd, openTodos, openTodo, setTodoPref, todoStyle, TODO_STYLES } from './state'
 
-const userOf = (id) => team.find((u) => u.id === id)
+export const userOf = (id) => team.find((u) => u.id === id)
 const KIND_ICON = { campaign: Megaphone, invoice: Receipt, phone: Phone }
 
 /** The picture for a link or index entry: a real logo for companies, an avatar for people, an icon otherwise. */
-function Mark({ e, size = 16 }) {
-  if (e.kind === 'person') return <Avatar user={{ name: e.label, hue: e.hue ?? (e.label.length * 37) % 360 }} size={size} />
+export function Mark({ e, size = 16 }) {
+  if (e.kind === 'person' || e.kind === 'member' || e.kind === 'vendor') return <Avatar user={{ name: e.label, hue: e.hue ?? (e.label.length * 37) % 360 }} size={size} />
   if (e.kind === 'phone') return <Phone size={size - 3} className="td-ico" />
   const logo = e.logo || (e.kind === 'brand' || e.kind === 'deal' ? e.brand || e.label : e.kind === 'campaign' ? e.brand : null)
   if (logo) return <BrandLogo name={logo} size={size} radius={4} />
@@ -31,7 +31,7 @@ function Mark({ e, size = 16 }) {
 export function LinkChip({ l }) {
   const href = l.kind === 'phone' ? 'tel:' + l.label.replace(/\s/g, '') : hrefOf(l)
   const text = l.kind === 'phone' && l.person ? l.person.name : l.label
-  const tip = l.kind === 'phone' ? [l.person ? l.label : l.tip, l.brand].filter(Boolean).join(' · ') : l.kind === 'person' ? l.brand : l.kind === 'deal' ? 'Deal' : l.kind === 'campaign' ? 'Campaign' : l.kind === 'invoice' ? 'Invoice' : null
+  const tip = l.kind === 'phone' ? [l.person ? l.label : l.tip, l.brand].filter(Boolean).join(' · ') : l.kind === 'person' ? l.brand : l.kind === 'deal' ? 'Deal' : l.kind === 'campaign' ? 'Campaign' : l.kind === 'invoice' ? 'Invoice' : l.kind === 'vendor' ? 'Creator' : null
   const body = <><Mark e={l} size={15} /><span className="td-chip-t">{text}</span></>
   const chip = href ? <a className={'td-chip k-' + l.kind} href={href.startsWith('tel:') ? href : '#' + href} onClick={(e) => e.stopPropagation()}>{body}</a> : <span className={'td-chip k-' + l.kind}>{body}</span>
   return tip ? <Tip label={tip}>{chip}</Tip> : chip
@@ -50,7 +50,7 @@ export function TodoText({ t, clamp }) {
   )
 }
 
-export const DueChip = ({ t }) => (t.due ? <span className={'td-due b-' + bucketOf({ ...t, done: false })}>{dueLabel(t.due)}</span> : null)
+export const DueChip = ({ t }) => (t.due ? <span className={'td-due b-' + bucketOf({ ...t, done: false })}>{t.start ? spanLabel(t) : dueLabel(t.due)}</span> : null)
 
 /** The date on a row, as a button: Today, Tomorrow, This weekend, Next week, a picked day, or no date.
     Rows without a date show a quiet "Date" on hover (always on touch). */
@@ -71,7 +71,9 @@ export function DueButton({ t }) {
           <div className="pop-h">Due</div>
           {QUICK_DUE.map(([l, f]) => { const d = f(); return <button key={l} onClick={() => set(d, close)}><span className="grow">{l}</span><span className="mute xs">{dueLabel(d)}</span></button> })}
           <label className="td-duem-pick"><span className="grow">Pick a day</span><input type="date" defaultValue={t.due ? ymd(t.due) : ''} min={ymd(TODAY)} onChange={(e) => { const [y, mo, d] = e.target.value.split('-').map(Number); if (y) set(new Date(y, mo - 1, d), close) }} /></label>
-          {t.due && <><div className="pop-sep" /><button onClick={() => set(null, close)}><span className="grow">No date</span></button></>}
+          <div className="pop-sep" />
+          <button onClick={() => { close(); openTodo(t.id) }}><GanttChart size={13} className="mute" /><span className="grow">Start and due…</span></button>
+          {t.due && <button onClick={() => { s.todo.patch(t.id, { due: null, start: null, remind: null }); close() }}><span className="grow">No date</span></button>}
         </div>
       )}
     </Popover>
@@ -157,31 +159,60 @@ export function Tick({ t, size }) {
   )
 }
 
-/** One to-do. `edit`: click the text to edit it in place. `grip`: a drag handle (the List page passes one). */
-export function TodoRow({ t, edit, grip, by = true, clamp, actions = true }) {
+/** Subtask progress as a tiny ring. */
+export function Ring({ n, of, size = 14 }) {
+  const r = (size - 3) / 2, c = 2 * Math.PI * r
+  return (
+    <svg className="td-ring" width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+      <circle cx={size / 2} cy={size / 2} r={r} />
+      <circle cx={size / 2} cy={size / 2} r={r} className="on" strokeDasharray={c} strokeDashoffset={c * (1 - (of ? n / of : 0))} />
+    </svg>
+  )
+}
+const byDueOrder = (a, b) => (a.due ? +a.due : 9e15) - (b.due ? +b.due : 9e15) || (a.order ?? 0) - (b.order ?? 0)
+
+/** One to-do. Click opens its detail; double-click edits the text in place (`edit`). `grip`: a drag handle (the List page passes one).
+    A to-do with subtasks shows "1/3"; clicking it folds the subtasks open under the row. `crumb`: show the parent of a subtask seen on its own. */
+export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs = true, crumb, sel }) {
   const s = useStore()
   const going = useGoing(t.id)
   const [ed, setEd] = useState(false)
   const [v, setV] = useState(t.text)
-  const who = t.by !== meId() && userOf(t.by)
+  const [open, setOpen] = useState(false)
+  const kids = subs && !t.parent ? s.todo.items.filter((x) => x.parent === t.id) : []
+  const kd = kids.filter((x) => x.done).length
+  const who = whoOf(t) !== meId() && userOf(whoOf(t))
+  const parent = crumb && t.parent ? s.todo.items.find((x) => x.id === t.parent) : null
   const save = () => { const x = v.trim(); if (x && x !== t.text) s.todo.patch(t.id, { text: x }); setEd(false) }
   return (
-    <div className={'td-row' + (t.done ? ' done' : '') + (bucketOf(t) === 'overdue' ? ' late' : '') + (going ? ' td-going' : '')} data-id={t.id}>
-      {grip}
-      <Tick t={t} />
-      <div className="td-body grow" onClick={(e) => { if (edit && !ed && !t.done && !e.target.closest('a,button')) { setV(t.text); setEd(true) } }}>
-        {ed ? (
-          <input className="td-edit" value={v} autoFocus onChange={(e) => setV(e.target.value)} onBlur={save} aria-label="Edit to-do"
-            onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setEd(false) } }} />
-        ) : <TodoText t={t} clamp={clamp} />}
+    <>
+      <div className={'td-row' + (t.done ? ' done' : '') + (bucketOf(t) === 'overdue' ? ' late' : '') + (going ? ' td-going' : '') + (t.parent ? ' is-sub' : '') + (sel ? ' sel' : '')} data-id={t.id}>
+        {grip}
+        <Tick t={t} />
+        <div className="td-body grow" onClick={(e) => { if (ed || e.detail > 1 || e.target.closest('a,button,input')) return; openTodo(t.id) }}
+          onDoubleClick={(e) => { if (edit && !t.done && !e.target.closest('a,button')) { setV(t.text); setEd(true) } }}>
+          {ed ? (
+            <input className="td-edit" value={v} autoFocus onChange={(e) => setV(e.target.value)} onBlur={save} aria-label="Edit to-do"
+              onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setEd(false) } }} />
+          ) : <TodoText t={t} clamp={clamp} />}
+          {parent && <span className="td-crumb ell"><CornerDownRight size={11} />{parent.text}</span>}
+        </div>
+        <span className="td-meta">
+          {kids.length > 0 && (
+            <Tip label={open ? 'Hide subtasks' : 'Show subtasks'}>
+              <button className={'td-prog' + (open ? ' open' : '') + (kd === kids.length ? ' all' : '')} onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }} aria-expanded={open} aria-label={kd + ' of ' + kids.length + ' subtasks done'}>
+                <Ring n={kd} of={kids.length} /><span className="num">{kd}/{kids.length}</span>
+              </button>
+            </Tip>
+          )}
+          {t.pinned && !t.done && <Pin size={12} className="mute td-pin" />}
+          <DueButton t={t} />
+          {by && who && <Tip label={'Assigned to ' + who.name}><span className="td-by"><Avatar user={who} size={18} /></span></Tip>}
+          {actions && <Tip label="Delete"><button className="b ghost icon sm td-del" onClick={(e) => { e.stopPropagation(); s.todo.remove(t.id) }} aria-label="Delete"><Trash2 size={13} /></button></Tip>}
+        </span>
       </div>
-      <span className="td-meta">
-        {t.pinned && !t.done && <Pin size={12} className="mute td-pin" />}
-        <DueButton t={t} />
-        {by && who && <Tip label={who.name}><span className="td-by"><Avatar user={who} size={18} /></span></Tip>}
-        {actions && <Tip label="Delete"><button className="b ghost icon sm td-del" onClick={(e) => { e.stopPropagation(); s.todo.remove(t.id) }} aria-label="Delete"><Trash2 size={13} /></button></Tip>}
-      </span>
-    </div>
+      {open && kids.length > 0 && <div className="td-subs">{[...kids].sort(byDueOrder).map((k) => <TodoRow key={k.id} t={k} by={by} actions={actions} subs={false} />)}</div>}
+    </>
   )
 }
 
@@ -208,7 +239,7 @@ const mask = (v, labels) => {
 const sameLink = (a, b) => a.kind === b.kind && a.id === b.id
 
 /** One composer for every surface. @ links what we hold, a phone number becomes a chip, "tomorrow 5pm" becomes the due date. Enter adds. */
-export function Composer({ pre = [], autoFocus, placeholder = 'Add a to-do', up, onAdded, onEscape, extra, className = '' }) {
+export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Add a to-do', up, onAdded, onEscape, extra, className = '', bare }) {
   const s = useStore()
   const idx = indexOf(s)
   const [text, setText] = useState('')
@@ -216,6 +247,8 @@ export function Composer({ pre = [], autoFocus, placeholder = 'Add a to-do', up,
   const preKey = pre.map((l) => l.kind + l.id).join()
   const [prel, setPrel] = useState(pre)
   useEffect(() => { setPrel(pre) }, [preKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [who, setWho] = useState(assign)
+  useEffect(() => { setWho(assign) }, [assign])
   const [skipPh, setSkipPh] = useState([])
   const [skipDate, setSkipDate] = useState(null)
   const [caret, setCaret] = useState(0)
@@ -231,7 +264,8 @@ export function Composer({ pre = [], autoFocus, placeholder = 'Add a to-do', up,
   const pickOn = results.length > 0
   const present = links.filter((l) => text.toLowerCase().includes(l.label.toLowerCase()))
   const phones = findPhones(text).filter((p) => !skipPh.includes(p.digits)).map((p) => ({ ...p, link: phoneLink(p, idx) }))
-  let date = parseDate(mask(text, [...present.map((l) => l.label), ...phones.map((p) => p.raw)]))
+  const masked = mask(text, [...present.map((l) => l.label), ...phones.map((p) => p.raw)])
+  let date = parseRange(masked) || parseDate(masked)
   if (date && date.key === skipDate) date = null
 
   const change = (e) => {
@@ -239,7 +273,12 @@ export function Composer({ pre = [], autoFocus, placeholder = 'Add a to-do', up,
     let c = e.target.selectionStart ?? v.length
     const mm = activeMention(v, c)
     const hit = mm && settled(idx, mm.q)
-    if (hit) {
+    if (hit && hit.kind === 'member') {
+      // "@Riya Kapoor " assigns: the name leaves the text and becomes the assignee.
+      v = v.slice(0, mm.start) + v.slice(mm.start + 1 + hit.label.length).replace(/^\s+/, '')
+      c = mm.start; want.current = c
+      setWho(hit.id)
+    } else if (hit) {
       v = v.slice(0, mm.start) + hit.label + v.slice(mm.start + 1 + hit.label.length)
       c -= 1; want.current = c
       setLinks((l) => (l.some((x) => sameLink(x, hit)) ? l : [...l, linkOf(hit)]))
@@ -248,6 +287,12 @@ export function Composer({ pre = [], autoFocus, placeholder = 'Add a to-do', up,
     if (closed >= 0 && (!mm || mm.start !== closed)) setClosed(-1)
   }
   const pick = (e) => {
+    if (e.kind === 'member') {
+      const v = text.slice(0, m.start) + text.slice(caret).replace(/^\s+/, '')
+      setText(v); setCaret(m.start); want.current = m.start; setHi(0); setWho(e.id)
+      inp.current?.focus()
+      return
+    }
     const v = text.slice(0, m.start) + e.label + ' ' + text.slice(caret)
     const c = m.start + e.label.length + 1
     setText(v); setCaret(c); want.current = c; setHi(0)
@@ -257,19 +302,25 @@ export function Composer({ pre = [], autoFocus, placeholder = 'Add a to-do', up,
   const submit = () => {
     let v = text
     let ls = [...links]
-    if (m) { const e = exact(idx, m.q); if (e) { v = v.slice(0, m.start) + e.label + v.slice(m.start + 1 + m.q.length); ls.push(linkOf(e)) } }
+    let w = who
+    if (m) {
+      const e = exact(idx, m.q)
+      if (e?.kind === 'member') { v = v.slice(0, m.start) + v.slice(m.start + 1 + m.q.length); w = e.id }
+      else if (e) { v = v.slice(0, m.start) + e.label + v.slice(m.start + 1 + m.q.length); ls.push(linkOf(e)) }
+    }
     ls = ls.filter((l) => v.toLowerCase().includes(l.label.toLowerCase()))
     const ph = findPhones(v).filter((p) => !skipPh.includes(p.digits))
     const phl = ph.map((p) => phoneLink(p, idx))
     for (const p of [...ph].sort((a, b) => b.start - a.start)) v = v.slice(0, p.start) + phoneLink(p, idx).label + v.slice(p.end)
-    let d = parseDate(mask(v, [...ls.map((l) => l.label), ...phl.map((l) => l.label)]))
+    const mv = mask(v, [...ls.map((l) => l.label), ...phl.map((l) => l.label)])
+    let d = parseRange(mv) || parseDate(mv)
     if (d && d.key === skipDate) d = null
     if (d) v = cut(v, d.spans)
     v = v.replace(/\s{2,}/g, ' ').trim()
     if (!v) return
     const all = [...prel, ...ls, ...phl].filter((l, i, a) => a.findIndex((x) => sameLink(x, l)) === i)
-    const t = s.todo.add({ text: v[0].toUpperCase() + v.slice(1), links: all, due: d?.date || null, by: meId(), ...(extra ? extra() : null) })
-    setText(''); setLinks([]); setSkipPh([]); setSkipDate(null); setCaret(0); setClosed(-1)
+    const t = s.todo.add({ text: v[0].toUpperCase() + v.slice(1), links: all, due: d?.date || null, start: d?.start || null, by: meId(), who: w || meId(), ...(extra ? extra() : null) })
+    setText(''); setLinks([]); setSkipPh([]); setSkipDate(null); setCaret(0); setClosed(-1); setWho(assign)
     onAdded?.(t)
   }
   const key = (e) => {
@@ -283,7 +334,7 @@ export function Composer({ pre = [], autoFocus, placeholder = 'Add a to-do', up,
   let gi = -1
   const picker = pickOn && (
     <div className="td-pick" role="listbox" aria-label="Link to">
-      {['brand', 'person', 'deal', 'campaign', 'invoice'].map((k) => {
+      {['brand', 'person', 'deal', 'campaign', 'invoice', 'vendor', 'member'].map((k) => {
         const rows = results.filter((r) => r.kind === k)
         if (!rows.length) return null
         return (
@@ -311,15 +362,16 @@ export function Composer({ pre = [], autoFocus, placeholder = 'Add a to-do', up,
     ...present.filter((l) => !prel.some((p) => sameLink(p, l))).map((l) => ({ k: 'm' + l.kind + l.id, e: l, label: l.label, drop: () => setLinks((x) => x.filter((y) => !sameLink(y, l))) })),
     ...phones.map((p) => ({ k: 'ph' + p.digits, e: p.link, label: p.link.label, sub: p.link.person ? p.link.person.name + (p.link.brand ? ' · ' + p.link.brand : '') : 'Not on file', drop: () => setSkipPh((x) => [...x, p.digits]) })),
     date && { k: 'due', due: true, label: date.label, drop: () => setSkipDate(date.key) },
+    who && who !== meId() && userOf(who) && { k: 'who', e: { kind: 'member', label: userOf(who).name, hue: userOf(who).hue }, label: userOf(who).short, sub: 'Assignee', drop: () => setWho(null) },
   ].filter(Boolean)
   return (
-    <div className={'td-comp' + (up ? ' up' : '') + (pickOn ? ' picking' : '') + ' ' + className}>
+    <div className={'td-comp' + (up ? ' up' : '') + (pickOn ? ' picking' : '') + (bare ? ' bare' : '') + ' ' + className}>
       {up && picker}
       <div className="td-comp-r">
         <Plus size={16} className="td-comp-i" />
         <input ref={inp} className="td-in" value={text} onChange={change} onKeyDown={key} onKeyUp={sync} onClick={sync} placeholder={placeholder} aria-label="Add a to-do"
           enterKeyHint="done" autoComplete="off" spellCheck={false} role="combobox" aria-expanded={pickOn} aria-autocomplete="list" />
-        <Tip label="Link a company, person, deal or campaign"><button type="button" className="b ghost icon sm td-at" onMouseDown={(e) => e.preventDefault()} onClick={() => { const v = text + (text && !/\s$/.test(text) ? ' @' : '@'); setText(v); setCaret(v.length); want.current = v.length; inp.current?.focus() }} aria-label="Link"><AtSign size={15} /></button></Tip>
+        <Tip label="Link anything, or assign a teammate"><button type="button" className="b ghost icon sm td-at" onMouseDown={(e) => e.preventDefault()} onClick={() => { const v = text + (text && !/\s$/.test(text) ? ' @' : '@'); setText(v); setCaret(v.length); want.current = v.length; inp.current?.focus() }} aria-label="Link"><AtSign size={15} /></button></Tip>
         <Tip label="Add" kbd="↵"><button type="button" className="b ink icon sm td-go" onMouseDown={(e) => e.preventDefault()} onClick={submit} disabled={!text.trim()} aria-label="Add"><ArrowUp size={14} /></button></Tip>
       </div>
       {chips.length > 0 && (
@@ -344,7 +396,7 @@ export function TodoBlock({ ctx, className = '' }) {
   const s = useStore()
   const [done, setDone] = useState(false)
   if (!ctx) return null
-  const mineOf = s.todo.items.filter((t) => linkedTo(t, ctx))
+  const mineOf = s.todo.items.filter((t) => top(t) && linkedTo(t, ctx))
   const open = mineOf.filter((t) => !t.done).sort((a, b) => (a.due ? +a.due : 9e15) - (b.due ? +b.due : 9e15))
   const fin = mineOf.filter((t) => t.done)
   return (

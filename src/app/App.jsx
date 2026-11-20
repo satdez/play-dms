@@ -49,7 +49,7 @@ import './todo/todo.css'
 import { TodoHost } from './todo/Host'
 import { TodoPage } from './todo/Page'
 import { TodoButton, TodoBellRows, dueMine } from './todo/ui'
-import { TODO_STYLES, TODO_HOME, setTodoStyle, hasPage, openTodoAdd, openTodos } from './todo/state'
+import { TODO_STYLES, TODO_HOME, TODO_WIDTHS, setTodoStyle, setTodoWidth, hasPage, openTodoAdd, openTodos } from './todo/state'
 import { ListChecks, ListPlus } from 'lucide-react'
 import { Palette, Settings as Gear, Menu as MenuIcon } from 'lucide-react'
 import { PopTuner, PRESETS, TUNE_AXES, normTune, presetOf, applyTune, clearTune, toneSwatch, Orb } from './popTune'
@@ -116,7 +116,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'prospect', bdFilters: 'bar', bdFilterSide: 'left', todo: 'panel', todoHome: 'strip', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'prospect', bdFilters: 'bar', bdFilterSide: 'left', todo: 'panel', todoHome: 'strip', todoWidth: '30', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -227,7 +227,7 @@ function Shell({ path }) {
   const setPrefs = (p) => { setPrefsRaw(p); try { localStorage.setItem('wldd-prefs', JSON.stringify(p)) } catch {} }
   VIEW = personaOf(prefs.viewAs); setView(VIEW)
   BDL = BD_HOME[prefs.bd] ? prefs.bd : 'prospect'; setBdLayout(BDL); setBdFilters(prefs.bdFilters); setBdFilterSide(prefs.bdFilterSide)
-  setTodoStyle(prefs.todo)
+  setTodoStyle(prefs.todo); setTodoWidth(prefs.todoWidth)
   // Pages switch the to-do variation or Home slot with the same preference Settings writes.
   useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, [e.detail.key]: e.detail.value }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('todo:pref', on); return () => window.removeEventListener('todo:pref', on) }, [])
   // The in-page "side panel / bar" switch writes the same preference as Settings.
@@ -1166,6 +1166,7 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
           <Command.Item value="add to-do todo task remind" onSelect={run(() => setTimeout(() => openTodoAdd(), 0))}><ListPlus size={15} /> Add to-do<kbd className="k" style={{ marginLeft: 'auto' }}>T</kbd></Command.Item>
           <Command.Item value="open to-dos todo list tasks" onSelect={run(() => setTimeout(openTodos, 0))}><ListChecks size={15} /> Open to-dos</Command.Item>
           {TODO_STYLES.map((x) => <Command.Item key={x.value} value={'to-do style todo ' + x.label + ' ' + x.desc} onSelect={run(() => look.setPrefs({ ...look.prefs, todo: x.value }))}><ListChecks size={15} /> To-do style · {x.label}<span className="cmdk-meta">{x.desc}</span>{look.prefs.todo === x.value && <Check size={14} style={{ marginLeft: 8 }} />}</Command.Item>)}
+          {TODO_WIDTHS.map((x) => <Command.Item key={'w' + x.value} value={'to-do panel width ' + x.label + ' ' + (100 - x.value) + '/' + x.value} onSelect={run(() => look.setPrefs({ ...look.prefs, todo: 'panel', todoWidth: x.value }))}><ListChecks size={15} /> To-do panel width · {100 - x.value}/{x.value}<span className="cmdk-meta">{x.desc}</span>{look.prefs.todoWidth === x.value && <Check size={14} style={{ marginLeft: 8 }} />}</Command.Item>)}
           {TODO_HOME.map((x) => <Command.Item key={x.value} value={'to-dos on home todo ' + x.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, todoHome: x.value }); go('/hub') })}><House size={15} /> To-dos on Home · {x.label}{look.prefs.todoHome === x.value && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
         <Command.Group heading="Home layout">

@@ -16,7 +16,7 @@ import { PopTuner, THEMES, themeActive } from '../popTune'
 import { PERSONAS } from '../personas'
 import { HOME_LAYOUTS } from './Hub'
 import { LAYOUTS as BD_LAYOUTS } from '../sales/prospect'
-import { TODO_STYLES, TODO_HOME } from '../todo/state'
+import { TODO_STYLES, TODO_HOME, TODO_WIDTHS } from '../todo/state'
 import { NoirTuner, DeskPreset } from '../noir'
 
 /* ───────── sections ───────── */
@@ -329,6 +329,7 @@ function Preferences({ look }) {
             ))}
           </div>
         </Row>
+        {(prefs.todo || 'panel') === 'panel' && <Row label="To-do panel width" tip="Share of the window the panel takes. 30% and 40% float over the page; 50% and 60% sit beside it and the page shrinks, so both stay usable. Drag the panel's edge to switch too."><Seg id="st-tdw" value={prefs.todoWidth || '30'} onChange={set('todoWidth')} options={TODO_WIDTHS.map((x) => ({ value: x.value, label: (100 - x.value) + '/' + x.value }))} /></Row>}
         <Row label="To-dos on Home" tip="Strip: one quiet line above the KPIs that opens into today's list · Card: a KPI-sized card with today's and overdue to-dos · Off"><Seg id="st-tdhome" value={prefs.todoHome || 'strip'} onChange={set('todoHome')} options={TODO_HOME} /></Row>
         <Row label="BD filters" tip="Where the global filter lives in Prospecting, Companies first and Stream. Bar: chips above the results · Side panel: every filter grouped down the left, with a count on each option. Phones always use a sheet."><Seg id="st-bdf" value={prefs.bdFilters || 'bar'} onChange={set('bdFilters')} options={[{ value: 'bar', label: 'Bar' }, { value: 'panel', label: 'Side panel' }]} /></Row>
         {prefs.bdFilters === 'panel' && <Row label="Filter panel side" tip="Which side of the page the filter panel docks to. Right-click the panel to switch too."><Seg id="st-bdfs" value={prefs.bdFilterSide || 'left'} onChange={set('bdFilterSide')} options={[{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }]} /></Row>}
@@ -478,7 +479,7 @@ function Shortcuts() {
   const groups = [
     ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Ask WLDD (when docked)', MOD + 'J'], ['Home', ALT + '0'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to BD', ALT + '3']]],
     ['Look', [['Cycle Home layout', ALT + 'H'], ['Cycle experience', ALT + 'E'], ['Cycle style', ALT + 'S'], ['Cycle Pop presets', ALT + 'P']]],
-    ['Lists & boards', [['New campaign', 'C'], ['Add to-do', 'T'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
+    ['Lists & boards', [['New campaign', 'C'], ['Add to-do', 'T'], ['To-do on anything', 'Right-click'], ['Tick a to-do', 'X'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
     ['Vercel experience', [['Find', 'F']]],
   ]
   return groups.map(([g, items]) => (

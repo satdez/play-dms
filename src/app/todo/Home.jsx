@@ -36,7 +36,7 @@ export function TodoStrip() {
       <AutoHeight duration={0.24}>
         {open && due.length > 0 && (
           <div className="td-strip-l">
-            <div className="td-rows">{due.map((t) => <TodoRow key={t.id} t={t} by={false} actions={false} />)}</div>
+            <div className="td-rows">{due.map((t) => <TodoRow key={t.id} t={t} by={false} actions={false} crumb />)}</div>
             <button className="td-more" onClick={openTodos}>All to-dos<ArrowUpRight size={12} /></button>
           </div>
         )}
@@ -60,7 +60,7 @@ export function TodoCard({ kind = 'tiles' }) {
   )
   const list = (
     <div className="td-rows">
-      {show.map((t) => <TodoRow key={t.id} t={t} by={false} actions={false} clamp />)}
+      {show.map((t) => <TodoRow key={t.id} t={t} by={false} actions={false} clamp crumb />)}
       {!show.length && <div className="td-none mute"><Check size={14} />Clear</div>}
     </div>
   )

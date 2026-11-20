@@ -308,7 +308,7 @@ const Card = memo(function Card({ d, hidden, onPointerDown, onClick, keyMove }) 
   const rep = repOf(d.owner)
   const due = d.due && d.stage !== 'won' && d.stage !== 'lost' ? Math.floor((+d.due - +startOfToday()) / DAY) : null
   return (
-    <div className={'pcard sl-card2' + (stale ? ' stale' : '') + (hidden ? ' landing' : '')} data-card={d.id} role="link" tabIndex={0}
+    <div className={'pcard sl-card2' + (stale ? ' stale' : '') + (hidden ? ' landing' : '')} data-card={d.id} data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })} role="link" tabIndex={0}
       aria-label={`${d.brand}, ${fmt.inr(d.value)}, ${stageLabel(d.stage)}. ${ALT}Left or Right moves stage`}
       onPointerDown={(e) => onPointerDown(e, d)} onClick={() => onClick(d)}
       onKeyDown={(e) => {

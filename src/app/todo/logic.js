@@ -1,5 +1,5 @@
 // To-do: the pure parts. Dates read the demo clock (TODAY), never the wall clock.
-import { TODAY, fmt, clients } from '../data'
+import { TODAY, fmt, clients, team } from '../data'
 import { brands, extras, brandOf, PHONES } from '../sales/data'
 import { dbCompanies, companyHref } from '../sales/prospect'
 import { view } from '../personas'
@@ -23,9 +23,15 @@ export function dueLabel(d) {
   const day = n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : n === -1 ? 'Yesterday' : n > 1 && n < 7 ? WD[d.getDay()] : fmt.date(d)
   return timed(d) ? day + ' ' + fmtTime(d) : day
 }
-/** Mine: written by whoever the app is showing (Settings › View as). */
+/** Mine: assigned to (or, unassigned, written by) whoever the app is showing (Settings › View as). */
 export const meId = () => view().person.id
-export const mine = (t) => t.by === meId()
+export const whoOf = (t) => t.who || t.by
+export const mine = (t) => whoOf(t) === meId()
+/** Top-level to-dos only; subtasks show under their parent. */
+export const top = (t) => !t.parent
+export const subsOf = (items, id) => items.filter((x) => x.parent === id)
+/** "Mon → Fri" for a to-do with a start, else its due label. */
+export const spanLabel = (t) => (t.start && t.due && dayDiff(t.start) !== dayDiff(t.due) ? dueLabel(t.start).replace(/ \d.*$/, '') + ' → ' + dueLabel(t.due) : dueLabel(t.due))
 
 /* ───────── Natural dates ───────── */
 const WDAY = { sun: 0, sunday: 0, mon: 1, monday: 1, tue: 2, tues: 2, tuesday: 2, wed: 3, weds: 3, wednesday: 3, thu: 4, thur: 4, thurs: 4, thursday: 4, fri: 5, friday: 5, sat: 6, saturday: 6 }
@@ -102,6 +108,24 @@ export function parseDate(text) {
   if (hm) { date = new Date(date); date.setHours(hm[0], hm[1], 0, 0) }
   return { date, spans: spans.sort((a, b) => a[0] - b[0]), label: dueLabel(date), key: spans.map(([a, b]) => lo.slice(a, b)).join('|') }
 }
+/** "from mon to fri", "from today till 25th": a timeline. Returns parseDate's shape plus `start`. */
+export function parseRange(text) {
+  const lo = text.toLowerCase()
+  const m = /\b(?:from|starting)\s+/.exec(lo)
+  if (!m) return null
+  const a0 = m.index + m[0].length
+  const sep = /\s+(?:to|till|until|through|thru|-|–)\s+/.exec(lo.slice(a0))
+  if (!sep) return null
+  const a = parseDate(lo.slice(a0, a0 + sep.index))
+  if (!a) return null
+  const b0 = a0 + sep.index + sep[0].length
+  const b = parseDate(lo.slice(b0))
+  if (!b || b.spans[0][0] > 3) return null
+  const start = a.date, due = b.date
+  if (due < start) return null
+  const end = b0 + Math.max(...b.spans.map((x) => x[1]))
+  return { start, date: due, spans: [[m.index, end]], label: dueLabel(start).replace(/ \d.*$/, '') + ' → ' + dueLabel(due), key: lo.slice(m.index, end) }
+}
 /** Cut spans out of text and tidy the spaces they leave behind. */
 export const cut = (text, spans) => {
   let out = text
@@ -123,7 +147,7 @@ let cache = { key: null, idx: null }
 /** Brands, people, deals, campaigns and invoices, each as { kind, id, label, sub, logo, brand, phone }. Rebuilt when the store changes. */
 export function indexOf(s) {
   const st = s.sales
-  const key = [st.db, st.contacts, st.inbound, st.deals, s.campaigns, s.invoices]
+  const key = [st.db, st.contacts, st.inbound, st.deals, s.campaigns, s.invoices, s.vendors, meId()]
   if (cache.key && cache.key.every((x, i) => x === key[i])) return cache.idx
   const seen = new Set()
   const co = dbCompanies(st).filter((c) => { const k = c.name.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true })
@@ -137,21 +161,27 @@ export function indexOf(s) {
   const deals = st.deals.map((d) => ({ kind: 'deal', id: d.id, label: d.brand + ' deal', sub: d.code + ' · ' + ({ new: 'New lead', brief: 'Brief', negotiation: 'Negotiation', pitch: 'Pitch', won: 'Won', lost: 'Closed lost' }[d.stage] || d.stage), logo: d.brand, brand: d.brand }))
   const camps = s.campaigns.map((c) => ({ kind: 'campaign', id: c.id, label: c.name, sub: c.code + ' · ' + c.pod, logo: c.client, brand: c.client }))
   const invs = s.invoices.map((x) => ({ kind: 'invoice', id: x.id, label: x.no, sub: x.vendor.name + ' · ' + x.campaign, brand: x.campaign.split(' × ')[0] }))
+  const vends = (s.vendors || []).map((v) => ({ kind: 'vendor', id: v.id, label: v.name, sub: v.kind + ' · ' + v.role, brand: null, hue: hueOf(v.name) }))
+  // Teammates: picking one assigns the to-do rather than linking it.
+  const crew = team.map((u) => ({ kind: 'member', id: u.id, label: u.name, sub: u.id === meId() ? 'You · ' + u.role : u.role, hue: u.hue, short: u.short }))
   const byPhone = {}
   people.forEach((p) => { if (p.phone && !byPhone[digits10(p.phone)]) byPhone[digits10(p.phone)] = p })
-  const idx = { all: [...co, ...pod, ...people, ...deals, ...camps, ...invs], byPhone, co: [...co, ...pod] }
+  const idx = { all: [...co, ...pod, ...people, ...deals, ...camps, ...invs, ...vends, ...crew], byPhone, co: [...co, ...pod], byName: {} }
+  idx.all.forEach((e) => { const k = e.label.toLowerCase(); if (!idx.byName[k]) idx.byName[k] = e })
   cache = { key, idx }
   return idx
 }
-export const KIND_ORDER = ['brand', 'person', 'deal', 'campaign', 'invoice']
-export const KIND_LABEL = { brand: 'Companies', person: 'People', deal: 'Deals', campaign: 'Campaigns', invoice: 'Invoices' }
-const CAP = { brand: 5, person: 4, deal: 3, campaign: 3, invoice: 3 }
+export const KIND_ORDER = ['brand', 'person', 'deal', 'campaign', 'invoice', 'vendor', 'member']
+export const KIND_LABEL = { brand: 'Companies', person: 'People', deal: 'Deals', campaign: 'Campaigns', invoice: 'Invoices', vendor: 'Creators & vendors', member: 'Assign to' }
+export const KIND_ONE = { brand: 'Company', person: 'Person', deal: 'Deal', campaign: 'Campaign', invoice: 'Invoice', vendor: 'Creator', member: 'Teammate', phone: 'Phone' }
+const CAP = { brand: 5, person: 4, deal: 3, campaign: 3, invoice: 3, vendor: 3, member: 3 }
 /** Picker results for "@query": grouped in KIND_ORDER, best first. */
 export function search(idx, q) {
   const t = q.trim().toLowerCase()
   const score = (e) => {
     const l = e.label.toLowerCase()
-    if (!t) return e.kind === 'brand' || e.kind === 'deal' ? 0 : 9
+    if (!t) return e.kind === 'brand' || e.kind === 'deal' || e.kind === 'campaign' || e.kind === 'member' ? 0 : 9
+    if (e.kind === 'member' && e.short.toLowerCase().startsWith(t)) return 0
     if (l.startsWith(t)) return 0
     if (l.split(/[\s×·.-]+/).some((w) => w.startsWith(t))) return 1
     if (l.includes(t)) return 2
@@ -161,7 +191,7 @@ export function search(idx, q) {
   const out = []
   for (const k of KIND_ORDER) {
     const list = idx.all.filter((e) => e.kind === k).map((e) => [score(e), e]).filter(([s]) => s < 9).sort((a, b) => a[0] - b[0] || a[1].label.length - b[1].label.length)
-    out.push(...list.slice(0, t ? CAP[k] : k === 'brand' ? 4 : k === 'deal' ? 3 : 0).map(([, e]) => e))
+    out.push(...list.slice(0, t ? CAP[k] : k === 'brand' ? 4 : k === 'deal' ? 3 : k === 'campaign' ? 2 : k === 'member' ? 3 : 0).map(([, e]) => e))
   }
   return out
 }
@@ -198,6 +228,7 @@ export function hrefOf(l) {
   if (l.kind === 'campaign') return can('pod') ? '/pod/campaigns/' + l.id : can('finance') ? '/finance/campaigns' : null
   if (l.kind === 'invoice') return can('finance') ? '/finance/invoices' : can('pod') ? '/pod/approvals' : null
   if (l.kind === 'person') return l.brand ? brandHref(brandOf(l.brand)?.id || '', l.brand) : null
+  if (l.kind === 'vendor') return can('finance') ? '/finance/vendors' : null
   return null
 }
 

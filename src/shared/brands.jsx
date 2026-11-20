@@ -51,11 +51,11 @@ export function BrandLogo({ name, size = 24, radius, hue, className = '' }) {
   const style = { width: size, height: size, borderRadius: r, flex: 'none' }
   if (url && !failed) {
     return (
-      <span className={'brand-logo ' + className} style={style}>
+      <span className={'brand-logo ' + className} style={style} data-brand={name}>
         <img src={url} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} draggable={false} />
       </span>
     )
   }
   const h = hue ?? (name.charCodeAt(0) * 37 + name.length * 13) % 360
-  return <span className={'logo ' + className} style={{ ...style, background: `oklch(0.6 0.12 ${h})`, fontSize: Math.round(size * 0.44) }}>{name[0]}</span>
+  return <span className={'logo ' + className} data-brand={name} style={{ ...style, background: `oklch(0.6 0.12 ${h})`, fontSize: Math.round(size * 0.44) }}>{name[0]}</span>
 }

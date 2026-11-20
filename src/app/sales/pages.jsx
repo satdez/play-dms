@@ -548,7 +548,7 @@ export function Pipeline() {
             <thead><tr><th>Brand</th><th>Stage</th><th className="r">Value</th><th>Owner</th><th>Next step</th><th>Due</th><th>Updated</th></tr></thead>
             <tbody>
               {deals.map((d) => (
-                <tr key={d.id} className="click" onClick={() => go('/bd/pipeline/' + d.id)}>
+                <tr key={d.id} className="click" data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })} onClick={() => go('/bd/pipeline/' + d.id)}>
                   <td><span className="row"><BrandLogo name={d.brand} size={22} /><b style={{ fontWeight: 500 }}>{d.brand}</b>{isStale(d) && <span className="chip y"><Hourglass size={11} />{staleDays(d)}d</span>}</span></td>
                   <td><StageTag id={d.stage} /></td>
                   <td className="r num">{fmt.inr(d.value)}</td>

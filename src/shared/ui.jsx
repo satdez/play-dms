@@ -65,6 +65,7 @@ export function Avatar({ user, size = 20, ring, className = '' }) {
   return (
     <span
       className={'av ' + className}
+      data-person={user.name || undefined}
       title={user.name || user.handle}
       style={{
         width: size, height: size, fontSize: Math.max(8, size * 0.42),
