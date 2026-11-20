@@ -43,7 +43,8 @@ export function TodoHost({ path }) {
     }
     const det = (e) => {
       const id = e.detail?.id
-      if (todoStyle() === 'panel') setPanel((p) => ({ links: null, n: 0, ...p, open: id }))
+      // Clicking the open to-do again closes it (beside the list there's no back button).
+      if (todoStyle() === 'panel') setPanel((p) => ({ links: null, n: 0, ...p, open: p?.open === id && window.innerWidth * +todoWidth() / 100 >= 620 ? null : id }))
       else setSheet(id)
     }
     window.addEventListener('todo:add', add); window.addEventListener('todo:open', open); window.addEventListener('todo:detail', det)
@@ -77,10 +78,11 @@ function Panel({ open, onClose, pre, who, focusKey, ctx, detail, setDetail }) {
   const docked = wide && isDocked(pref)
   useEffect(() => {
     if (!open) return
-    const k = (e) => { if (e.key === 'Escape' && !e.defaultPrevented && !e.target.closest?.('input, textarea')) onClose() }
+    // Esc closes the open to-do first when it sits beside the list, then the panel.
+    const k = (e) => { if (e.key === 'Escape' && !e.defaultPrevented && !e.target.closest?.('input, textarea')) { if (detail && wide && px >= 620) setDetail(null); else onClose() } }
     window.addEventListener('keydown', k)
     return () => window.removeEventListener('keydown', k)
-  }, [open, onClose])
+  }, [open, onClose, detail, wide, px, setDetail])
   // Docked: the app shell gives up the panel's width.
   useEffect(() => {
     const h = document.documentElement

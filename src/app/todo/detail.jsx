@@ -132,18 +132,27 @@ export function TodoDetail({ id, onBack, onClose, backLabel = 'To-do' }) {
   const span = t.start && t.due ? dayDiff(t.due) - dayDiff(t.start) + 1 : 0
   const set = (p) => s.todo.patch(t.id, p)
   const drop = (l) => set({ links: t.links.filter((x) => !(x.kind === l.kind && x.id === l.id)) })
+  // Beside the list (onClose) the panel header already owns the top edge, so pin and delete move onto the title row.
+  const inline = !!onClose && !onBack
+  const acts = (
+    <>
+      <Tip label={t.pinned ? 'Unpin' : 'Pin to the top'}><button className={'b ghost icon sm' + (t.pinned ? ' on' : '')} aria-pressed={!!t.pinned} onClick={() => set({ pinned: !t.pinned })} aria-label="Pin"><Pin size={14} /></button></Tip>
+      <Tip label="Delete"><button className="b ghost icon sm" onClick={() => { s.todo.remove(t.id); (onBack || onClose)?.() }} aria-label="Delete"><Trash2 size={14} /></button></Tip>
+    </>
+  )
   return (
-    <div className="td-dt">
-      <div className="td-dt-hd">
-        {onBack && <button className="b ghost sm td-dt-back" onClick={onBack}><ChevronLeft size={15} />{backLabel}</button>}
-        <span className="grow" />
-        <Tip label={t.pinned ? 'Unpin' : 'Pin to the top'}><button className={'b ghost icon sm' + (t.pinned ? ' on' : '')} aria-pressed={!!t.pinned} onClick={() => set({ pinned: !t.pinned })} aria-label="Pin"><Pin size={14} /></button></Tip>
-        <Tip label="Delete"><button className="b ghost icon sm" onClick={() => { s.todo.remove(t.id); (onBack || onClose)?.() }} aria-label="Delete"><Trash2 size={14} /></button></Tip>
-        {onClose && <button className="b ghost icon sm" onClick={onClose} aria-label="Close"><X size={15} /></button>}
-      </div>
+    <div className={'td-dt' + (inline ? ' inline' : '')}>
+      {!inline && (
+        <div className="td-dt-hd">
+          {onBack && <button className="b ghost sm td-dt-back" onClick={onBack}><ChevronLeft size={15} />{backLabel}</button>}
+          <span className="grow" />
+          {acts}
+          {onClose && <button className="b ghost icon sm" onClick={onClose} aria-label="Close"><X size={15} /></button>}
+        </div>
+      )}
       <div className="td-dt-b">
         {parent && <button className="td-dt-parent" onClick={() => openTodo(parent.id)}><CornerDownRight size={12} /><span className="ell">{parent.text}</span></button>}
-        <div className="td-dt-top"><Tick t={t} size="lg" /><Title t={t} /></div>
+        <div className="td-dt-top"><Tick t={t} size="lg" /><Title t={t} />{inline && <span className="td-dt-acts">{acts}</span>}</div>
 
         <dl className="td-dt-props">
           <dt>Assignees</dt><dd className="td-dt-whos"><Assignee t={t} /></dd>
