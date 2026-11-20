@@ -44,12 +44,12 @@ const DL = (id, brand) => ({ kind: 'deal', id, label: brand + ' deal', brand })
 const CP = (id, label) => ({ kind: 'campaign', id, label, brand: label.split(' × ')[0] })
 const PE = (id, label, brand) => ({ kind: 'person', id, label, brand })
 const PH = (digits, person, brand) => ({ kind: 'phone', id: digits, label: '+91 ' + digits.slice(0, 5) + ' ' + digits.slice(5), brand, person })
-const T = (id, text, links, due, by, extra = {}) => ({ id, text, links, due, remind: due, by, who: by, start: null, parent: null, notes: '', at: new Date(TODAY.getTime() - 864e5 * (2 + (id.length % 3))), done: false, doneAt: null, pinned: false, ...extra })
-const S = (id, parent, text, due, who, extra = {}) => T(id, text, [], due, 'u1', { parent, who, ...extra })
+const T = (id, text, links, due, by, extra = {}) => ({ id, text, links, due, remind: due, by, who: [by], start: null, parent: null, notes: '', at: new Date(TODAY.getTime() - 864e5 * (2 + (id.length % 3))), done: false, doneAt: null, pinned: false, ...extra })
+const S = (id, parent, text, due, who, extra = {}) => T(id, text, [], due, 'u1', { parent, who: [who], ...extra })
 function seed() {
   const items = [
     T('t3', 'Chase Unacademy, no reply in 6 days', [DL('d103', 'Unacademy')], dayAt(-1), 'u1'),
-    T('t7', 'Lock the creator shortlist for Philips × Sale Countdown', [CP('c8', 'Philips × Sale Countdown')], dayAt(-2), 'u5', { who: 'u1', start: dayAt(-6) }),
+    T('t7', 'Lock the creator shortlist for Philips × Sale Countdown', [CP('c8', 'Philips × Sale Countdown')], dayAt(-2), 'u5', { who: ['u1', 'u5'], start: dayAt(-6) }),
     S('t7a', 't7', 'Shortlist 20 meme pages', dayAt(-4), 'u5', { done: true, doneAt: dayAt(-4, 17) }),
     S('t7b', 't7', 'Get rates from Pagal Memes and Dank Desi', dayAt(-2), 'u5'),
     T('t1', 'Send Rare Rabbit the Q4 credentials deck', [B('Rare Rabbit', 'rare-rabbit'), DL('d101', 'Rare Rabbit')], dayAt(0, 17), 'u1', { pinned: true, start: dayAt(-2), notes: 'Juhi wants fashion case studies up front. Keep it under 12 slides.' }),
@@ -63,12 +63,12 @@ function seed() {
     T('t2', 'Call Juhi about the womenswear launch', [PE('ct1', 'Juhi Mathur', 'Rare Rabbit'), PH('9820144556', { id: 'ct1', name: 'Juhi Mathur' }, 'Rare Rabbit')], dayAt(1), 'u1'),
     T('t9', 'Ask Dhruv for the Share.Market meme numbers', [PE('ct2', 'Dhruv Pillai', 'PhonePe'), DL('d102', 'PhonePe')], dayAt(2), 'u1'),
     T('t16', 'Get District sign-off on the Always-on Q4 calendar', [CP('c3', 'District × Always-on Q4')], dayAt(2, 12), 'u10', { start: dayAt(0) }),
-    T('t5', 'Licious wants proposal v2 by Friday', [DL('d109', 'Licious')], dayAt(3), 'u3', { who: 'u1', start: dayAt(1) }),
+    T('t5', 'Licious wants proposal v2 by Friday', [DL('d109', 'Licious')], dayAt(3), 'u3', { who: ['u1', 'u3'], start: dayAt(1) }),
     S('t5a', 't5', 'Rework the budget split', dayAt(1), 'u1'),
     S('t5b', 't5', 'Add two food creators to the plan', dayAt(2), 'u3'),
     S('t5c', 't5', 'Send v2 to Arjun', dayAt(3), 'u1'),
     T('t12', 'Book the Lenskart renewal call', [B('Lenskart', 'lenskart')], dayAt(6, 11), 'u1'),
-    T('t17', 'Netflix Diwali Drop: wrap-up report', [CP('c1', 'Netflix India × Diwali Drop')], dayAt(9), 'u4', { who: 'u1', start: dayAt(4) }),
+    T('t17', 'Netflix Diwali Drop: wrap-up report', [CP('c1', 'Netflix India × Diwali Drop')], dayAt(9), 'u4', { who: ['u1', 'u4', 'u2'], start: dayAt(4) }),
     T('t10', 'Zepto Café always-on: pitch it as a retainer', [B('Zepto', 'zepto')], null, 'u1'),
     T('t11', 'Why did Mamaearth spend drop 31%?', [B('Mamaearth', 'mamaearth')], null, 'u1'),
     T('t14', 'Intro Spinny to the Neon pod', [DL('d113', 'Spinny')], dayAt(-1), 'u1', { done: true, doneAt: dayAt(-1, 18) }),
@@ -91,7 +91,7 @@ export function useTodoState() {
 
   /** New items go to the top of their section. */
   const add = useCallback((f) => {
-    const t = { id: uid(), text: f.text, links: f.links || [], due: f.due || null, start: f.start || null, remind: f.remind ?? f.due ?? null, by: f.by, who: f.who || f.by, parent: f.parent || null, notes: '', at: new Date(TODAY.getTime() - 1000), done: false, doneAt: null, pinned: false, color: f.color || null, x: f.x, y: f.y, order: Math.min(0, ...ref.current.items.map((x) => x.order ?? 0)) - 1 }
+    const t = { id: uid(), text: f.text, links: f.links || [], due: f.due || null, start: f.start || null, remind: f.remind ?? f.due ?? null, by: f.by, who: f.who ? (Array.isArray(f.who) ? f.who : [f.who]) : [f.by], parent: f.parent || null, notes: '', at: new Date(TODAY.getTime() - 1000), done: false, doneAt: null, pinned: false, color: f.color || null, x: f.x, y: f.y, order: Math.min(0, ...ref.current.items.map((x) => x.order ?? 0)) - 1 }
     setItems((l) => [t, ...l])
     return t
   }, [setItems])

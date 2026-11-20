@@ -4,13 +4,13 @@ import { flushSync } from 'react-dom'
 import { Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
-import { Avatar } from '../../shared/ui'
+import { Avatar, AvatarStack } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
 import { Popover, go } from '../ui'
 import { team, TODAY } from '../data'
 import {
   indexOf, search, settled, exact, linkOf, phoneLink, findPhones, parseDate, cut, hrefOf, segments, dueLabel, bucketOf, meId, mine,
-  KIND_LABEL, linkedTo, dayDiff, at, parseRange, whoOf, spanLabel, top,
+  KIND_LABEL, linkedTo, dayDiff, at, parseRange, whosOf, asList, spanLabel, top,
 } from './logic'
 import { openTodoAdd, openTodos, openTodo, setTodoPref, todoStyle, TODO_STYLES } from './state'
 
@@ -181,7 +181,9 @@ export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs 
   const [open, setOpen] = useState(false)
   const kids = subs && !t.parent ? s.todo.items.filter((x) => x.parent === t.id) : []
   const kd = kids.filter((x) => x.done).length
-  const who = whoOf(t) !== meId() && userOf(whoOf(t))
+  const whos = whosOf(t)
+  // Others on it: hidden when it's only you.
+  const crew = whos.length === 1 && whos[0] === meId() ? [] : whos.map(userOf).filter(Boolean)
   const parent = crumb && t.parent ? s.todo.items.find((x) => x.id === t.parent) : null
   const save = () => { const x = v.trim(); if (x && x !== t.text) s.todo.patch(t.id, { text: x }); setEd(false) }
   return (
@@ -207,7 +209,7 @@ export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs 
           )}
           {t.pinned && !t.done && <Pin size={12} className="mute td-pin" />}
           <DueButton t={t} />
-          {by && who && <Tip label={'Assigned to ' + who.name}><span className="td-by"><Avatar user={who} size={18} /></span></Tip>}
+          {by && crew.length > 0 && <Tip label={crew.map((u) => (u.id === meId() ? 'You' : u.short)).join(', ')}><span className="td-by"><AvatarStack users={crew.slice(0, 3)} size={18} ring="var(--surface)" />{crew.length > 3 && <span className="td-by-n num">+{crew.length - 3}</span>}</span></Tip>}
           {actions && <Tip label="Delete"><button className="b ghost icon sm td-del" onClick={(e) => { e.stopPropagation(); s.todo.remove(t.id) }} aria-label="Delete"><Trash2 size={13} /></button></Tip>}
         </span>
       </div>
@@ -247,8 +249,10 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
   const preKey = pre.map((l) => l.kind + l.id).join()
   const [prel, setPrel] = useState(pre)
   useEffect(() => { setPrel(pre) }, [preKey]) // eslint-disable-line react-hooks/exhaustive-deps
-  const [who, setWho] = useState(assign)
-  useEffect(() => { setWho(assign) }, [assign])
+  const assignKey = asList(assign).join()
+  const [who, setWho] = useState(() => asList(assign))
+  useEffect(() => { setWho(asList(assign)) }, [assignKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const addWho = (id) => setWho((w) => (w.includes(id) ? w : [...w, id]))
   const [skipPh, setSkipPh] = useState([])
   const [skipDate, setSkipDate] = useState(null)
   const [caret, setCaret] = useState(0)
@@ -277,7 +281,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
       // "@Riya Kapoor " assigns: the name leaves the text and becomes the assignee.
       v = v.slice(0, mm.start) + v.slice(mm.start + 1 + hit.label.length).replace(/^\s+/, '')
       c = mm.start; want.current = c
-      setWho(hit.id)
+      addWho(hit.id)
     } else if (hit) {
       v = v.slice(0, mm.start) + hit.label + v.slice(mm.start + 1 + hit.label.length)
       c -= 1; want.current = c
@@ -289,7 +293,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
   const pick = (e) => {
     if (e.kind === 'member') {
       const v = text.slice(0, m.start) + text.slice(caret).replace(/^\s+/, '')
-      setText(v); setCaret(m.start); want.current = m.start; setHi(0); setWho(e.id)
+      setText(v); setCaret(m.start); want.current = m.start; setHi(0); addWho(e.id)
       inp.current?.focus()
       return
     }
@@ -305,7 +309,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     let w = who
     if (m) {
       const e = exact(idx, m.q)
-      if (e?.kind === 'member') { v = v.slice(0, m.start) + v.slice(m.start + 1 + m.q.length); w = e.id }
+      if (e?.kind === 'member') { v = v.slice(0, m.start) + v.slice(m.start + 1 + m.q.length); if (!w.includes(e.id)) w = [...w, e.id] }
       else if (e) { v = v.slice(0, m.start) + e.label + v.slice(m.start + 1 + m.q.length); ls.push(linkOf(e)) }
     }
     ls = ls.filter((l) => v.toLowerCase().includes(l.label.toLowerCase()))
@@ -319,8 +323,8 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     v = v.replace(/\s{2,}/g, ' ').trim()
     if (!v) return
     const all = [...prel, ...ls, ...phl].filter((l, i, a) => a.findIndex((x) => sameLink(x, l)) === i)
-    const t = s.todo.add({ text: v[0].toUpperCase() + v.slice(1), links: all, due: d?.date || null, start: d?.start || null, by: meId(), who: w || meId(), ...(extra ? extra() : null) })
-    setText(''); setLinks([]); setSkipPh([]); setSkipDate(null); setCaret(0); setClosed(-1); setWho(assign)
+    const t = s.todo.add({ text: v[0].toUpperCase() + v.slice(1), links: all, due: d?.date || null, start: d?.start || null, by: meId(), who: w.length ? w : [meId()], ...(extra ? extra() : null) })
+    setText(''); setLinks([]); setSkipPh([]); setSkipDate(null); setCaret(0); setClosed(-1); setWho(asList(assign))
     onAdded?.(t)
   }
   const key = (e) => {
@@ -362,7 +366,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     ...present.filter((l) => !prel.some((p) => sameLink(p, l))).map((l) => ({ k: 'm' + l.kind + l.id, e: l, label: l.label, drop: () => setLinks((x) => x.filter((y) => !sameLink(y, l))) })),
     ...phones.map((p) => ({ k: 'ph' + p.digits, e: p.link, label: p.link.label, sub: p.link.person ? p.link.person.name + (p.link.brand ? ' · ' + p.link.brand : '') : 'Not on file', drop: () => setSkipPh((x) => [...x, p.digits]) })),
     date && { k: 'due', due: true, label: date.label, drop: () => setSkipDate(date.key) },
-    who && who !== meId() && userOf(who) && { k: 'who', e: { kind: 'member', label: userOf(who).name, hue: userOf(who).hue }, label: userOf(who).short, sub: 'Assignee', drop: () => setWho(null) },
+    ...who.map(userOf).filter(Boolean).filter((u) => !(who.length === 1 && u.id === meId())).map((u) => ({ k: 'who' + u.id, e: { kind: 'member', label: u.name, hue: u.hue }, label: u.id === meId() ? 'You' : u.short, sub: 'Assignee', drop: () => setWho((w) => w.filter((x) => x !== u.id)) })),
   ].filter(Boolean)
   return (
     <div className={'td-comp' + (up ? ' up' : '') + (pickOn ? ' picking' : '') + (bare ? ' bare' : '') + ' ' + className}>

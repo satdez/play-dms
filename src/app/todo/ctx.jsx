@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 import { useStore } from '../store'
 import { EASE } from '../../shared/motion'
 import { team } from '../data'
-import { indexOf, linkOf, pageCtx, linkedTo, hrefOf, KIND_ONE, meId, whoOf, dueLabel, at, top, bucketOf } from './logic'
+import { indexOf, linkOf, pageCtx, linkedTo, hrefOf, KIND_ONE, meId, whosOf, assigned, dueLabel, at, top, bucketOf } from './logic'
 import { openTodoAdd, openTodo } from './state'
 import { Mark } from './ui'
 
@@ -118,7 +118,7 @@ function EntMenu({ e, run }) {
   const s = useStore()
   const member = e.kind === 'member'
   const ctx = { keys: new Set([e.kind + ':' + e.id]), brand: e.kind === 'brand' || e.kind === 'deal' ? e.brand : null }
-  const open = s.todo.items.filter((t) => !t.done && top(t) && (member ? whoOf(t) === e.id : linkedTo(t, ctx)))
+  const open = s.todo.items.filter((t) => !t.done && top(t) && (member ? assigned(t, e.id) : linkedTo(t, ctx)))
     .sort((a, b) => (a.due ? +a.due : 9e15) - (b.due ? +b.due : 9e15))
   const href = !member && e.kind !== 'phone' ? hrefOf(e) : null
   const here = href && location.hash.slice(1).startsWith(href)
@@ -153,7 +153,7 @@ function TodoMenu({ id, run }) {
   const t = s.todo.items.find((x) => x.id === id)
   if (!t) return null
   const set = (p) => s.todo.patch(t.id, p)
-  const mineNow = whoOf(t) === meId()
+  const mineNow = assigned(t, meId())
   return (
     <>
       <div className="td-ctx-h td-ctx-h-t"><span className="ell">{t.text}</span></div>
@@ -168,7 +168,7 @@ function TodoMenu({ id, run }) {
         {t.due && <button role="menuitem" onClick={run(() => set({ due: null, start: null, remind: null }))} aria-label="No date"><CalendarDays size={13} />None</button>}
       </div>
       <div className="pop-sep" />
-      {!mineNow && <button role="menuitem" onClick={run(() => set({ who: meId() }))}><UserRound size={14} /><span className="grow">Assign to me</span></button>}
+      {!mineNow && <button role="menuitem" onClick={run(() => set({ who: [...whosOf(t), meId()] }))}><UserRound size={14} /><span className="grow">Add me</span></button>}
       <button role="menuitem" onClick={run(() => set({ pinned: !t.pinned }))}><Pin size={14} /><span className="grow">{t.pinned ? 'Unpin' : 'Pin'}</span></button>
       <button role="menuitem" onClick={run(() => s.todo.toggle(t.id))}><Check size={14} /><span className="grow">{t.done ? 'Mark not done' : 'Mark done'}</span></button>
       <button role="menuitem" className="td-ctx-del" onClick={run(() => s.todo.remove(t.id))}><Trash2 size={14} /><span className="grow">Delete</span></button>

@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, GripVertical, X, Link2, User, AlarmClock, Check, Rows3, GanttChart } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
-import { Avatar } from '../../shared/ui'
+import { Avatar, AvatarStack } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
 import { Popover, Seg } from '../ui'
 import { TODAY, fmt } from '../data'
-import { bucketOf, mine, brandOfItem, top, whoOf, meId, dayDiff, at, spanLabel } from './logic'
+import { bucketOf, mine, brandOfItem, top, whosOf, meId, dayDiff, at, spanLabel } from './logic'
 import { todoStyle, openTodos, openTodo } from './state'
 import { Composer, TodoRow, StyleMenu, Tick, TodoText, userOf } from './ui'
 
@@ -34,9 +34,9 @@ function groupsOf(open, by) {
   if (by === 'date') return SECTIONS.map(([k, label]) => ({ key: k, label, reorder: true, list: open.filter((t) => (k === 'today' ? ['overdue', 'today'].includes(bucketOf(t)) : bucketOf(t) === k)).sort(byOrder) }))
   const m = new Map()
   for (const t of open) {
-    const k = by === 'company' ? brandOfItem(t) || '' : whoOf(t)
-    if (!m.has(k)) m.set(k, [])
-    m.get(k).push(t)
+    // By assignee, a shared to-do shows under each person on it.
+    const ks = by === 'company' ? [brandOfItem(t) || ''] : whosOf(t).length ? whosOf(t) : ['']
+    for (const k of ks) { if (!m.has(k)) m.set(k, []); m.get(k).push(t) }
   }
   const out = [...m.entries()].map(([k, list]) => {
     if (by === 'company') return { key: 'c:' + k, label: k || 'No company', icon: k ? <BrandLogo name={k} size={16} radius={4} /> : null, list: list.sort(byDue), n: k ? 0 : 1 }
@@ -237,13 +237,13 @@ function Timeline({ groups }) {
               const a0 = gh ? gh.a : off(t.start || t.due), b0 = gh ? gh.b : off(t.due)
               const a = Math.max(0, a0), b = Math.min(DAYS - 1, b0)
               const visible = b0 >= 0 && a0 <= DAYS - 1
-              const u = userOf(whoOf(t))
+              const crew = whosOf(t).filter((x) => x !== meId()).map(userOf).filter(Boolean)
               return (
                 <div key={t.id} className={'td-tl-row' + (bucketOf(t) === 'overdue' ? ' late' : '')} data-id={t.id}>
                   <div className="td-tl-name">
                     <Tick t={t} />
                     <button className="td-tl-t ell" onClick={() => openTodo(t.id)}>{t.text}</button>
-                    {u && u.id !== meId() && <Tip label={u.name}><span className="td-by"><Avatar user={u} size={16} /></span></Tip>}
+                    {crew.length > 0 && <Tip label={crew.map((u) => u.short).join(', ')}><span className="td-by"><AvatarStack users={crew.slice(0, 3)} size={16} ring="var(--surface)" /></span></Tip>}
                   </div>
                   <div className="td-tl-track" onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
                     <i className="td-tl-now" style={{ left: `calc(${(BACK + 0.5) / DAYS} * 100%)` }} />

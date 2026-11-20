@@ -25,8 +25,12 @@ export function dueLabel(d) {
 }
 /** Mine: assigned to (or, unassigned, written by) whoever the app is showing (Settings › View as). */
 export const meId = () => view().person.id
-export const whoOf = (t) => t.who || t.by
-export const mine = (t) => whoOf(t) === meId()
+/** Assignees: `who` is a list (older saves hold one id). Empty list = nobody. */
+export const asList = (w) => (Array.isArray(w) ? w : w ? [w] : [])
+export const whosOf = (t) => (t.who === undefined ? asList(t.by) : asList(t.who))
+export const whoOf = (t) => whosOf(t)[0] || null
+export const assigned = (t, id) => whosOf(t).includes(id)
+export const mine = (t) => assigned(t, meId())
 /** Top-level to-dos only; subtasks show under their parent. */
 export const top = (t) => !t.parent
 export const subsOf = (items, id) => items.filter((x) => x.parent === id)

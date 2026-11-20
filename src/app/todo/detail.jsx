@@ -1,12 +1,12 @@
 // One to-do, opened: title, assignee, timeline (start → due), links, subtasks, notes. Lives in the Panel (beside or over its list) or a sheet.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ChevronLeft, X, Pin, Trash2, Plus, CornerDownRight, ArrowRight, Search } from 'lucide-react'
+import { ChevronLeft, X, Pin, Trash2, Plus, CornerDownRight, ArrowRight, Search, Check } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
 import { Avatar } from '../../shared/ui'
 import { Popover } from '../ui'
 import { team, TODAY, fmt } from '../data'
-import { indexOf, search, linkOf, KIND_ONE, whoOf, meId, dueLabel, dayDiff, at, bucketOf } from './logic'
+import { indexOf, search, linkOf, KIND_ONE, whosOf, meId, dueLabel, dayDiff, at, bucketOf } from './logic'
 import { Tick, LinkChip, Mark, Composer, TodoRow, Ring, userOf } from './ui'
 import { openTodo } from './state'
 
@@ -32,24 +32,45 @@ function DayField({ value, onChange, empty, min, late }) {
   )
 }
 
+/** Everyone on it, as chips; the picker ticks people on and off and stays open so you can add several. */
 function Assignee({ t }) {
   const s = useStore()
-  const u = userOf(whoOf(t))
+  const [q, setQ] = useState('')
+  const whos = whosOf(t)
+  const us = whos.map(userOf).filter(Boolean)
+  const flip = (id) => s.todo.patch(t.id, { who: whos.includes(id) ? whos.filter((x) => x !== id) : [...whos, id] })
+  const list = [...team].sort((a, b) => (b.id === meId()) - (a.id === meId()) || whos.includes(b.id) - whos.includes(a.id))
+    .filter((x) => !q || (x.name + ' ' + x.role).toLowerCase().includes(q.toLowerCase()))
   return (
-    <Popover align="left" width={250} trigger={({ toggle, open }) => (
-      <button className={'td-dt-v' + (open ? ' open' : '')} onClick={toggle}>{u ? <><Avatar user={u} size={18} />{u.id === meId() ? 'You' : u.name}</> : 'Nobody'}</button>
-    )}>
-      {(close) => (
-        <>
-          <div className="pop-h">Assign to</div>
-          {[...team].sort((a, b) => (b.id === meId()) - (a.id === meId())).map((x) => (
-            <button key={x.id} onClick={() => { s.todo.patch(t.id, { who: x.id }); close() }}>
-              <Avatar user={x} size={18} /><span className="grow ell">{x.id === meId() ? 'You' : x.name}</span><span className="mute xs ell">{x.role}</span>
-            </button>
-          ))}
-        </>
-      )}
-    </Popover>
+    <>
+      {us.map((u) => (
+        <span key={u.id} className="td-dt-who">
+          <Avatar user={u} size={18} /><span className="ell">{u.id === meId() ? 'You' : us.length > 2 ? u.short : u.name}</span>
+          <button className="td-cchip-x" onClick={() => flip(u.id)} aria-label={'Unassign ' + u.name}><X size={11} /></button>
+        </span>
+      ))}
+      <Popover align="left" width={300} trigger={({ toggle, open }) => (
+        us.length ? <button className={'td-dt-add' + (open ? ' on' : '')} onClick={toggle} aria-label="Add people"><Plus size={13} />{us.length ? '' : 'Assign'}</button>
+          : <button className={'td-dt-v empty' + (open ? ' open' : '')} onClick={toggle}>Nobody</button>
+      )}>
+        {() => (
+          <div className="td-lk td-who">
+            <label className="td-lk-in"><Search size={13} className="mute" /><input autoFocus value={q} placeholder="Add people" onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && list[0]) { e.preventDefault(); flip(list[0].id); setQ('') } }} /></label>
+            {list.map((x) => {
+              const on = whos.includes(x.id)
+              return (
+                <button key={x.id} role="menuitemcheckbox" aria-checked={on} className={on ? 'picked' : ''} onClick={() => flip(x.id)}>
+                  <Avatar user={x} size={20} />
+                  <span className="td-who-n"><span className="ell">{x.id === meId() ? 'You' : x.name}</span><span className="mute xs ell">{x.role}</span></span>
+                  <span className={'td-who-ck' + (on ? ' on' : '')}>{on && <Check size={12} />}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </Popover>
+    </>
   )
 }
 
@@ -125,7 +146,7 @@ export function TodoDetail({ id, onBack, onClose, backLabel = 'To-do' }) {
         <div className="td-dt-top"><Tick t={t} size="lg" /><Title t={t} /></div>
 
         <dl className="td-dt-props">
-          <dt>Assignee</dt><dd><Assignee t={t} /></dd>
+          <dt>Assignees</dt><dd className="td-dt-whos"><Assignee t={t} /></dd>
           <dt>Timeline</dt>
           <dd className="td-dt-tl">
             <DayField value={t.start} empty="Start" onChange={(d) => set({ start: d, ...(d && t.due && d > t.due ? { due: d, remind: d } : null) })} />
