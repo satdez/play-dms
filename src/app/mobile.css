@@ -328,7 +328,9 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .sl-rows > div { grid-template-columns: minmax(0, 1fr) auto; }
   .sl-rows > div > .mute { display: none; }
   .sl-know { margin-left: 0; }
-  .sl-ask { top: 0; bottom: 0; max-height: none; width: 100vw; }
+  .sl-ask { top: 0; bottom: 0; max-height: none; width: 100vw; height: 100dvh; overscroll-behavior: contain; }
+  .sl-ask-body { overscroll-behavior: contain; }
+  .sl-ask-in { margin-bottom: max(12px, env(safe-area-inset-bottom)); }
   .sl-present-stage { width: calc(100vw - 16px); }
   .sl-callrow { flex-wrap: wrap; }
   .sl-thumb { width: 88px; }

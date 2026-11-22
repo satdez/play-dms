@@ -146,10 +146,18 @@ export function Decision({ q, yes, onYes, nudge, onNudge, onLost, yesDisabled, e
 
 /* ───────── Ask box ───────── */
 export const openAsk = (q) => window.dispatchEvent(new CustomEvent('sales:ask', { detail: { q } }))
+const PHONE = '(max-width: 760px)'
+function usePhone() {
+  const [m, setM] = useState(() => window.matchMedia(PHONE).matches)
+  useEffect(() => { const q = window.matchMedia(PHONE); const on = () => setM(q.matches); q.addEventListener('change', on); return () => q.removeEventListener('change', on) }, [])
+  return m
+}
 export function AskButton() {
+  // Phones: icon-only, so it's a ghost like the other top-bar icons (an outlined lone icon reads as stuck on).
+  const phone = usePhone()
   return (
     <Tip label="Ask about any brand">
-      <button className="b sm sl-askb" onClick={() => openAsk()} aria-label="Ask"><MessageCircleQuestion size={14} /><span className="m-hide">Ask</span></button>
+      <button className={'b sm sl-askb' + (phone ? ' ghost icon' : '')} onClick={() => openAsk()} aria-label="Ask"><MessageCircleQuestion size={14} /><span className="m-hide">Ask</span></button>
     </Tip>
   )
 }
@@ -178,18 +186,37 @@ export function AskDialog() {
   }, []) // eslint-disable-line
   useEffect(() => {
     if (!open) return
-    setTimeout(() => inp.current?.focus(), 30)
+    // Touch: no autofocus, so the keyboard doesn't cover the suggestions before anyone asks for it.
+    if (!window.matchMedia('(pointer: coarse)').matches) setTimeout(() => inp.current?.focus(), 30)
     const k = (e) => { if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', k)
     return () => window.removeEventListener('keydown', k)
   }, [open])
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [thread])
+  // Keyboard up: the sheet takes only the visible area (iOS overlays the keyboard; Android follows interactive-widget in index.html).
+  const sheet = useRef(null)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!open || !vv) return
+    const fit = () => {
+      const el = sheet.current
+      if (!el) return
+      const kb = window.innerHeight - vv.height > 80
+      el.style.top = kb ? vv.offsetTop + 'px' : ''
+      el.style.height = kb ? vv.height + 'px' : ''
+      el.style.bottom = kb ? 'auto' : ''
+      if (kb) window.scrollTo(0, 0)
+    }
+    fit()
+    vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit)
+    return () => { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit) }
+  }, [open])
   return createPortal(
     <AnimatePresence>
       {open && (
         <>
           <motion.div className="sl-ask-scrim" onClick={() => setOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} />
-          <motion.aside className="sl-ask" role="dialog" aria-label="Ask" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%', transition: { duration: 0.2, ease: EASE } }} transition={{ duration: 0.32, ease: DRAWER }}>
+          <motion.aside ref={sheet} className="sl-ask" role="dialog" aria-label="Ask" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%', transition: { duration: 0.2, ease: EASE } }} transition={{ duration: 0.32, ease: DRAWER }}>
             <div className="sl-ask-hd">
               <MessageCircleQuestion size={16} className="mute" />
               <b className="grow">Ask</b>
