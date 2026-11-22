@@ -255,13 +255,20 @@ export function Board({ st, deals, sort = 'manual' }) {
       const h = sc.clientHeight - top - 40 /* column header */ - 40 /* board padding, scrollbar, breathing room */
       b.style.setProperty('--colmax', Math.max(280, Math.floor(h)) + 'px')
     }
-    fit()
-    const ro = new ResizeObserver(fit); ro.observe(b); if (b.closest('.d-scroll')) ro.observe(b.closest('.d-scroll')); if (b.closest('.d-page')) ro.observe(b.closest('.d-page')) // stats collapsing moves the board up
+    // Edge fades: a side fades into the padding only while more of the board sits past it.
+    const edges = () => {
+      const l = b.scrollLeft > 1, r = b.scrollLeft + b.clientWidth < b.scrollWidth - 1
+      if ((b.dataset.l === '1') !== l) b.dataset.l = l ? '1' : ''
+      if ((b.dataset.r === '1') !== r) b.dataset.r = r ? '1' : ''
+    }
+    fit(); edges()
+    b.addEventListener('scroll', edges, { passive: true })
+    const ro = new ResizeObserver(() => { fit(); edges() }); ro.observe(b); if (b.closest('.d-scroll')) ro.observe(b.closest('.d-scroll')); if (b.closest('.d-page')) ro.observe(b.closest('.d-page')) // stats collapsing moves the board up
     b.addEventListener('wheel', wheel, { passive: false })
     b.addEventListener('pointerdown', down)
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
-    return () => { ro.disconnect(); b.removeEventListener('wheel', wheel); b.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+    return () => { ro.disconnect(); b.removeEventListener('scroll', edges); b.removeEventListener('wheel', wheel); b.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
   }, [])
   const stageCols = lostOpen ? DEAL_STAGES : OPEN_STAGES
   return (

@@ -426,3 +426,20 @@ button.sl-step-i:active { transform: scale(.94); }
 .sl-dcard.lost { opacity: .72; }
 .sl-dcard-n { font-size: 13px; color: var(--fg-2); line-height: 1.45; min-height: 19px; }
 .vgrid-wrap .group-h .sl-stag { font-size: inherit; }
+
+/* Board edge fades: content past an edge dissolves into the padding; the fade leaves once that end is reached.
+   A mask, not an overlay, so it suits every theme. The scrollbar strip at the bottom stays unmasked. */
+@property --sl-fl { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --sl-fr { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.sl-board2 {
+  --sl-fl: 0px; --sl-fr: 0px;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--sl-fl), #000 calc(100% - var(--sl-fr)), transparent), linear-gradient(#000, #000);
+  mask-image: linear-gradient(to right, transparent, #000 var(--sl-fl), #000 calc(100% - var(--sl-fr)), transparent), linear-gradient(#000, #000);
+  -webkit-mask-size: 100% calc(100% - 14px), 100% 14px; mask-size: 100% calc(100% - 14px), 100% 14px;
+  -webkit-mask-position: top, bottom; mask-position: top, bottom;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  transition: --sl-fl 220ms cubic-bezier(.23,1,.32,1), --sl-fr 220ms cubic-bezier(.23,1,.32,1);
+}
+.sl-board2[data-l='1'] { --sl-fl: 56px; }
+.sl-board2[data-r='1'] { --sl-fr: 56px; }
+html.sl-dragging .sl-board2 { --sl-fl: 0px; --sl-fr: 0px; }
