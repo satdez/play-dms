@@ -325,7 +325,7 @@ html[data-motion='reduced'] .sl-spin, html[data-motion='reduced'] .sl-think i { 
 .s-won > .sl-colh .sl-cold { background: var(--green); }
 .s-lost > .sl-colh .sl-cold { background: transparent; box-shadow: inset 0 0 0 1.5px var(--muted); }
 .sl-colt { color: var(--fg); white-space: nowrap; }
-.sl-colb { display: flex; flex-direction: column; gap: 8px; padding: 2px 8px 10px; overflow-y: auto; max-height: var(--colmax, max(420px, calc(100dvh - 330px))); min-height: 120px; scrollbar-width: none; overscroll-behavior: contain; }
+.sl-colb { display: flex; flex-direction: column; gap: 8px; padding: 2px 8px 10px; overflow-y: auto; max-height: var(--colmax, max(420px, calc(100dvh - 330px))); min-height: 120px; scrollbar-width: none; overflow-x: hidden; overscroll-behavior-y: contain; }
 .sl-colb::-webkit-scrollbar { display: none; }
 .sl-colempty { display: grid; place-items: center; height: 72px; border-radius: 10px; border: 1px dashed var(--line-2); color: var(--muted); font-size: 12.5px; }
 .sl-col.over .sl-colempty { display: none; }
@@ -371,15 +371,6 @@ html[data-motion='reduced'] .sl-lr-wrap, html[data-motion='reduced'] .sl-lr { an
 html[data-motion='reduced'] .sl-tabnew { animation: none; }
 @media (prefers-reduced-motion: reduce) { .sl-tabnew { animation: none; } }
 .sl-board2 { cursor: default; position: relative; }
-/* Edge arrows: only when more stages sit off-screen, shown on hover; one column per click. */
-.sl-boardw { position: relative; }
-.sl-edge { all: unset; box-sizing: border-box; position: absolute; top: 50%; z-index: 3; display: grid; place-items: center; width: 32px; height: 32px; margin-top: -16px; border-radius: 999px; cursor: pointer; color: var(--fg-2); background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow-1); opacity: 0; transition: opacity 150ms, transform 150ms cubic-bezier(.23,1,.32,1), color 150ms; }
-.sl-edge.l { left: -12px; } .sl-edge.r { right: 12px; }
-.sl-boardw:hover .sl-edge { opacity: 1; }
-.sl-edge:hover { color: var(--fg); }
-.sl-edge:active { transform: scale(.94); }
-html.sl-dragging .sl-edge { display: none; }
-@media (pointer: coarse) { .sl-edge { display: none; } }
 .sl-board2.panning { cursor: grabbing; user-select: none; }
 .sl-board2.panning * { cursor: grabbing !important; }
 .sl-board2::-webkit-scrollbar { height: 8px; }
