@@ -539,7 +539,8 @@ export function Pipeline() {
         <div className="inp sl-pipe-q"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Brand or contact" /></div>
         <button className="b ink" onClick={() => openAddLead({ source: 'Discover' })}><Plus size={15} /><span className="m-hide">Add lead</span></button>
       </div>
-      <SlidePanel k={view} index={PIPE_VIEWS.findIndex((x) => x.id === view)} style={{ marginTop: 14 }}>
+      <div className="sl-views">
+      <SlidePanel k={view} index={PIPE_VIEWS.findIndex((x) => x.id === view)}>
         {view === 'board' ? (
           <Board st={st} deals={deals} sort={sort} />
         ) : view === 'timeline' ? <DealTimeline deals={deals} />
@@ -562,6 +563,7 @@ export function Pipeline() {
           </table>
         )}
       </SlidePanel>
+      </div>
     </div>
   )
 }

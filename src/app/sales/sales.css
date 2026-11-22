@@ -408,6 +408,9 @@ button.sl-step-i:active { transform: scale(.94); }
 .d-page.sl-pipe { max-width: none; }
 .sl-pipe-bar { margin-top: 16px; flex-wrap: nowrap; }
 .sl-pipe-bar > * { flex-shrink: 0; }
+/* View switch: the outgoing view is clipped to the incoming one, so a long view leaving never flashes the page scrollbar. */
+.d-scroll:has(.sl-pipe) { scrollbar-gutter: stable; }
+.sl-views { position: relative; overflow-y: clip; margin-top: 14px; padding-bottom: 16px; margin-bottom: -16px; }
 /* The board runs to the panel's right edge, so a cut column reads as "scroll for more", not as clipping. */
 @media (min-width: 761px) { .sl-pipe .sl-board2 { margin-right: -32px; padding-right: 32px; scroll-padding-right: 32px; } }
 .sl-pipe-q { width: 220px; flex-shrink: 1; min-width: 140px; }
