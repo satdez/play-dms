@@ -23,6 +23,7 @@ import { TodoBlock } from '../todo/ui'
 import {
   FILTERS, filterById, activeCount, describe, run, companyHref, inDb, peopleOf, isKnown, sigsOf, apolloFind, apolloFetch, revealPeople,
   roleOf, FRESH, kbOf, heat, fmtDays, GROUPS, SCOPES, optsOf, facetCounts, quickFind, bdFilters, bdFilterSide, fetchName, companyByName, searchScope,
+  MATCH, VIA, matchOf,
 } from './prospect'
 
 /* ───────── Hooks ───────── */
@@ -38,10 +39,23 @@ export function useProspect() {
   const s = useStore(); const st = s.sales
   const f = st.filter
   const res = useMemo(() => run(st, f), [st.signals, st.inbound, st.accounts, st.deals, st.db, st.revealed, st.contacts, f]) // eslint-disable-line react-hooks/exhaustive-deps
-  const setF = (next) => st.set(() => ({ filter: { ...F_EMPTY, ...next } }))
+  // The match mode isn't a filter: clearing keeps it; a view saved with a mode brings it back.
+  const setF = (next) => st.set((x) => ({ filter: { ...F_EMPTY, match: matchOf(x.filter), ...next } }))
   return { s, st, f, res, setF }
 }
-const same = (a, b) => JSON.stringify({ ...F_EMPTY, ...a }) === JSON.stringify({ ...F_EMPTY, ...b })
+const same = (a, b) => { const k = (x) => { const { match, ...r } = { ...F_EMPTY, ...x }; return JSON.stringify(r) }; return k(a) === k(b) }
+
+/** Match any (union) or Match all (intersection) of the filter groups that are set. */
+function MatchSeg() {
+  const { f, setF } = useProspect()
+  return (
+    <Tip label="How Signal, Company and People filters combine">
+      <span className="bdv-match"><Seg id="bdv-match" value={matchOf(f)} onChange={(m) => setF({ ...f, match: m })} options={MATCH.map(([value, label]) => ({ value, label }))} /></span>
+    </Tip>
+  )
+}
+/** Why a company is in the list when groups are unioned: the groups it matched. */
+export const ViaTags = ({ via }) => (via?.length ? <span className="bdv-via">{via.map((k) => <span key={k} className="chip">{VIA[k]}</span>)}</span> : null)
 
 /* ───────── Filter bar ───────── */
 const INLINE = ['funding', 'size', 'cat', 'city', 'kind', 'recency', 'relevance', 'role', 'dept']
@@ -171,6 +185,7 @@ export function FilterBar({ children, inline = true }) {
         <ViewsMenu />
         {n > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear{!narrow && <span className="mute num">{n}</span>}</button>}
         <span className="grow" />
+        {!narrow && <MatchSeg />}
         <span className="m-hide"><Tip label="Apollo credits left"><span className="bdv-credit"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
         {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
         {children}
@@ -300,6 +315,7 @@ export function FilterBody({ sheet, onDone }) {
         {!sheet && <Tip label="Filters as a bar"><button className="b ghost icon sm" onClick={() => setFilterMode('bar')} aria-label="Filters as a bar"><PanelLeftClose size={15} /></button></Tip>}
       </div>
       {!sheet && <SearchBox stacked />}
+      <MatchSeg />
       <div className="bdv-fb-sec">
         <div className="bdv-fb-gh"><span className="grow">Saved views</span><ViewsMenu icon /></div>
         <div className="bdv-fb-views">
@@ -610,7 +626,7 @@ export function SigRow({ g, showCo = true }) {
   )
 }
 
-export function CoRow({ c, n, max, onOpen, sel, showHeat }) {
+export function CoRow({ c, n, max, onOpen, sel, showHeat, via }) {
   const s = useStore(); const st = s.sales
   const h = showHeat ? heat(c, st) : null
   const Tag = onOpen ? 'button' : 'a'
@@ -621,6 +637,7 @@ export function CoRow({ c, n, max, onOpen, sel, showHeat }) {
         <span className="row" style={{ gap: 6 }}><span className="li-t ell">{c.name}</span><FreshTag id={c.id} /></span>
         <CoMeta c={c} short />
       </span>
+      <ViaTags via={via} />
       {showHeat ? (
         <Tip label={'Heat ' + h + ' · recent signals, relevance, relationship'}><span className="bdv-heat"><span className="bdv-bar"><i style={{ width: h + '%' }} /></span><span className="num">{h}</span></span></Tip>
       ) : (

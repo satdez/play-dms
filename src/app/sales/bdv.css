@@ -476,3 +476,11 @@ button.li.bdv-mo { width: 100%; text-align: left; cursor: pointer; color: inheri
 .bdv-fp-rz:hover::after, .bdv-fp-rz:focus-visible::after, html.bdv-resizing .bdv-fp-rz::after { background: color-mix(in oklab, var(--fg) 35%, transparent); }
 .bdv-fp-rz:focus-visible { outline: none; }
 html.bdv-resizing, html.bdv-resizing * { cursor: col-resize !important; user-select: none !important; }
+
+/* Match any / Match all: how set filter groups combine. Via chips say which groups a company matched (Match any). */
+.bdv-match { display: inline-flex; }
+.bdv-fb > .tipw:has(.bdv-match) { display: block; }
+.bdv-fb .bdv-match { display: flex; }
+.bdv-fb .bdv-match .seg { flex: 1; }
+.bdv-fb .bdv-match .seg > button { flex: 1; }
+.bdv-via { display: inline-flex; gap: 4px; flex: none; }

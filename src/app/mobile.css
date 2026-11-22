@@ -447,3 +447,7 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .hub-dock .hub-sug:not(.in)::-webkit-scrollbar { display: none; }
   .hub-dock .hub-sug .hub-chip { flex: none; }
 }
+
+@media (max-width: 760px) {
+  .bdv-co-r .bdv-via { display: none; }
+}

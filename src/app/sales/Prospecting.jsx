@@ -65,8 +65,8 @@ export function Prospect() {
       )}
       {tab === 'companies' && (
         <div className="list bdv-list">
-          <div className="bdv-lh"><span className="grow">Sorted by matching signals</span><Src s="Signals engine" /></div>
-          {res.companies.map(({ c, sigs }) => <CoRow key={c.id} c={c} n={sigs.length} max={max} />)}
+          <div className="bdv-lh"><span className="grow">{res.union ? 'Sorted by groups matched' : 'Sorted by matching signals'}</span><Src s="Signals engine" /></div>
+          {res.companies.map(({ c, sigs, via }) => <CoRow key={c.id} c={c} n={sigs.length} max={max} via={via} />)}
           {!res.companies.length && <Empty />}
           <BeyondRow kind="companies" />
         </div>

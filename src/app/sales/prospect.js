@@ -148,6 +148,12 @@ function sigMatch(g, f) {
     && (!on(f.deal) || f.deal.some((k) => inB(g.dealSize, DEAL_B[k])))
 }
 const inbRel = (x) => (x.budget >= 20e5 ? 'high' : x.budget >= 10e5 ? 'med' : 'low')
+const coLevel = (f) => on(f.funding) || on(f.size) || on(f.cat) || on(f.city) || on(f.rel) || on(f.co)
+const GROUP_KEYS = ['s', 'c', 'p']
+/** How set filter groups combine into the Company tab. Not a filter: Clear keeps it, saved views remember it. */
+export const MATCH = [['any', 'Match any'], ['all', 'Match all']]
+export const VIA = { s: 'Signal', c: 'Company', p: 'People' }
+export const matchOf = (f) => (f?.match === 'all' ? 'all' : 'any')
 
 /** Everything the filter matches, in one pass. Every layout reads this.
     Search has a scope: All looks everywhere; Companies, People or Signals look only at that entity, and the other tabs
@@ -158,30 +164,38 @@ export function run(st, f = F_EMPTY) {
   const qAll = scope === 'all' ? q : ''
   const cos = dbCompanies(st)
   const byName = Object.fromEntries(cos.map((c) => [c.name, c]))
-  const coOk = new Map(cos.map((c) => [c.name, coMatch(c, f, st)]))
-  if (scope === 'companies') coOk.forEach((v, n) => { if (v) coOk.set(n, has(q, n, byName[n].cat, byName[n].hq, byName[n].about)) })
-  // People filters (and a People search) keep only companies with someone who matches.
+  // Each filter group picks a set of companies on its own (a search counts toward the group of its scope).
+  const set = { s: sigLevel(f) || scope === 'signals', c: coLevel(f) || scope === 'companies', p: peopleLevel(f) || scope === 'people' }
+  const coOk = new Map(cos.map((c) => [c.name, coMatch(c, f, st) && (scope !== 'companies' || has(q, c.name, c.cat, c.hq, c.about))]))
   const pBy = new Map()
   const pq = scope === 'people' ? q : ''
-  if (peopleLevel(f) || pq) {
-    coOk.forEach((v, n) => {
-      if (!v) return
-      const ps = peopleOf(byName[n], st).filter((p) => personMatch(p, f, st) && has(pq, p.name, p.title, p.email))
-      if (ps.length) pBy.set(n, ps); else coOk.set(n, false)
+  if (set.p) {
+    cos.forEach((c) => {
+      const ps = peopleOf(c, st).filter((p) => personMatch(p, f, st) && has(pq, p.name, p.title, p.email))
+      if (ps.length) pBy.set(c.name, ps)
     })
   }
-  const okName = (n) => (byName[n] ? coOk.get(n) : coMatch(null, f, st) && scope !== 'companies' && scope !== 'people' && !peopleLevel(f))
   const sigQ = (g) => (scope === 'signals' ? has(q, g.title, g.intent, g.pitch, SIGNAL_KIND[g.kind]) : has(qAll, g.brand, g.title, g.intent, g.pitch))
+  const sigOk = (g) => g.status !== 'dismissed' && sigMatch(g, f) && sigQ(g)
+  const sNames = new Set(set.s ? st.signals.filter(sigOk).map((g) => g.brand) : [])
+  /** Groups a company matched, of the groups that are set. */
+  const viaOf = (n) => GROUP_KEYS.filter((k) => set[k] && (k === 's' ? sNames.has(n) : k === 'c' ? (byName[n] ? coOk.get(n) : coMatch(null, f, st)) : pBy.has(n)))
+  const nSet = GROUP_KEYS.filter((k) => set[k]).length
+  const any = matchOf(f) === 'any'
+  // The Company tab: everything when no group is set; Match all = every set group; Match any = at least one.
+  const okName = (n) => { if (!nSet) return true; const v = viaOf(n).length; return any ? v > 0 : v === nSet }
 
-  const signals = typeOk(f, 'signal') ? st.signals.filter((g) => g.status !== 'dismissed' && okName(g.brand) && sigMatch(g, f) && sigQ(g)) : []
+  // Signals and People: matching records when their group is set, otherwise everything; always at Company-tab companies.
+  const signals = typeOk(f, 'signal') ? st.signals.filter((g) => sigOk(g) && okName(g.brand)) : []
   const sideOk = scope === 'all' || scope === 'companies' || scope === 'people' // a Signals search hides the other kinds
-  const inbound = sideOk && typeOk(f, 'inbound') && !on(f.kind) && !on(f.fit)
-    ? st.inbound.filter((x) => x.status === 'open' && okName(x.company) && (!on(f.recency) || daysAgo(x.at) <= REC[f.recency]) && (!on(f.relevance) || f.relevance.includes(inbRel(x)))
-      && (!on(f.deal) || f.deal.some((k) => inB(x.budget, DEAL_B[k]))) && (f.owner === 'mine' ? x.owner === me.id : f.owner === 'unclaimed' ? !x.owner : true) && has(qAll, x.company, x.name, x.summary))
+  // Inbound: requests at Company-tab companies.
+  const inbound = sideOk && typeOk(f, 'inbound')
+    ? st.inbound.filter((x) => x.status === 'open' && okName(x.company)
+      && (f.owner === 'mine' ? x.owner === me.id : f.owner === 'unclaimed' ? !x.owner : true) && has(qAll, x.company, x.name, x.summary))
     : []
   const momentList = sideOk && typeOk(f, 'moment') && !on(f.kind) && !on(f.fit) && !on(f.relevance) && !on(f.deal)
     ? moments.filter((m) => daysTo(m.at) >= -0.5 && (!on(f.recency) || daysTo(m.at) <= REC[f.recency]) && (!on(f.cat) || m.cats.some((k) => f.cat.includes(k))))
-      .map((m) => ({ ...m, brands: cos.filter((c) => m.cats.includes(c.cat) && coOk.get(c.name) && (inDb(c, st))).sort((a, b) => heatRaw(b, st) - heatRaw(a, st)) }))
+      .map((m) => ({ ...m, brands: cos.filter((c) => m.cats.includes(c.cat) && okName(c.name) && (inDb(c, st))).sort((a, b) => heatRaw(b, st) - heatRaw(a, st)) }))
       .filter((m) => m.brands.length && has(qAll, m.name, ...m.brands.map((c) => c.name)))
     : []
   const alerts = sideOk && typeOk(f, 'alert') && !on(f.kind) && !on(f.fit) && f.owner !== 'unclaimed'
@@ -191,19 +205,20 @@ export function run(st, f = F_EMPTY) {
     ? dueOf(st).filter((d) => okName(d.deal.brand) && (f.owner !== 'mine' || d.deal.owner === me.id) && has(qAll, d.deal.brand, d.text))
     : []
 
-  // Companies: every match when only company facts are filtered; otherwise the companies behind what matched.
-  const entity = sigLevel(f) || on(f.types) || on(f.owner) || scope === 'signals'
+  // Companies: the Company tab. Activity filters (Stream) narrow it to the companies behind what they show.
+  const entity = on(f.types) || on(f.owner)
   const behind = new Set([...signals.map((g) => g.brand), ...inbound.map((x) => x.company), ...alerts.map((a) => a.brand), ...(on(f.types) ? momentList.flatMap((m) => m.brands.slice(0, 3).map((c) => c.name)) : [])])
   const sigBy = {}; signals.forEach((g) => { (sigBy[g.brand] ||= []).push(g) })
-  const companies = cos.filter((c) => coOk.get(c.name) && (entity ? behind.has(c.name) : !qAll || has(qAll, c.name, c.cat, c.hq, c.about) || (sigBy[c.name]?.length > 0)))
-    .map((c) => ({ c, sigs: sigBy[c.name] || [], inb: inbound.filter((x) => x.company === c.name).length, heat: heat(c, st), match: pBy.get(c.name)?.length || 0 }))
-    .sort((a, b) => b.sigs.length - a.sigs.length || b.heat - a.heat || a.c.name.localeCompare(b.c.name))
+  const union = any && nSet > 1
+  const companies = cos.filter((c) => okName(c.name) && (entity ? behind.has(c.name) : !qAll || has(qAll, c.name, c.cat, c.hq, c.about) || (sigBy[c.name]?.length > 0)))
+    .map((c) => ({ c, sigs: sigBy[c.name] || [], inb: inbound.filter((x) => x.company === c.name).length, heat: heat(c, st), match: pBy.get(c.name)?.length || 0, via: union ? viaOf(c.name) : [] }))
+    .sort((a, b) => b.via.length - a.via.length || b.sigs.length - a.sigs.length || b.heat - a.heat || a.c.name.localeCompare(b.c.name))
   const people = typeOk(f, 'person') || !on(f.types)
-    ? companies.flatMap(({ c }) => pBy.get(c.name) || peopleOf(c, st).filter((p) => personMatch(p, f, st)))
+    ? companies.flatMap(({ c }) => (set.p ? pBy.get(c.name) || [] : peopleOf(c, st)))
       .filter((p) => !qAll || has(qAll, p.name, p.title, p.brand))
       .sort((a, b) => (b.born ? 1 : 0) - (a.born ? 1 : 0) || (isKnown(b, st) ? 1 : 0) - (isKnown(a, st) ? 1 : 0))
     : []
-  return { signals: [...signals].sort((a, b) => b.at - a.at), companies, people, inbound, moments: momentList, alerts, follows }
+  return { signals: [...signals].sort((a, b) => b.at - a.at), companies, people, inbound, moments: momentList, alerts, follows, union }
 }
 
 /** Per-option counts for the side panel: how many results each option would give, all other filters kept.
