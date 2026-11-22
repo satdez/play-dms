@@ -246,14 +246,10 @@ html[data-motion='reduced'] .td-ck:active { transform: none; }
 .td-duem-pick input { width: 120px; border: 0; background: none; color: var(--fg-2); font: inherit; font-size: 12.5px; color-scheme: light dark; }
 @media (max-width: 760px) { .td-duem button, .td-duem-pick { height: 42px; } .td-duem-pick input { font-size: 16px; } }
 
-/* ═════════ Panel widths (30 / 40 float · 50 / 60 dock) ═════════ */
-@media (min-width: 961px) {
-  .d { transition: margin-right 320ms cubic-bezier(.32,.72,0,1); }
-  html[data-td-dock] .d { margin-right: var(--td-dock); }
-  html[data-td-drag] .d { transition: none; }
-}
+/* ═════════ Panel widths (30 / 40 drawer · 50 / 60 sheet; all over the page) ═════════ */
 html[data-td-drag], html[data-td-drag] * { cursor: col-resize !important; user-select: none; }
-.td-panel.docked { box-shadow: -1px 0 0 var(--line); }
+.td-panel.sheet { top: 6px; right: 6px; bottom: 6px; border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 1px var(--line), 0 24px 80px -16px rgba(0,0,0,.5); }
+.td-panel.sheet .td-rsz { left: 0; }
 .td-rsz { position: absolute; z-index: 3; top: 0; bottom: 0; left: -5px; width: 10px; cursor: col-resize; touch-action: none; outline: none; }
 .td-rsz::after { content: ''; position: absolute; top: 0; bottom: 0; left: 4px; width: 2px; border-radius: 2px; background: var(--fg); opacity: 0; transition: opacity 150ms; }
 .td-rsz:hover::after, .td-rsz:focus-visible::after, .td-panel.dragging .td-rsz::after { opacity: .28; }
@@ -267,9 +263,8 @@ html[data-td-drag], html[data-td-drag] * { cursor: col-resize !important; user-s
 .td-wpic { flex: none; display: flex; width: 36px; height: 22px; padding: 2px; border-radius: 5px; background: color-mix(in oklab, var(--fg) 6%, transparent); }
 .td-wpic i { border-radius: 3px 0 0 3px; background: color-mix(in oklab, var(--fg) 10%, transparent); }
 .td-wpic b { border-radius: 0 3px 3px 0; background: color-mix(in oklab, var(--fg) 42%, transparent); box-shadow: -2px 0 3px -1px rgba(0,0,0,.25); }
-.td-wpic.dock { gap: 2px; }
-.td-wpic.dock i { border-radius: 3px; }
-.td-wpic.dock b { border-radius: 3px; box-shadow: none; }
+.td-wpic.sheet i { border-radius: 3px; background: color-mix(in oklab, var(--fg) 5%, transparent); }
+.td-wpic.sheet b { margin: 2px 2px 2px 0; border-radius: 3px; }
 
 /* Panel body: list, or list | detail side by side when it's wide enough */
 .td-panel-main { position: relative; flex: 1; min-height: 0; display: flex; }

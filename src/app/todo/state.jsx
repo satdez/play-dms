@@ -19,17 +19,17 @@ export const TODO_HOME = [{ value: 'strip', label: 'Strip' }, { value: 'card', l
 /** The To-do page exists only in List. (A saved Canvas or In context choice falls back to Panel.) */
 export const hasPage = () => STYLE === 'list'
 
-/** Panel width as a share of the window. 30 and 40 float over the page; 50 and 60 sit beside it (the page shrinks). */
+/** Panel width as a share of the window. All float over the page: 30 and 40 as an edge drawer, 50 and 60 as an inset sheet over a dimmed page. */
 export const TODO_WIDTHS = [
   { value: '30', label: '30%', desc: 'Over the page' },
   { value: '40', label: '40%', desc: 'Over the page' },
-  { value: '50', label: '50%', desc: 'Beside the page' },
-  { value: '60', label: '60%', desc: 'Beside the page' },
+  { value: '50', label: '50%', desc: 'Sheet over the page' },
+  { value: '60', label: '60%', desc: 'Sheet over the page' },
 ]
 let WIDTH = '30'
 export const setTodoWidth = (v) => { WIDTH = TODO_WIDTHS.some((x) => x.value === String(v)) ? String(v) : '30' }
 export const todoWidth = () => WIDTH
-export const isDocked = (w = WIDTH) => +w >= 50
+export const isSheet = (w = WIDTH) => +w >= 50
 
 /* Events: any page can ask for capture or the to-do surface; the shell decides what that means for the variation. */
 export const openTodoAdd = (links = [], opts = {}) => window.dispatchEvent(new CustomEvent('todo:add', { detail: { links, ...opts } }))

@@ -11,7 +11,7 @@ import { Popover } from '../ui'
 import { Sheet } from '../pages/Finance'
 import { BottomSheet, useNarrow } from '../sales/kit'
 import { pageCtx, linkedTo, bucketOf, dueLabel, top } from './logic'
-import { todoStyle, todoWidth, isDocked, TODO_WIDTHS, setTodoPref, openTodos, openTodo } from './state'
+import { todoStyle, todoWidth, isSheet, TODO_WIDTHS, setTodoPref, openTodos, openTodo } from './state'
 import { Composer, TodoRow, StyleMenu } from './ui'
 import { TodoDetail } from './detail'
 import { EntityMenu } from './ctx'
@@ -64,7 +64,8 @@ export function TodoHost({ path }) {
 }
 
 /* ───────── Panel: 30 / 40 / 50 / 60% of the window ─────────
-   30 and 40 float over the page (a peek; the scrim closes it). 50 and 60 dock: the page shrinks beside it and stays usable.
+   Every width floats over the page; the page never reflows. 30 and 40 are an edge drawer (a peek).
+   50 and 60 are a sheet: inset from the window edges, rounded, over a dimmed page (the scrim closes it).
    Drag the inner edge to resize; it snaps to the nearest width on release. Double-click the edge steps to the next width.
    Phones: a full-screen sheet. */
 const MIN = 360
@@ -75,7 +76,7 @@ function Panel({ open, onClose, pre, who, focusKey, ctx, detail, setDetail }) {
   const pref = todoWidth()
   const [drag, setDrag] = useState(null)
   const px = Math.min(vw, drag ?? Math.max(MIN, Math.round((vw * +pref) / 100)))
-  const docked = wide && isDocked(pref)
+  const sheet = wide && isSheet(pref)
   useEffect(() => {
     if (!open) return
     // Esc closes the open to-do first when it sits beside the list, then the panel.
@@ -83,13 +84,6 @@ function Panel({ open, onClose, pre, who, focusKey, ctx, detail, setDetail }) {
     window.addEventListener('keydown', k)
     return () => window.removeEventListener('keydown', k)
   }, [open, onClose, detail, wide, px, setDetail])
-  // Docked: the app shell gives up the panel's width.
-  useEffect(() => {
-    const h = document.documentElement
-    if (open && docked) { h.style.setProperty('--td-dock', px + 'px'); h.dataset.tdDock = '' }
-    else delete h.dataset.tdDock
-  }, [open, docked, px])
-  useEffect(() => () => { delete document.documentElement.dataset.tdDock }, [])
   useEffect(() => { if (drag != null) document.documentElement.dataset.tdDrag = ''; else delete document.documentElement.dataset.tdDrag }, [drag])
 
   const snap = (w) => TODO_WIDTHS.reduce((b, x) => (Math.abs((vw * +x.value) / 100 - w) < Math.abs((vw * +b.value) / 100 - w) ? x : b)).value
@@ -107,8 +101,8 @@ function Panel({ open, onClose, pre, who, focusKey, ctx, detail, setDetail }) {
     <AnimatePresence>
       {open && (
         <>
-          {!docked && <motion.div key="scrim" className="td-scrim" onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} />}
-          <motion.aside key="panel" className={'td-panel' + (docked ? ' docked' : '') + (drag != null ? ' dragging' : '')} role="dialog" aria-label="To-do" style={narrow ? undefined : { width: px }}
+          <motion.div key="scrim" className={'td-scrim' + (sheet ? ' dim' : '')} onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} />
+          <motion.aside key="panel" className={'td-panel' + (sheet ? ' sheet' : '') + (drag != null ? ' dragging' : '')} role="dialog" aria-label="To-do" style={narrow ? undefined : { width: sheet ? px - 12 : px }}
             initial={narrow ? { y: '100%' } : { x: '100%' }} animate={narrow ? { y: 0 } : { x: 0 }}
             exit={{ ...(narrow ? { y: '100%' } : { x: '100%' }), transition: { duration: 0.2, ease: EASE } }} transition={{ duration: 0.32, ease: DRAWER }}>
             {wide && (
@@ -137,7 +131,7 @@ function WidthMenu() {
           <div className="pop-h">Width</div>
           {TODO_WIDTHS.map((x) => (
             <button key={x.value} className="td-wopt" onClick={() => { close(); setTodoPref('todoWidth', x.value) }}>
-              <span className={'td-wpic' + (isDocked(x.value) ? ' dock' : '')} aria-hidden><i style={{ flex: 100 - x.value }} /><b style={{ flex: +x.value }} /></span>
+              <span className={'td-wpic' + (isSheet(x.value) ? ' sheet' : '')} aria-hidden><i style={{ flex: 100 - x.value }} /><b style={{ flex: +x.value }} /></span>
               <span className="grow"><span className="num">{100 - x.value}/{x.value}</span><span className="mute xs td-wopt-d">{x.desc}</span></span>
               {cur === x.value && <Check size={14} />}
             </button>
