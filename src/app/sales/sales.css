@@ -406,8 +406,16 @@ button.sl-step-i:active { transform: scale(.94); }
 .sl-ask-think { display: flex; align-items: center; height: 30px; margin-top: 2px; }
 
 /* ───── Pipeline: KPIs on top, one toolbar row, Cards view ───── */
-.sl-pipe-bar { margin-top: 16px; }
-.sl-pipe-q { width: 200px; }
+.d-page.sl-pipe { max-width: none; }
+.sl-pipe-bar { margin-top: 16px; flex-wrap: nowrap; }
+.sl-pipe-bar > * { flex-shrink: 0; }
+/* The board runs to the panel's right edge, so a cut column reads as "scroll for more", not as clipping. */
+@media (min-width: 761px) { .sl-pipe .sl-board2 { margin-right: -32px; padding-right: 32px; scroll-padding-right: 32px; } }
+.sl-pipe-q { width: 220px; flex-shrink: 1; min-width: 140px; }
+@media (max-width: 1180px) and (min-width: 761px) {
+  .sl-pv { gap: 0 !important; }
+  .sl-pv-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
 .sl-dcard { gap: 12px; color: inherit; }
 .sl-dcard.stale { box-shadow: inset 2px 0 0 color-mix(in oklab, var(--yellow) 70%, transparent), 0 0 0 1px var(--line); }
 .sl-dcard.lost { opacity: .72; }

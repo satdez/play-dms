@@ -531,7 +531,7 @@ export function Pipeline() {
         <button className={'metric sl-mbtn' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><span className="metric-l">Stale</span><span className="metric-v num"><Ticker value={open.filter(isStale).length} /></span></button>
       </div>
       <div className="sl-filters sl-pipe-bar">
-        <Seg id="pview" value={view} onChange={setV} options={PIPE_VIEWS.map(({ id, label, icon: I }) => ({ value: id, label: <span className="row" style={{ gap: 5 }}><I size={13} />{label}</span> }))} />
+        <Seg id="pview" value={view} onChange={setV} options={PIPE_VIEWS.map(({ id, label, icon: I }) => ({ value: id, label: <span className="row sl-pv" style={{ gap: 5 }}><I size={13} /><span className="sl-pv-t">{label}</span></span> }))} />
         <Select align="left" value={who} onChange={setWho} options={[{ id: 'all', label: 'Everyone' }, { id: 'mine', label: 'Mine' }, ...REPS.slice(1).map((u) => ({ id: u.id, label: u.short }))]} />
         <button className={'b sm' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><Hourglass size={13} />Stale only</button>
         <span className="grow" />

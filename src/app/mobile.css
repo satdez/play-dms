@@ -301,6 +301,7 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .sl-dh { flex-wrap: wrap; }
   .sl-dh .sl-step { width: 100%; }
   .sl-filters > .seg { flex: none; max-width: 100%; overflow-x: auto; }
+  .sl-filters.sl-pipe-bar { flex-wrap: wrap; }
   .sl-pipe-bar > .grow { display: none; }
   .sl-pipe-bar .sl-pipe-q { flex: 1 1 160px; width: auto; }
   .sl-dec-a, .sl-dec-n { justify-content: flex-start; }
