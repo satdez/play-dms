@@ -406,7 +406,9 @@ button.sl-step-i:active { transform: scale(.94); }
 
 /* ───── Pipeline: KPIs on top, one toolbar row, Cards view ───── */
 .d-page.sl-pipe { max-width: none; }
-.sl-pipe-bar { margin-top: 16px; flex-wrap: nowrap; }
+/* Stats collapse from the toolbar; the bar then sits at the top. */
+.sl-stats { overflow: hidden; padding: 1px 1px 17px; margin: -1px -1px 0; } /* the gap below lives inside, so it collapses with it */
+.sl-pipe-bar { flex-wrap: nowrap; }
 .sl-pipe-bar > * { flex-shrink: 0; }
 /* View switch: the outgoing view is clipped to the incoming one, so a long view leaving never flashes the page scrollbar. */
 .d-scroll:has(.sl-pipe) { scrollbar-gutter: stable; }

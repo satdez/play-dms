@@ -256,7 +256,7 @@ export function Board({ st, deals, sort = 'manual' }) {
       b.style.setProperty('--colmax', Math.max(280, Math.floor(h)) + 'px')
     }
     fit()
-    const ro = new ResizeObserver(fit); ro.observe(b); if (b.closest('.d-scroll')) ro.observe(b.closest('.d-scroll'))
+    const ro = new ResizeObserver(fit); ro.observe(b); if (b.closest('.d-scroll')) ro.observe(b.closest('.d-scroll')); if (b.closest('.d-page')) ro.observe(b.closest('.d-page')) // stats collapsing moves the board up
     b.addEventListener('wheel', wheel, { passive: false })
     b.addEventListener('pointerdown', down)
     window.addEventListener('pointermove', move)

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, ThumbsUp, ThumbsDown, ArrowRight, ArrowUpRight, Hourglass, Mail, Globe, Check, Bookmark, Plus, KeyRound, UserCheck,
   ClipboardPaste, Wand2, Presentation, LayoutGrid, Columns3, Table2, GanttChart, CalendarDays, CalendarClock, TrendingDown, RefreshCw, Sparkle, Ban, Clock,
-  Hash, CircleDot, Layers, Coins, User, Building2, ArrowDown, Maximize2,
+  Hash, CircleDot, Layers, Coins, User, Building2, ArrowDown, Maximize2, BarChart3,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
@@ -515,6 +515,8 @@ export function Pipeline() {
   const [sort, setSort] = useState(() => { try { return localStorage.getItem('wldd-pipe-sort') || 'manual' } catch { return 'manual' } })
   const setS = (v) => { setSort(v); try { localStorage.setItem('wldd-pipe-sort', v) } catch {} }
   const setV = (v) => { setView(v); try { localStorage.setItem('wldd-pipe-view', v) } catch {} }
+  const [stats, setStats] = useState(() => { try { return localStorage.getItem('wldd-pipe-stats') !== '0' } catch { return true } })
+  const togStats = () => setStats((v) => { try { localStorage.setItem('wldd-pipe-stats', v ? '0' : '1') } catch {} return !v })
   const deals = st.deals.filter((d) => (who === 'all' || (who === 'mine' ? d.owner === me.id : d.owner === who)) && (!stale || isStale(d)) && (!q || (d.brand + ' ' + (d.contact?.name || '')).toLowerCase().includes(q.toLowerCase())))
   const mineAll = st.deals.filter((d) => d.owner === me.id)
   const sent = mineAll.filter((d) => d.outreach?.sentAt), replied = sent.filter((d) => d.outreach.reply)
@@ -525,17 +527,24 @@ export function Pipeline() {
   const sorted = SORT_FNS[sort] ? [...deals].sort(SORT_FNS[sort]) : deals
   return (
     <div className="d-page wide sl-pipe">
-      <div className="metrics sl-m4">
-        <div className="metric"><span className="metric-l">Open</span><span className="metric-v num"><Ticker value={open.reduce((t, d) => t + d.value, 0)} format={(n) => fmt.inr(Math.round(n))} /></span></div>
-        <div className="metric"><Tip label={`Your intro emails with a reply · ${replied.length} of ${sent.length}`}><span className="metric-l">Reply rate</span></Tip><span className="metric-v num"><Ticker value={reply} format={(n) => Math.round(n) + '%'} /></span></div>
-        <div className="metric"><Tip label={`Your closed deals that were won · ${won} of ${won + lost}`}><span className="metric-l">Close rate</span></Tip><span className="metric-v num"><Ticker value={close} format={(n) => Math.round(n) + '%'} /></span></div>
-        <button className={'metric sl-mbtn' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><span className="metric-l">Stale</span><span className="metric-v num"><Ticker value={open.filter(isStale).length} /></span></button>
-      </div>
+      <AnimatePresence initial={false}>
+        {stats && (
+          <motion.div key="stats" className="sl-stats" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: EASE }}>
+          <div className="metrics sl-m4">
+            <div className="metric"><span className="metric-l">Open</span><span className="metric-v num"><Ticker value={open.reduce((t, d) => t + d.value, 0)} format={(n) => fmt.inr(Math.round(n))} /></span></div>
+            <div className="metric"><Tip label={`Your intro emails with a reply · ${replied.length} of ${sent.length}`}><span className="metric-l">Reply rate</span></Tip><span className="metric-v num"><Ticker value={reply} format={(n) => Math.round(n) + '%'} /></span></div>
+            <div className="metric"><Tip label={`Your closed deals that were won · ${won} of ${won + lost}`}><span className="metric-l">Close rate</span></Tip><span className="metric-v num"><Ticker value={close} format={(n) => Math.round(n) + '%'} /></span></div>
+            <button className={'metric sl-mbtn' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><span className="metric-l">Stale</span><span className="metric-v num"><Ticker value={open.filter(isStale).length} /></span></button>
+          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="sl-filters sl-pipe-bar">
         <Seg id="pview" value={view} onChange={setV} options={PIPE_VIEWS.map(({ id, label, icon: I }) => ({ value: id, label: <span className="row sl-pv" style={{ gap: 5 }}><I size={13} /><span className="sl-pv-t">{label}</span></span> }))} />
         <Select align="left" value={who} onChange={setWho} options={[{ id: 'all', label: 'Everyone' }, { id: 'mine', label: 'Mine' }, ...REPS.slice(1).map((u) => ({ id: u.id, label: u.short }))]} />
         <button className={'b sm' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><Hourglass size={13} />Stale only</button>
         <span className="grow" />
+        <Tip label={stats ? 'Hide stats' : 'Show stats'}><button className={'b ghost icon sm' + (stats ? '' : ' on')} aria-pressed={!stats} aria-label={stats ? 'Hide stats' : 'Show stats'} onClick={togStats}><BarChart3 size={15} /></button></Tip>
         {view !== 'timeline' && <Select value={sort} onChange={setS} width={170} options={[{ id: 'manual', label: view === 'board' ? 'Manual order' : 'Default order' }, { id: 'value', label: 'Highest value' }, { id: 'due', label: 'Due soonest' }, { id: 'updated', label: 'Recently updated' }]} />}
         <div className="inp sl-pipe-q"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Brand or contact" /></div>
         <button className="b ink" onClick={() => openAddLead({ source: 'Discover' })}><Plus size={15} /><span className="m-hide">Add lead</span></button>
