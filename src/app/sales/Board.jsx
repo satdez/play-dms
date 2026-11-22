@@ -226,7 +226,8 @@ export function Board({ st, deals, sort = 'manual' }) {
     const wheel = (e) => {
       if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY) || b.scrollWidth <= b.clientWidth + 1) return
       const body = e.target.closest?.('.sl-colb')
-      if (body && body.scrollHeight > body.clientHeight + 1) {
+      // Shift+wheel is always sideways; a plain wheel over a long column scrolls that column first.
+      if (!e.shiftKey && body && body.scrollHeight > body.clientHeight + 1) {
         const canY = e.deltaY > 0 ? body.scrollTop + body.clientHeight < body.scrollHeight - 1 : body.scrollTop > 0
         if (canY) return
       }
@@ -238,7 +239,10 @@ export function Board({ st, deals, sort = 'manual' }) {
     let pan = null
     const down = (e) => {
       if (e.button !== 0 || e.pointerType !== 'mouse' || e.target.closest('[data-card],button,a,input')) return
-      pan = { x: e.clientX, left: b.scrollLeft, moved: false }
+      // The native scrollbar owns its own drag; panning there too would cancel it out.
+      const r = b.getBoundingClientRect()
+      if (e.clientY >= r.top + b.clientTop + b.clientHeight) return
+      pan ={ x: e.clientX, left: b.scrollLeft, moved: false }
     }
     const move = (e) => {
       if (!pan) return
