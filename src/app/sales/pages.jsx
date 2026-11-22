@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, ThumbsUp, ThumbsDown, ArrowRight, ArrowUpRight, Hourglass, Mail, Globe, Check, Bookmark, Plus, KeyRound, UserCheck,
   ClipboardPaste, Wand2, Presentation, LayoutGrid, Columns3, Table2, GanttChart, CalendarDays, CalendarClock, TrendingDown, RefreshCw, Sparkle, Ban, Clock,
+  Hash, CircleDot, Layers, Coins, User, Building2, ArrowDown, Maximize2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
@@ -11,7 +12,7 @@ import { fmt, SERVICES, me, TODAY } from '../data'
 import { ConfirmButton, Tip, AutoHeight, Swap, SlidePanel, Ticker, EASE } from '../../shared/motion'
 import { Avatar, AreaChart } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
-import { Seg, Svc, Select, Track, go } from '../ui'
+import { Seg, Svc, Select, Track, Popover, go } from '../ui'
 import { Sheet } from '../pages/Finance'
 import { brands, brandById, brandOf, budgetOf, repOf, REPS, cases, caseById, DEAL_STAGES, SIGNAL_KIND, now, ago } from './data'
 import { relOf, factsFor, parseNotes, isOpen, isStale, staleDays, stageLabel, RELL } from './state'
@@ -545,28 +546,122 @@ export function Pipeline() {
           <Board st={st} deals={deals} sort={sort} />
         ) : view === 'timeline' ? <DealTimeline deals={deals} />
         : view === 'cards' ? <DealCards deals={sorted} /> : (
-          <table className="tbl sl-tbl">
-            <thead><tr><th>Brand</th><th>Stage</th><th className="r">Value</th><th>Owner</th><th>Next step</th><th>Due</th><th>Updated</th></tr></thead>
-            <tbody>
-              {sorted.map((d) => (
-                <tr key={d.id} className="click" data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })} onClick={() => go('/bd/pipeline/' + d.id)}>
-                  <td><span className="row"><BrandLogo name={d.brand} size={22} /><b style={{ fontWeight: 500 }}>{d.brand}</b>{isStale(d) && <span className="chip y"><Hourglass size={11} />{staleDays(d)}d</span>}</span></td>
-                  <td><StageTag id={d.stage} /></td>
-                  <td className="r num">{fmt.inr(d.value)}</td>
-                  <td><Avatar user={repOf(d.owner)} size={20} /></td>
-                  <td className="fg2 ell" style={{ maxWidth: 240 }}>{d.next || '—'}</td>
-                  <td className="fg2">{d.due ? fmt.ago(d.due) : '—'}</td>
-                  <td className="fg2">{fmt.ago(d.updated)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DealTable st={st} deals={sorted} sort={sort} setSort={setS} />
         )}
       </SlidePanel>
       </div>
     </div>
   )
 }
+/* Table: the same grid as Pod › Campaigns (gt), so every table in the app reads alike. */
+const DEAL_COLS = [
+  { id: 'code', label: 'ID', icon: Hash },
+  { id: 'stage', label: 'Stage', icon: CircleDot },
+  { id: 'services', label: 'Services', icon: Layers },
+  { id: 'value', label: 'Value', icon: Coins, sort: 'value' },
+  { id: 'owner', label: 'Owner', icon: User },
+  { id: 'next', label: 'Next step', icon: ArrowRight },
+  { id: 'due', label: 'Due', icon: CalendarClock, sort: 'due' },
+  { id: 'updated', label: 'Updated', icon: Clock, sort: 'updated' },
+]
+function DealTable({ st, deals, sort, setSort }) {
+  const [sel, setSel] = useState(() => new Set())
+  const all = deals.length > 0 && deals.every((d) => sel.has(d.id))
+  const tog = (id) => setSel((x) => { const n = new Set(x); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const open = (d) => go('/bd/pipeline/' + d.id)
+  const cell = (d, id) => {
+    if (id === 'code') return <span className="mono mute">{d.code}</span>
+    if (id === 'stage') return (
+      <Popover align="left" width={190} trigger={({ toggle }) => <button className="gt-edit" onClick={(e) => { e.stopPropagation(); toggle() }}><StageTag id={d.stage} /></button>}>
+        {(close) => DEAL_STAGES.map((g) => <button key={g.id} onClick={() => { if (g.id !== d.stage) st.moveDeal(d.id, g.id); close() }}><StageTag id={g.id} />{d.stage === g.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</button>)}
+      </Popover>
+    )
+    if (id === 'services') return <Svc list={d.services} />
+    if (id === 'value') return <span className="num">{fmt.inr(d.value)}</span>
+    if (id === 'owner') {
+      const rep = repOf(d.owner)
+      return (
+        <Popover align="left" width={180} trigger={({ toggle }) => <button className="gt-edit" onClick={(e) => { e.stopPropagation(); toggle() }}><Avatar user={rep} size={18} /><span className="fg2">{d.owner === me.id ? 'You' : rep.short}</span></button>}>
+          {(close) => REPS.map((u) => <button key={u.id} onClick={() => { st.patchDeal(d.id, { owner: u.id }); close() }}><Avatar user={u} size={18} />{u.id === me.id ? 'You' : u.short}{d.owner === u.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</button>)}
+        </Popover>
+      )
+    }
+    if (id === 'next') return d.stage === 'won' ? <span className="mute">{d.won?.pod ? d.won.pod + ' pod' : 'Hand off'}</span> : d.stage === 'lost' ? <span className="mute">{d.lost?.reason || '—'}</span> : <span className="fg2">{d.next || '—'}</span>
+    if (id === 'due') {
+      if (!d.due || d.stage === 'won' || d.stage === 'lost') return <span className="mute">—</span>
+      const sod = new Date(TODAY); sod.setHours(0, 0, 0, 0)
+      const n = Math.floor((+d.due - +sod) / 864e5)
+      return <span className={'sl-cdue' + (n < 0 ? ' late' : n === 0 ? ' today' : '')}>{n < 0 ? -n + 'd late' : n === 0 ? 'Today' : n === 1 ? 'Tmrw' : 'in ' + n + 'd'}</span>
+    }
+    if (id === 'updated') return <span className="mute num">{fmt.agoShort(d.updated)}</span>
+    return null
+  }
+  const bulkNext = () => {
+    const order = DEAL_STAGES.map((g) => g.id).filter((x) => x !== 'lost')
+    sel.forEach((id) => { const d = st.deals.find((x) => x.id === id); const i = order.indexOf(d?.stage); if (d && i >= 0 && i < order.length - 1) st.moveDeal(id, order[i + 1]) })
+    setSel(new Set())
+  }
+  return (
+    <>
+      <div className="gt-wrap">
+        <table className="gt">
+          <thead>
+            <tr>
+              <th className="gt-ck"><DealCk on={all} onClick={() => setSel(all ? new Set() : new Set(deals.map((d) => d.id)))} /></th>
+              <th className="gt-first"><span className="gt-th"><Building2 size={13} />Brand</span></th>
+              {DEAL_COLS.map((c) => (
+                <th key={c.id} className={(c.sort ? 'sortable' : '') + (sort === c.sort ? ' on' : '')} onClick={() => c.sort && setSort(c.sort)}>
+                  <span className="gt-th"><c.icon size={13} />{c.label}{c.sort && sort === c.sort && <ArrowDown size={12} />}</span>
+                </th>
+              ))}
+              <th className="gt-fill" />
+            </tr>
+          </thead>
+          <tbody>
+            {deals.map((d) => (
+              <tr key={d.id} className={sel.has(d.id) ? 'sel' : ''} data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })}>
+                <td className="gt-ck"><DealCk on={sel.has(d.id)} onClick={() => tog(d.id)} /></td>
+                <td className="gt-first">
+                  <button className="gt-rec" onClick={() => open(d)}>
+                    <BrandLogo name={d.brand} size={20} />
+                    <span className="ell"><span className="li-t">{d.brand}</span>{d.contact?.name && <span className="mute"> · {d.contact.name}</span>}</span>
+                    {isStale(d) && <span className="chip y sl-stale"><Hourglass size={11} />{staleDays(d)}d</span>}
+                    <Maximize2 size={12} className="gt-open" />
+                  </button>
+                </td>
+                {DEAL_COLS.map((c) => <td key={c.id}>{cell(d, c.id)}</td>)}
+                <td className="gt-fill" />
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td className="gt-ck" />
+              <td className="gt-first"><span className="mute">Count</span> <span className="num fw5">{deals.length}</span></td>
+              {DEAL_COLS.map((c) => <td key={c.id}>{c.id === 'value' && <><span className="mute">Sum</span> <span className="num fw5">{fmt.inr(deals.reduce((t, d) => t + d.value, 0))}</span></>}</td>)}
+              <td className="gt-fill" />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <AnimatePresence>
+        {sel.size > 0 && (
+          <motion.div className="bar" initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }} transition={{ duration: 0.2, ease: EASE }}>
+            <span className="num" style={{ fontWeight: 600 }}>{sel.size}</span><span style={{ opacity: 0.6, marginRight: 8 }}>selected</span>
+            <button className="b sm" onClick={bulkNext}><ArrowUpRight size={14} /> Next stage</button>
+            <button className="b sm icon" onClick={() => setSel(new Set())} aria-label="Clear"><X size={14} /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
+const DealCk = ({ on, onClick }) => (
+  <button role="checkbox" aria-checked={on} className={'ck' + (on ? ' on' : '')} onClick={(e) => { e.stopPropagation(); onClick() }}>
+    {on && <Check size={11} strokeWidth={3} />}
+  </button>
+)
+
 const PIPE_VIEWS = [
   { id: 'board', label: 'Board', icon: Columns3 },
   { id: 'cards', label: 'Cards', icon: LayoutGrid },
