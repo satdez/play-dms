@@ -301,6 +301,8 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .sl-dh { flex-wrap: wrap; }
   .sl-dh .sl-step { width: 100%; }
   .sl-filters > .seg { flex: none; max-width: 100%; overflow-x: auto; }
+  .sl-pipe-bar > .grow { display: none; }
+  .sl-pipe-bar .sl-pipe-q { flex: 1 1 160px; width: auto; }
   .sl-dec-a, .sl-dec-n { justify-content: flex-start; }
   .sl-dec-n .grow { flex-basis: 100%; }
   .sl-mail-a { flex-wrap: wrap; }
@@ -416,10 +418,10 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .has-tabbar .metric-v { font-size: 17px; }
   .has-tabbar .metric-l { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* Pipeline header: search and add on one row. */
-  .has-tabbar .sl-pipe .d-head { flex-wrap: nowrap; gap: 8px; }
-  .has-tabbar .sl-pipe .d-head .inp { flex: 1; width: auto !important; }
-  .has-tabbar .sl-pipe .d-head .b.ink { min-width: 42px; min-height: 42px; }
+  /* Pipeline toolbar: search grows to fill its line. */
+  .has-tabbar .sl-pipe-bar { gap: 8px; }
+  .has-tabbar .sl-pipe-bar .sl-pipe-q { flex: 1 1 160px; width: auto; }
+  .has-tabbar .sl-pipe-bar .b.ink { min-width: 42px; min-height: 42px; }
 
   /* Tab rows that scroll show it. */
   .has-tabbar .bdv-tabrow .tabs { mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }

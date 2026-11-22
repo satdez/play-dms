@@ -312,7 +312,7 @@ html[data-motion='reduced'] .sl-spin, html[data-motion='reduced'] .sl-think i { 
 .sl-mbtn:hover { background: var(--hover); }
 .sl-mbtn.on .metric-l { color: color-mix(in oklab, var(--yellow) 55%, var(--fg)); }
 .sl-mbtn:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
-.sl-board2 { --colw: minmax(190px, 1fr); display: grid; grid-template-columns: repeat(5, var(--colw)) 40px; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; margin: 0 -2px; scrollbar-width: thin; }
+.sl-board2 { --colw: minmax(300px, 1fr); display: grid; grid-template-columns: repeat(5, var(--colw)) 40px; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; margin: 0 -2px; scrollbar-width: thin; }
 .sl-board2.lost-open { grid-template-columns: repeat(6, var(--colw)); }
 .sl-col { display: flex; flex-direction: column; min-width: 0; border-radius: 14px; background: color-mix(in oklab, var(--fg) 2.5%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--line) 60%, transparent); transition: background 150ms, box-shadow 150ms; }
 .sl-col.over { background: color-mix(in oklab, var(--fg) 5%, transparent); box-shadow: inset 0 0 0 1px var(--line-2); }
@@ -404,3 +404,12 @@ button.sl-step-i { cursor: pointer; border: 0; padding: 0; font: inherit; font-s
 button.sl-step-i:not(.cur):hover { background: color-mix(in oklab, var(--fg) 18%, transparent); color: var(--fg); }
 button.sl-step-i:active { transform: scale(.94); }
 .sl-ask-think { display: flex; align-items: center; height: 30px; margin-top: 2px; }
+
+/* ───── Pipeline: KPIs on top, one toolbar row, Cards view ───── */
+.sl-pipe-bar { margin-top: 16px; }
+.sl-pipe-q { width: 200px; }
+.sl-dcard { gap: 12px; color: inherit; }
+.sl-dcard.stale { box-shadow: inset 2px 0 0 color-mix(in oklab, var(--yellow) 70%, transparent), 0 0 0 1px var(--line); }
+.sl-dcard.lost { opacity: .72; }
+.sl-dcard-n { font-size: 13px; color: var(--fg-2); line-height: 1.45; min-height: 19px; }
+.vgrid-wrap .group-h .sl-stag { font-size: inherit; }

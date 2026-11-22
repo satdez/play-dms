@@ -3,11 +3,11 @@ import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, ThumbsUp, ThumbsDown, ArrowRight, ArrowUpRight, Hourglass, Mail, Globe, Check, Bookmark, Plus, KeyRound, UserCheck,
-  ClipboardPaste, Wand2, Presentation, LayoutGrid, List as ListIcon, GanttChart, CalendarDays, TrendingDown, RefreshCw, Sparkle, Ban, Clock,
+  ClipboardPaste, Wand2, Presentation, LayoutGrid, Columns3, Table2, GanttChart, CalendarDays, CalendarClock, TrendingDown, RefreshCw, Sparkle, Ban, Clock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
-import { fmt, SERVICES, me } from '../data'
+import { fmt, SERVICES, me, TODAY } from '../data'
 import { ConfirmButton, Tip, AutoHeight, Swap, SlidePanel, Ticker, EASE } from '../../shared/motion'
 import { Avatar, AreaChart } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
@@ -16,7 +16,7 @@ import { Sheet } from '../pages/Finance'
 import { brands, brandById, brandOf, budgetOf, repOf, REPS, cases, caseById, DEAL_STAGES, SIGNAL_KIND, now, ago } from './data'
 import { relOf, factsFor, parseNotes, isOpen, isStale, staleDays, stageLabel, RELL } from './state'
 import { Src, Rel, Val, Facts, CaseChip, openAddLead, dueOf, DeckViewer, credsDeck } from './ui'
-import { Board } from './Board'
+import { Board, SORTS as SORT_FNS } from './Board'
 import { DealTimeline } from './Timeline'
 import { TodoBlock } from '../todo/ui'
 
@@ -507,7 +507,7 @@ export function Contacts() {
 /* ═════════ Pipeline ═════════ */
 export function Pipeline() {
   const s = useStore(); const st = s.sales
-  const [view, setView] = useState(() => { try { return localStorage.getItem('wldd-pipe-view') || 'board' } catch { return 'board' } })
+  const [view, setView] = useState(() => { try { const v = localStorage.getItem('wldd-pipe-view') || 'board'; return v === 'list' ? 'table' : PIPE_VIEWS.some((x) => x.id === v) ? v : 'board' } catch { return 'board' } })
   const [who, setWho] = useState('all')
   const [stale, setStale] = useState(false)
   const [q, setQ] = useState('')
@@ -521,33 +521,33 @@ export function Pipeline() {
   const reply = sent.length ? Math.round((replied.length / sent.length) * 100) : 0
   const close = won + lost ? Math.round((won / (won + lost)) * 100) : 0
   const open = st.deals.filter(isOpen)
+  const sorted = SORT_FNS[sort] ? [...deals].sort(SORT_FNS[sort]) : deals
   return (
     <div className="d-page wide sl-pipe">
-      <div className="d-head">
-        <h1 className="d-h1">Pipeline</h1>
-        <div className="inp" style={{ width: 200 }}><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Brand or contact" /></div>
-        <button className="b ink" onClick={() => openAddLead({ source: 'Discover' })}><Plus size={15} /><span className="m-hide">Add lead</span></button>
-      </div>
       <div className="metrics sl-m4">
         <div className="metric"><span className="metric-l">Open</span><span className="metric-v num"><Ticker value={open.reduce((t, d) => t + d.value, 0)} format={(n) => fmt.inr(Math.round(n))} /></span></div>
         <div className="metric"><Tip label={`Your intro emails with a reply · ${replied.length} of ${sent.length}`}><span className="metric-l">Reply rate</span></Tip><span className="metric-v num"><Ticker value={reply} format={(n) => Math.round(n) + '%'} /></span></div>
         <div className="metric"><Tip label={`Your closed deals that were won · ${won} of ${won + lost}`}><span className="metric-l">Close rate</span></Tip><span className="metric-v num"><Ticker value={close} format={(n) => Math.round(n) + '%'} /></span></div>
         <button className={'metric sl-mbtn' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><span className="metric-l">Stale</span><span className="metric-v num"><Ticker value={open.filter(isStale).length} /></span></button>
       </div>
-      <div className="sl-filters" style={{ marginTop: 16 }}>
-        <Seg id="pview" value={view} onChange={setV} options={[{ value: 'board', label: <span className="row" style={{ gap: 5 }}><LayoutGrid size={13} />Board</span> }, { value: 'list', label: <span className="row" style={{ gap: 5 }}><ListIcon size={13} />List</span> }, { value: 'timeline', label: <span className="row" style={{ gap: 5 }}><GanttChart size={13} />Timeline</span> }]} />
+      <div className="sl-filters sl-pipe-bar">
+        <Seg id="pview" value={view} onChange={setV} options={PIPE_VIEWS.map(({ id, label, icon: I }) => ({ value: id, label: <span className="row" style={{ gap: 5 }}><I size={13} />{label}</span> }))} />
         <Select align="left" value={who} onChange={setWho} options={[{ id: 'all', label: 'Everyone' }, { id: 'mine', label: 'Mine' }, ...REPS.slice(1).map((u) => ({ id: u.id, label: u.short }))]} />
         <button className={'b sm' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><Hourglass size={13} />Stale only</button>
-        {view === 'board' && <><span className="grow" /><Select value={sort} onChange={setS} width={170} options={[{ id: 'manual', label: 'Manual order' }, { id: 'value', label: 'Highest value' }, { id: 'due', label: 'Due soonest' }, { id: 'updated', label: 'Recently updated' }]} /></>}
+        <span className="grow" />
+        {view !== 'timeline' && <Select value={sort} onChange={setS} width={170} options={[{ id: 'manual', label: view === 'board' ? 'Manual order' : 'Default order' }, { id: 'value', label: 'Highest value' }, { id: 'due', label: 'Due soonest' }, { id: 'updated', label: 'Recently updated' }]} />}
+        <div className="inp sl-pipe-q"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Brand or contact" /></div>
+        <button className="b ink" onClick={() => openAddLead({ source: 'Discover' })}><Plus size={15} /><span className="m-hide">Add lead</span></button>
       </div>
-      <SlidePanel k={view} index={['board', 'list', 'timeline'].indexOf(view)} style={{ marginTop: 14 }}>
+      <SlidePanel k={view} index={PIPE_VIEWS.findIndex((x) => x.id === view)} style={{ marginTop: 14 }}>
         {view === 'board' ? (
           <Board st={st} deals={deals} sort={sort} />
-        ) : view === 'timeline' ? <DealTimeline deals={deals} /> : (
+        ) : view === 'timeline' ? <DealTimeline deals={deals} />
+        : view === 'cards' ? <DealCards deals={sorted} /> : (
           <table className="tbl sl-tbl">
             <thead><tr><th>Brand</th><th>Stage</th><th className="r">Value</th><th>Owner</th><th>Next step</th><th>Due</th><th>Updated</th></tr></thead>
             <tbody>
-              {deals.map((d) => (
+              {sorted.map((d) => (
                 <tr key={d.id} className="click" data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })} onClick={() => go('/bd/pipeline/' + d.id)}>
                   <td><span className="row"><BrandLogo name={d.brand} size={22} /><b style={{ fontWeight: 500 }}>{d.brand}</b>{isStale(d) && <span className="chip y"><Hourglass size={11} />{staleDays(d)}d</span>}</span></td>
                   <td><StageTag id={d.stage} /></td>
@@ -565,6 +565,63 @@ export function Pipeline() {
     </div>
   )
 }
+const PIPE_VIEWS = [
+  { id: 'board', label: 'Board', icon: Columns3 },
+  { id: 'cards', label: 'Cards', icon: LayoutGrid },
+  { id: 'table', label: 'Table', icon: Table2 },
+  { id: 'timeline', label: 'Timeline', icon: GanttChart },
+]
+
+// Cards: every deal as a roomy card, grouped by stage (open stages first, Closed lost last).
+function DealCards({ deals }) {
+  const groups = DEAL_STAGES.map((sg) => ({ sg, items: deals.filter((d) => d.stage === sg.id) })).filter((g) => g.items.length)
+  if (!groups.length) return <div className="empty"><b>Nothing</b></div>
+  return (
+    <div className="vgrid-wrap">
+      {groups.map(({ sg, items }) => (
+        <div key={sg.id}>
+          <div className="group-h"><StageTag id={sg.id} /> <span className="mute num">{items.length}</span><span className="grow" /><span className="mute num xs">{fmt.inr(items.reduce((t, d) => t + d.value, 0))}</span></div>
+          <div className="vgrid">
+            {items.map((d) => <DealCard key={d.id} d={d} />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+function DealCard({ d }) {
+  const rep = repOf(d.owner)
+  const stale = isStale(d)
+  const closed = d.stage === 'won' || d.stage === 'lost'
+  const sod = new Date(TODAY); sod.setHours(0, 0, 0, 0)
+  const due = d.due && !closed ? Math.floor((+d.due - +sod) / 864e5) : null
+  return (
+    <a href={'#/bd/pipeline/' + d.id} className={'vcard sl-dcard' + (stale ? ' stale' : '') + (d.stage === 'lost' ? ' lost' : '')} data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })}>
+      <div className="row" style={{ gap: 12 }}>
+        <BrandLogo name={d.brand} size={36} />
+        <div className="grow" style={{ minWidth: 0 }}>
+          <div className="li-t ell">{d.brand}</div>
+          {d.contact?.name && <div className="mute xs ell">{d.contact.name}{d.contact.title ? ' · ' + d.contact.title : ''}</div>}
+        </div>
+        <span className="num fw5">{fmt.inr(d.value)}</span>
+      </div>
+      <div className="sl-dcard-n">
+        {d.stage === 'lost' ? <span className="mute">{d.lost?.reason || 'No reason yet'}</span>
+          : d.stage === 'won' ? <span className="row" style={{ gap: 6 }}><Check size={13} className="mute" />{d.won?.pod ? 'With ' + d.won.pod + ' pod' : 'Hand off to a pod'}</span>
+          : <span className="row" style={{ gap: 6, alignItems: 'flex-start' }}><ArrowRight size={13} className="mute" style={{ marginTop: 3, flex: 'none' }} /><span className="grow">{d.next || '—'}</span></span>}
+      </div>
+      <div className="row vcard-f">
+        <Svc list={d.services} />
+        {stale && <Tip label={'No activity in ' + staleDays(d) + ' days'}><span className="chip y"><Hourglass size={11} />{staleDays(d)}d</span></Tip>}
+        <span className="grow" />
+        {due != null && <span className={'sl-cdue' + (due < 0 ? ' late' : due === 0 ? ' today' : '')}><CalendarClock size={11} />{due < 0 ? -due + 'd late' : due === 0 ? 'Today' : due === 1 ? 'Tmrw' : due + 'd'}</span>}
+        <Tip label={d.owner === me.id ? 'You' : rep.name}><span><Avatar user={rep} size={20} /></span></Tip>
+      </div>
+      <div className="mute xs">Updated {fmt.ago(d.updated)}</div>
+    </a>
+  )
+}
+
 export function StageTag({ id }) {
   const sg = DEAL_STAGES.find((x) => x.id === id)
   return <span className={'sl-stag s-' + id}><i />{sg.label}</span>

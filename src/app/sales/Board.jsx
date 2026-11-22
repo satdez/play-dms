@@ -21,7 +21,7 @@ const DAY = 864e5
 
 /** Manual order: the saved rank, else the deal's place in the list (new deals sit on top). */
 export const rankOf = (d, i) => (typeof d.rank === 'number' ? d.rank : i)
-const SORTS = {
+export const SORTS = {
   manual: null,
   value: (a, b) => b.value - a.value,
   due: (a, b) => (a.due ? +a.due : Infinity) - (b.due ? +b.due : Infinity),
