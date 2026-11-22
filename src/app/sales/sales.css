@@ -413,10 +413,8 @@ button.sl-step-i:active { transform: scale(.94); }
 /* View switch: the outgoing view is clipped to the incoming one, so a long view leaving never flashes the page scrollbar. */
 .d-scroll:has(.sl-pipe) { scrollbar-gutter: stable; }
 .sl-views { position: relative; overflow-y: clip; margin-top: 14px; padding-bottom: 16px; margin-bottom: -16px; }
-/* The board runs to the panel's right edge, so a cut column reads as "scroll for more", not as clipping. */
+/* Board view: trim the page bottom so the board fits the panel height. */
 @media (min-width: 761px) {
-  .sl-pipe .sl-boardw { margin-right: -32px; }
-  .sl-pipe .sl-board2 { padding-right: 32px; }
   .d-page.sl-pipe:has(.sl-board2) { padding-bottom: 12px; }
 }
 .sl-pipe-q { width: 220px; flex-shrink: 1; min-width: 140px; }
