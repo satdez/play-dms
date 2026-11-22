@@ -3,7 +3,7 @@
 // Performance: no per-card layout animation. Cards that shift get one cheap FLIP (Web Animations) per change.
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowRight, Check, Hourglass, Plus, ChevronRight, CalendarClock, GripVertical } from 'lucide-react'
+import { ArrowRight, Check, Hourglass, Plus, ChevronLeft, ChevronRight, CalendarClock, GripVertical } from 'lucide-react'
 import { toast } from 'sonner'
 import { fmt, me, TODAY } from '../data'
 import { Tip, ALT } from '../../shared/motion'
@@ -219,20 +219,23 @@ export function Board({ st, deals, sort = 'manual' }) {
     })
   })
 
-  /* ───── Sideways navigation: the wheel moves the board, and empty space can be dragged ─────
-     A column with more cards scrolls first; at either end of the board the page scrolls as usual. */
+  /* ───── Sideways navigation ─────
+     Horizontal input (Shift+wheel, wheel tilt, trackpad swipe) always moves the board, even over cards.
+     A plain wheel over a card list scrolls that column while it has more; over headers, gaps, empty space,
+     or once the column is at its end, it moves the board. Empty space can be dragged; edge arrows step a column. */
+  const [edge, setEdge] = useState({ l: false, r: false })
   useEffect(() => {
     const b = boardRef.current; if (!b) return
     const wheel = (e) => {
-      if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY) || b.scrollWidth <= b.clientWidth + 1) return
+      if (e.ctrlKey || b.scrollWidth <= b.clientWidth + 1) return
+      const sideways = Math.abs(e.deltaX) > Math.abs(e.deltaY)
+      const dx = sideways ? e.deltaX : e.shiftKey ? e.deltaY : 0
+      if (dx) { e.preventDefault(); b.scrollLeft += dx; return }
       const body = e.target.closest?.('.sl-colb')
-      // Shift+wheel is always sideways; a plain wheel over a long column scrolls that column first.
-      if (!e.shiftKey && body && body.scrollHeight > body.clientHeight + 1) {
+      if (body && body.scrollHeight > body.clientHeight + 1) {
         const canY = e.deltaY > 0 ? body.scrollTop + body.clientHeight < body.scrollHeight - 1 : body.scrollTop > 0
         if (canY) return
       }
-      const canX = e.deltaY > 0 ? b.scrollLeft + b.clientWidth < b.scrollWidth - 1 : b.scrollLeft > 0
-      if (!canX) return
       e.preventDefault()
       b.scrollLeft += e.deltaY
     }
@@ -242,7 +245,7 @@ export function Board({ st, deals, sort = 'manual' }) {
       // The native scrollbar owns its own drag; panning there too would cancel it out.
       const r = b.getBoundingClientRect()
       if (e.clientY >= r.top + b.clientTop + b.clientHeight) return
-      pan ={ x: e.clientX, left: b.scrollLeft, moved: false }
+      pan = { x: e.clientX, left: b.scrollLeft, moved: false }
     }
     const move = (e) => {
       if (!pan) return
@@ -253,17 +256,62 @@ export function Board({ st, deals, sort = 'manual' }) {
       b.scrollLeft = pan.left - dx
     }
     const up = () => { pan = null; b.classList.remove('panning') }
+    // Edge state for the arrows, and the board's height: it fills the panel down to the bottom, so the page never scrolls too.
+    const sync = () => {
+      const l = b.scrollLeft > 2, r = b.scrollLeft + b.clientWidth < b.scrollWidth - 2
+      setEdge((p) => (p.l === l && p.r === r ? p : { l, r }))
+    }
+    const fit = () => {
+      const sc = b.closest('.d-scroll'); if (!sc || window.matchMedia('(max-width: 760px)').matches) { b.style.removeProperty('--colmax'); return sync() }
+      const top = b.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop
+      const h = sc.clientHeight - top - 40 /* column header */ - 40 /* board padding, scrollbar, breathing room */
+      b.style.setProperty('--colmax', Math.max(280, Math.floor(h)) + 'px')
+      sync()
+    }
+    fit()
+    const ro = new ResizeObserver(fit); ro.observe(b); if (b.closest('.d-scroll')) ro.observe(b.closest('.d-scroll'))
+    b.addEventListener('scroll', sync, { passive: true })
     b.addEventListener('wheel', wheel, { passive: false })
     b.addEventListener('pointerdown', down)
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
-    return () => { b.removeEventListener('wheel', wheel); b.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+    return () => { ro.disconnect(); b.removeEventListener('scroll', sync); b.removeEventListener('wheel', wheel); b.removeEventListener('pointerdown', down); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+  }, [])
+  // One column per click, landing on a column's left edge.
+  const step = (dir) => {
+    const b = boardRef.current; if (!b) return
+    const pad = parseFloat(getComputedStyle(b).paddingLeft) || 0
+    const starts = [...b.children].map((c) => c.offsetLeft - b.offsetLeft - pad)
+    const x = b.scrollLeft
+    const to = dir > 0 ? starts.find((s) => s > x + 4) ?? b.scrollWidth : [...starts].reverse().find((s) => s < x - 4) ?? 0
+    b.scrollTo({ left: to, behavior: reduced() ? 'auto' : 'smooth' })
+  }
+  // Arrow keys walk the board: ↑/↓ within a column, ←/→ to the same row in the next stage. Alt+←/→ still moves the deal.
+  const onKeyNav = useCallback((e) => {
+    if (e.altKey || e.metaKey || e.ctrlKey || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return
+    const card = e.target.closest?.('[data-card]'); if (!card) return
+    const col = card.closest('[data-col]'), b = boardRef.current
+    const list = [...col.querySelectorAll('[data-card]')], i = list.indexOf(card)
+    let next = null
+    if (e.key === 'ArrowDown') next = list[i + 1]
+    else if (e.key === 'ArrowUp') next = list[i - 1]
+    else {
+      const cols = [...b.querySelectorAll('[data-col]')].filter((c) => c.querySelector('[data-card]'))
+      const ci = cols.indexOf(col), nc = cols[ci + (e.key === 'ArrowRight' ? 1 : -1)]
+      if (nc) { const ns = [...nc.querySelectorAll('[data-card]')]; next = ns[Math.min(i, ns.length - 1)] }
+    }
+    if (!next) return
+    e.preventDefault()
+    next.focus({ preventScroll: true })
+    next.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [])
 
   const stageCols = lostOpen ? DEAL_STAGES : OPEN_STAGES
   return (
-    <>
-      <div className={'sl-board2' + (lostOpen ? ' lost-open' : '')} ref={boardRef}>
+    <div className="sl-boardw">
+      {edge.l && <button className="sl-edge l" onClick={() => step(-1)} aria-label="Previous stage" tabIndex={-1}><ChevronLeft size={16} /></button>}
+      {edge.r && <button className="sl-edge r" onClick={() => step(1)} aria-label="Next stage" tabIndex={-1}><ChevronRight size={16} /></button>}
+      <div className={'sl-board2' + (lostOpen ? ' lost-open' : '')} ref={boardRef} onKeyDown={onKeyNav}>
         {stageCols.map((sg) => (
           <Column key={sg.id} sg={sg} list={cols[sg.id]} hover={hover} landing={landing} onPointerDown={onPointerDown} onClick={onClick} keyMove={keyMove}
             onCollapse={sg.id === 'lost' ? toggleLost : null} />
@@ -277,7 +325,7 @@ export function Board({ st, deals, sort = 'manual' }) {
         )}
       </div>
       {ask && <LostReason d={st.deals.find((x) => x.id === ask)} onPick={(reason) => { st.patchDeal(ask, (x) => ({ lost: { ...x.lost, reason }, history: [...x.history, { at: new Date(), text: 'Lost reason · ' + reason, kind: 'lost', by: me.id }] }), true); setAsk(null) }} onClose={() => setAsk(null)} />}
-    </>
+    </div>
   )
 }
 
