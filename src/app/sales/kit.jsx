@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, Check, ChevronDown, SlidersHorizontal, Bookmark, Plus, KeyRound, UserCheck, Database, Radar, Pin, PinOff, Megaphone, ArrowUpRight,
   BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, PanelRight, Info, Building2, User, CornerDownLeft, Layers3, Flame,
-  Mail, Globe,
+  Mail, Globe, createLucideIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
@@ -45,12 +45,25 @@ export function useProspect() {
 }
 const same = (a, b) => { const k = (x) => { const { match, ...r } = { ...F_EMPTY, ...x }; return JSON.stringify(r) }; return k(a) === k(b) }
 
+/* Lucide's squares-unite / squares-intersect (lucide 1.x), registered through lucide's own factory: our pinned 0.468 predates them. */
+const SquaresUnite = createLucideIcon('SquaresUnite', [
+  ['path', { d: 'M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 0 1 1h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-3a1 1 0 0 0-1-1z', key: 'u1' }],
+])
+const SquaresIntersect = createLucideIcon('SquaresIntersect', [
+  ['path', { d: 'M10 22a2 2 0 0 1-2-2', key: 'i1' }], ['path', { d: 'M14 2a2 2 0 0 1 2 2', key: 'i2' }], ['path', { d: 'M16 22h-2', key: 'i3' }],
+  ['path', { d: 'M2 10V8', key: 'i4' }], ['path', { d: 'M2 4a2 2 0 0 1 2-2', key: 'i5' }], ['path', { d: 'M20 8a2 2 0 0 1 2 2', key: 'i6' }],
+  ['path', { d: 'M22 14v2', key: 'i7' }], ['path', { d: 'M22 20a2 2 0 0 1-2 2', key: 'i8' }], ['path', { d: 'M4 16a2 2 0 0 1-2-2', key: 'i9' }],
+  ['path', { d: 'M8 10a2 2 0 0 1 2-2h5a1 1 0 0 1 1 1v5a2 2 0 0 1-2 2H9a1 1 0 0 1-1-1z', key: 'i10' }], ['path', { d: 'M8 2h2', key: 'i11' }],
+])
+const MATCH_ICON = { any: SquaresUnite, all: SquaresIntersect }
+
 /** Match any (union) or Match all (intersection) of the filter groups that are set. */
 function MatchSeg() {
   const { f, setF } = useProspect()
+  const opts = MATCH.map(([value, label]) => { const I = MATCH_ICON[value]; return { value, label: <span className="bdv-match-o"><I size={14} aria-hidden />{label}</span> } })
   return (
     <Tip label="How Signal, Company and People filters combine">
-      <span className="bdv-match"><Seg id="bdv-match" value={matchOf(f)} onChange={(m) => setF({ ...f, match: m })} options={MATCH.map(([value, label]) => ({ value, label }))} /></span>
+      <span className="bdv-match"><Seg id="bdv-match" value={matchOf(f)} onChange={(m) => setF({ ...f, match: m })} options={opts} /></span>
     </Tip>
   )
 }

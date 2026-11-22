@@ -484,3 +484,4 @@ html.bdv-resizing, html.bdv-resizing * { cursor: col-resize !important; user-sel
 .bdv-fb .bdv-match .seg { flex: 1; }
 .bdv-fb .bdv-match .seg > button { flex: 1; }
 .bdv-via { display: inline-flex; gap: 4px; flex: none; }
+.bdv-match-o { display: inline-flex; align-items: center; gap: 6px; }
