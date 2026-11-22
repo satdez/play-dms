@@ -419,6 +419,9 @@ button.sl-step-i:active { transform: scale(.94); }
   .d-page.sl-pipe:has(.sl-board2) { padding-bottom: 12px; }
 }
 .sl-pipe-q { width: 220px; flex-shrink: 1; min-width: 140px; }
+.sl-pipe-q input, .sl-pipe-q input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.sl-pipe-x { flex: none; display: grid; place-items: center; width: 20px; height: 20px; margin-right: -4px; border-radius: 6px; color: var(--muted); }
+.sl-pipe-x:hover { background: var(--hover); color: var(--fg); }
 @media (max-width: 1180px) and (min-width: 761px) {
   .sl-pv { gap: 0 !important; }
   .sl-pv-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

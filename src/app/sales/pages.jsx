@@ -1,5 +1,5 @@
 // Sales portal pages: Feed, Discover, Inbound, Accounts, Contacts, Pipeline, Case Library.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, ThumbsUp, ThumbsDown, ArrowRight, ArrowUpRight, Hourglass, Mail, Globe, Check, Bookmark, Plus, KeyRound, UserCheck,
@@ -512,6 +512,19 @@ export function Pipeline() {
   const [who, setWho] = useState('all')
   const [stale, setStale] = useState(false)
   const [q, setQ] = useState('')
+  const viewsRef = useRef(null)
+  // Searching the board: slide to the first stage that has a match, so a hit off-screen (phones, narrow windows) is in view.
+  useEffect(() => {
+    if (!q.trim() || view !== 'board') return
+    const id = requestAnimationFrame(() => {
+      const board = viewsRef.current?.querySelector('.sl-board2')
+      const col = board && [...board.querySelectorAll('.sl-col')].find((c) => c.querySelector('.sl-card2'))
+      if (!col) return
+      const left = col.getBoundingClientRect().left - board.getBoundingClientRect().left + board.scrollLeft - parseFloat(getComputedStyle(board).paddingLeft || 0)
+      board.scrollTo({ left: Math.max(0, left), behavior: 'smooth' })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [q, view])
   const [sort, setSort] = useState(() => { try { return localStorage.getItem('wldd-pipe-sort') || 'manual' } catch { return 'manual' } })
   const setS = (v) => { setSort(v); try { localStorage.setItem('wldd-pipe-sort', v) } catch {} }
   const setV = (v) => { setView(v); try { localStorage.setItem('wldd-pipe-view', v) } catch {} }
@@ -549,10 +562,10 @@ export function Pipeline() {
         <Tip label={stats ? 'Hide stats' : 'Show stats'}><button className={'b ghost icon sm' + (stats ? '' : ' on')} aria-pressed={!stats} aria-label={stats ? 'Hide stats' : 'Show stats'} onClick={togStats}><BarChart3 size={15} /></button></Tip>
         {view !== 'timeline' && <Select value={sort} onChange={setS} width={170} options={[{ id: 'manual', label: view === 'board' ? 'Manual order' : 'Default order' }, { id: 'value', label: 'Highest value' }, { id: 'due', label: 'Due soonest' }, { id: 'updated', label: 'Recently updated' }]} />}
         </div>
-        <div className="inp sl-pipe-q"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Brand or contact" /></div>
+        <div className="inp sl-pipe-q"><Search size={14} /><input type="search" enterKeyHint="search" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape' && q) { e.stopPropagation(); setQ('') } }} placeholder="Brand or contact" aria-label="Search deals" />{q && <button className="sl-pipe-x" onClick={() => setQ('')} aria-label="Clear search"><X size={13} /></button>}</div>
         <button className="b ink" onClick={() => openAddLead({ source: 'Discover' })}><Plus size={15} /><span className="m-hide">Add lead</span></button>
       </div>
-      <div className="sl-views">
+      <div className="sl-views" ref={viewsRef}>
       <SlidePanel k={view} index={PIPE_VIEWS.findIndex((x) => x.id === view)}>
         {view === 'board' ? (
           <Board st={st} deals={deals} sort={sort} />
