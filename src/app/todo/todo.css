@@ -199,6 +199,17 @@ html[data-variant='app'] .td-in:focus-visible, html[data-variant='app'] .td-edit
   .td-hc-a .b.sm { min-height: 36px; }
   .td-bar .b.sm, .td-cbar .b.sm, .td-blk-add { min-height: 36px; }
   .td-page { padding-top: 12px; }
+  /* Page toolbar: one swipe strip instead of three wrapped rows. */
+  .td-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: -16px; margin-right: -16px; padding: 0 16px; }
+  .td-bar::-webkit-scrollbar { display: none; }
+  .td-bar > * { flex: none; }
+  .td-bar > .grow { display: none; }
+  /* Detail header and its small controls: finger-sized. */
+  .td-dt-hd { height: 52px; }
+  .td-dt-hd .b.sm { min-height: 40px; }
+  .td-dt-hd .b.icon.sm { width: 40px; }
+  .td-dt-add { min-width: 36px; min-height: 36px; }
+  .td-dt-who .td-cchip-x::after, .td-dt-link .td-cchip-x::after { content: ''; position: absolute; inset: -8px; }
   .td-cbar { padding: 12px 16px; }
   .td-cbar-r { width: 100%; }
   .td-blk-add { padding: 0 12px; }
@@ -382,8 +393,14 @@ html[data-td-drag], html[data-td-drag] * { cursor: col-resize !important; user-s
 .td-tl-row .td-ck { flex: none; }
 @media (max-width: 760px) {
   .td-tl { overflow-x: auto; margin-left: -16px; margin-right: -16px; padding: 0 16px; }
-  .td-tl-row { grid-template-columns: 150px minmax(600px, 1fr); }
+  /* Phones: two-line rows (to-do, then its bar under it) so names read in full; the days swipe, the names stay put. */
+  .td-tl-row { grid-template-columns: minmax(735px, 1fr); }
   .td-tl-head { position: static; }
+  .td-tl-head .td-tl-name { display: none; }
+  .td-tl-name, .td-tl-g > .td-sec-h { position: sticky; left: 0; width: calc(100vw - 32px); min-height: 38px; padding-right: 0; }
+  .td-tl-row:not(.td-tl-head) .td-tl-track { min-height: 36px; }
+  .td-tl-row:not(.td-tl-head) .td-tl-bar { top: 4px; }
+  .td-tl-off { line-height: 36px; }
   .td-dt-b { padding: 4px 16px 20px; }
   .td-dt-props { grid-template-columns: 76px 1fr; }
   .td-dt-v { height: 36px; }

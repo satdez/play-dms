@@ -541,11 +541,14 @@ export function Pipeline() {
       </AnimatePresence>
       <div className="sl-filters sl-pipe-bar">
         <Seg id="pview" value={view} onChange={setV} options={PIPE_VIEWS.map(({ id, label, icon: I }) => ({ value: id, label: <span className="row sl-pv" style={{ gap: 5 }}><I size={13} /><span className="sl-pv-t">{label}</span></span> }))} />
+        {/* Filters: part of the row on desktop (display: contents); a swipe strip under it on phones. */}
+        <div className="sl-pipe-f">
         <Select align="left" value={who} onChange={setWho} options={[{ id: 'all', label: 'Everyone' }, { id: 'mine', label: 'Mine' }, ...REPS.slice(1).map((u) => ({ id: u.id, label: u.short }))]} />
         <button className={'b sm' + (stale ? ' on' : '')} aria-pressed={stale} onClick={() => setStale((v) => !v)}><Hourglass size={13} />Stale only</button>
         <span className="grow" />
         <Tip label={stats ? 'Hide stats' : 'Show stats'}><button className={'b ghost icon sm' + (stats ? '' : ' on')} aria-pressed={!stats} aria-label={stats ? 'Hide stats' : 'Show stats'} onClick={togStats}><BarChart3 size={15} /></button></Tip>
         {view !== 'timeline' && <Select value={sort} onChange={setS} width={170} options={[{ id: 'manual', label: view === 'board' ? 'Manual order' : 'Default order' }, { id: 'value', label: 'Highest value' }, { id: 'due', label: 'Due soonest' }, { id: 'updated', label: 'Recently updated' }]} />}
+        </div>
         <div className="inp sl-pipe-q"><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Brand or contact" /></div>
         <button className="b ink" onClick={() => openAddLead({ source: 'Discover' })}><Plus size={15} /><span className="m-hide">Add lead</span></button>
       </div>

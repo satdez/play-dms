@@ -301,9 +301,14 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
   .sl-dh { flex-wrap: wrap; }
   .sl-dh .sl-step { width: 100%; }
   .sl-filters > .seg { flex: none; max-width: 100%; overflow-x: auto; }
-  .sl-filters.sl-pipe-bar { flex-wrap: wrap; }
-  .sl-pipe-bar > .grow { display: none; }
-  .sl-pipe-bar .sl-pipe-q { flex: 1 1 160px; width: auto; }
+  /* Pipeline toolbar: views (icons) · search · add on one row; filters swipe underneath. */
+  .sl-filters.sl-pipe-bar { flex-wrap: wrap; row-gap: 10px; }
+  .sl-pipe-bar .sl-pv { gap: 0 !important; }
+  .sl-pipe-bar .sl-pv-t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .sl-pipe-bar .sl-pipe-q { flex: 1 1 0; width: auto; min-width: 0; }
+  .sl-pipe-f { order: 9; flex: 0 0 100%; display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; max-width: none; width: calc(100% + 32px); flex-basis: calc(100% + 32px); }
+  .sl-pipe-f::-webkit-scrollbar { display: none; }
+  .sl-pipe-f > .grow { display: none; }
   .sl-dec-a, .sl-dec-n { justify-content: flex-start; }
   .sl-dec-n .grow { flex-basis: 100%; }
   .sl-mail-a { flex-wrap: wrap; }
@@ -421,7 +426,6 @@ html[data-exp='vercel'] .agd { background: var(--surface); border-radius: 8px; b
 
   /* Pipeline toolbar: search grows to fill its line. */
   .has-tabbar .sl-pipe-bar { gap: 8px; }
-  .has-tabbar .sl-pipe-bar .sl-pipe-q { flex: 1 1 160px; width: auto; }
   .has-tabbar .sl-pipe-bar .b.ink { min-width: 42px; min-height: 42px; }
 
   /* Tab rows that scroll show it. */
