@@ -596,7 +596,7 @@ function DealCard({ d }) {
   const sod = new Date(TODAY); sod.setHours(0, 0, 0, 0)
   const due = d.due && !closed ? Math.floor((+d.due - +sod) / 864e5) : null
   return (
-    <a href={'#/bd/pipeline/' + d.id} className={'vcard sl-dcard' + (stale ? ' stale' : '') + (d.stage === 'lost' ? ' lost' : '')} data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })}>
+    <a href={'#/bd/pipeline/' + d.id} className={'vcard sl-dcard' + (d.stage === 'lost' ? ' lost' : '')} data-ent={JSON.stringify({ kind: 'deal', id: d.id, label: d.brand + ' deal', brand: d.brand })}>
       <div className="row" style={{ gap: 12 }}>
         <BrandLogo name={d.brand} size={36} />
         <div className="grow" style={{ minWidth: 0 }}>
