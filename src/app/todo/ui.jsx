@@ -1,7 +1,7 @@
 // To-do pieces every variation shares: link chips, the tick, a row, the smart composer, the record block, the top-bar button.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart } from 'lucide-react'
+import { Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
 import { Avatar, AvatarStack } from '../../shared/ui'
@@ -50,7 +50,12 @@ export function TodoText({ t, clamp }) {
   )
 }
 
-export const DueChip = ({ t }) => (t.due ? <span className={'td-due b-' + bucketOf({ ...t, done: false })}>{t.start ? spanLabel(t) : dueLabel(t.due)}</span> : null)
+/** A date label; "Mon → Fri" draws its arrow from the icon set, not a typed glyph. */
+export const Span = ({ label }) => {
+  const [a, b] = String(label).split(' → ')
+  return b == null ? label : <span className="td-span">{a}<ArrowRight size={11} strokeWidth={2.2} className="td-span-i" aria-label="to" />{b}</span>
+}
+export const DueChip = ({ t }) => (t.due ? <span className={'td-due b-' + bucketOf({ ...t, done: false })}><Span label={t.start ? spanLabel(t) : dueLabel(t.due)} /></span> : null)
 
 /** The date on a row, as a button: Today, Tomorrow, This weekend, Next week, a picked day, or no date.
     Rows without a date show a quiet "Date" on hover (always on touch). */
@@ -383,7 +388,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
           {chips.map((c) => (
             <span key={c.k} className={'td-cchip' + (c.due ? ' due' : '')}>
               {c.due ? <CalendarDays size={13} className="td-ico" /> : <Mark e={c.e} size={15} />}
-              <span className="ell">{c.label}</span>
+              <span className="ell">{c.due ? <Span label={c.label} /> : c.label}</span>
               {c.sub && <span className="td-cchip-s ell">{c.sub}</span>}
               <button type="button" className="td-cchip-x" onMouseDown={(e) => e.preventDefault()} onClick={c.drop} aria-label={'Remove ' + c.label}><X size={12} /></button>
             </span>

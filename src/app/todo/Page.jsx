@@ -1,6 +1,6 @@
 // #/todo — the List style's page. Two views of the same to-dos: List (grouped by date, company or assignee) and Timeline (start → due bars).
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, GripVertical, X, Link2, User, AlarmClock, Check, Rows3, GanttChart } from 'lucide-react'
+import { ChevronDown, GripVertical, X, Link2, User, AlarmClock, Check, Rows3, GanttChart, ArrowLeft, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
 import { Avatar, AvatarStack } from '../../shared/ui'
@@ -9,7 +9,7 @@ import { Popover, Seg } from '../ui'
 import { TODAY, fmt } from '../data'
 import { bucketOf, mine, brandOfItem, top, whosOf, meId, dayDiff, at, spanLabel } from './logic'
 import { todoStyle, openTodos, openTodo } from './state'
-import { Composer, TodoRow, StyleMenu, Tick, TodoText, userOf } from './ui'
+import { Composer, TodoRow, StyleMenu, Tick, TodoText, userOf, Span } from './ui'
 
 export function TodoPage() {
   const style = todoStyle()
@@ -254,7 +254,7 @@ function Timeline({ groups }) {
                           <span className="ell">{t.text}</span>
                           <span className="td-tl-end" onPointerDown={(e) => startDrag(e, t, 'end')} aria-hidden />
                         </span>
-                    ) : <span className="td-tl-off mute xs">{b0 < 0 ? '← ' : ''}{spanLabel(t)}{a0 > DAYS - 1 ? ' →' : ''}</span>}
+                    ) : <span className="td-tl-off td-span mute xs">{b0 < 0 && <ArrowLeft size={11} strokeWidth={2.2} className="td-span-i" />}<Span label={spanLabel(t)} />{a0 > DAYS - 1 && <ArrowRight size={11} strokeWidth={2.2} className="td-span-i" />}</span>}
                   </div>
                 </div>
               )
