@@ -2,8 +2,8 @@
 
 /* ───────── Chips in text ───────── */
 .td-text { line-height: 1.55; overflow-wrap: anywhere; }
-/* Text that carries chips gets a line tall enough for a chip plus a gap, so wrapped chips never touch; the negative margin keeps the first line where plain rows put it. */
-.td-text:has(.td-chip) { line-height: 28px; margin: -3px 0; }
+/* Text that carries chips gets a line tall enough for a chip plus a gap, so wrapped chips never touch. */
+.td-text:has(.td-chip) { line-height: 28px; }
 /* A chip's Tip wrapper is inline-flex, which would take its baseline from the chip's first child (avatar vs icon) — centre both instead so every chip sits on the same line. */
 .td-text > .tipw { vertical-align: middle; }
 .td-text.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -32,6 +32,8 @@ a.td-chip:hover { background: color-mix(in oklab, var(--fg) 11%, transparent); }
 .td-row { position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 9px 4px; min-height: 40px; background: var(--surface); }
 .td-row + .td-row { box-shadow: 0 -1px 0 var(--line); }
 .td-row > .td-ck { margin-top: 2px; }
+/* The taller chip line would push the first line below the tick; pull the body up by half the extra so tick and text share a centre. */
+.td-row > .td-body:has(.td-chip) { margin-block: -3px; }
 .td-body { min-width: 0; cursor: text; }
 .td-row.done .td-text { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in oklab, var(--fg) 30%, transparent); }
 .td-row.done .td-body { cursor: default; }
@@ -188,7 +190,8 @@ html[data-variant='app'] .td-in:focus-visible, html[data-variant='app'] .td-edit
   .td-ck { width: 20px; height: 20px; }
   .td-del { display: none; }
   .td-chip { height: 26px; font-size: 13px; }
-  .td-text:has(.td-chip) { line-height: 32px; margin: -5px 0; }
+  .td-text:has(.td-chip) { line-height: 32px; }
+  .td-row > .td-body:has(.td-chip) { margin-block: -5px; }
   .td-opt { min-height: 44px; }
   .td-cchip { height: 32px; }
   .td-cchip-x { width: 28px; height: 28px; }
