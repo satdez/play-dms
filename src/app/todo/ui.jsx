@@ -318,6 +318,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
   const [hi, setHi] = useState(0)
   const [tab, setTab] = useState('') // the kind chosen on the picker's strip; '' = everything
   const inp = useRef()
+  const root = useRef(null)
   const want = useRef(null)
   useLayoutEffect(() => { if (want.current != null && inp.current) { inp.current.setSelectionRange(want.current, want.current); want.current = null } })
   useEffect(() => { if (autoFocus) setTimeout(() => inp.current?.focus({ preventScroll: true }), 40) }, [autoFocus])
@@ -328,6 +329,13 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
   const has = results.length > 0
   const pickOn = !!m && m.start !== closed && (has || !!kind)
   useEffect(() => { if (!m) setTab('') }, [!!m]) // eslint-disable-line react-hooks/exhaustive-deps
+  // A press anywhere outside the composer closes the @ list; clicking back into the input opens it again.
+  useEffect(() => {
+    if (!pickOn) return
+    const out = (e) => { if (!root.current?.contains(e.target)) setClosed(m.start) }
+    document.addEventListener('pointerdown', out, true)
+    return () => document.removeEventListener('pointerdown', out, true)
+  }, [pickOn, m?.start])
   const present = links.filter((l) => text.toLowerCase().includes(l.label.toLowerCase()))
   const phones = findPhones(text).filter((p) => !skipPh.includes(p.digits)).map((p) => ({ ...p, link: phoneLink(p, idx) }))
   const masked = mask(text, [...present.map((l) => l.label), ...phones.map((p) => p.raw)])
@@ -430,11 +438,11 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     ...who.map(userOf).filter(Boolean).filter((u) => !(who.length === 1 && u.id === meId())).filter((u) => !present.some((l) => l.kind === 'member' && l.id === u.id)).map((u) => ({ k: 'who' + u.id, e: { kind: 'member', label: u.name, hue: u.hue }, label: u.id === meId() ? 'You' : u.short, sub: 'Assignee', drop: () => setWho((w) => w.filter((x) => x !== u.id)) })),
   ].filter(Boolean)
   return (
-    <div className={'td-comp' + (up ? ' up' : '') + (pickOn ? ' picking' : '') + (bare ? ' bare' : '') + ' ' + className}>
+    <div ref={root} className={'td-comp' + (up ? ' up' : '') + (pickOn ? ' picking' : '') + (bare ? ' bare' : '') + ' ' + className}>
       {up && picker}
       <div className="td-comp-r">
         <Plus size={16} className="td-comp-i" />
-        <input ref={inp} className="td-in" value={text} onChange={change} onKeyDown={key} onKeyUp={sync} onClick={sync} placeholder={placeholder} aria-label="Add a to-do"
+        <input ref={inp} className="td-in" value={text} onChange={change} onKeyDown={key} onKeyUp={sync} onClick={(e) => { sync(e); setClosed(-1) }} placeholder={placeholder} aria-label="Add a to-do"
           enterKeyHint="done" autoComplete="off" spellCheck={false} role="combobox" aria-expanded={pickOn} aria-autocomplete="list" />
         <Tip label="Tag a company, signal, person or colleague"><button type="button" className="b ghost icon sm td-at" onMouseDown={(e) => e.preventDefault()} onClick={() => { const v = text + (text && !/\s$/.test(text) ? ' @' : '@'); setText(v); setCaret(v.length); want.current = v.length; inp.current?.focus() }} aria-label="Link"><AtSign size={15} /></button></Tip>
         <Tip label="Add" kbd="↵"><button type="button" className="b ink icon sm td-go" onMouseDown={(e) => e.preventDefault()} onClick={submit} disabled={!text.trim()} aria-label="Add"><ArrowUp size={14} /></button></Tip>
