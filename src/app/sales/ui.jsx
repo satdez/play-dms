@@ -146,18 +146,11 @@ export function Decision({ q, yes, onYes, nudge, onNudge, onLost, yesDisabled, e
 
 /* ───────── Ask box ───────── */
 export const openAsk = (q) => window.dispatchEvent(new CustomEvent('sales:ask', { detail: { q } }))
-const PHONE = '(max-width: 760px)'
-function usePhone() {
-  const [m, setM] = useState(() => window.matchMedia(PHONE).matches)
-  useEffect(() => { const q = window.matchMedia(PHONE); const on = () => setM(q.matches); q.addEventListener('change', on); return () => q.removeEventListener('change', on) }, [])
-  return m
-}
 export function AskButton() {
-  // Phones: icon-only, so it's a ghost like the other top-bar icons (an outlined lone icon reads as stuck on).
-  const phone = usePhone()
+  // Same as every top-bar control: a ghost icon, the name in the tooltip.
   return (
     <Tip label="Ask about any brand">
-      <button className={'b sm sl-askb' + (phone ? ' ghost icon' : '')} onClick={() => openAsk()} aria-label="Ask"><MessageCircleQuestion size={14} /><span className="m-hide">Ask</span></button>
+      <button className="b ghost icon sl-askb" onClick={() => openAsk()} aria-label="Ask"><MessageCircleQuestion size={16} /></button>
     </Tip>
   )
 }

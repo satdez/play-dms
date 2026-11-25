@@ -499,7 +499,7 @@ export function TodoButton({ path }) {
   const on = path === '/todo'
   return (
     <Tip label={'To-do' + (n ? ' · ' + n + ' open' : '')} kbd="T">
-      <button className={'b ghost td-tb' + (on ? ' on' : '')} onClick={openTodos} aria-label="To-do">
+      <button className={'b ghost icon td-tb' + (on ? ' on' : '')} onClick={openTodos} aria-label="To-do">
         <ListChecks size={16} />{n > 0 && <span className="td-tb-n num">{n}</span>}
       </button>
     </Tip>

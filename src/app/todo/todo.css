@@ -89,8 +89,9 @@ html[data-variant='app'] .td-in:focus-visible, html[data-variant='app'] .td-edit
 .ov-side .td-blk { margin-top: 4px; }
 
 /* ───────── Top bar button ───────── */
-.b.td-tb { gap: 5px; padding: 0 8px; min-width: 32px; position: relative; }
-.td-tb-n { font-size: 12px; font-weight: 600; color: var(--fg-2); }
+.b.td-tb { position: relative; }
+/* Count as a small badge on the corner, like the bell's dot, so every top-bar control is the same square. */
+.td-tb-n { position: absolute; top: 2px; right: 0; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; font-size: 10px; font-weight: 600; line-height: 15px; text-align: center; color: var(--surface); background: var(--fg-2); pointer-events: none; }
 .b.td-tb.on { background: var(--sunken); color: var(--fg); }
 .td-style { gap: 6px; }
 .pop .td-sopt { height: auto; min-height: 48px; padding: 7px 10px; align-items: center; }
