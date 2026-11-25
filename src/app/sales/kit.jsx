@@ -118,6 +118,14 @@ export function SearchBox({ stacked }) {
   const [hi, setHi] = useState(0)
   const box = useRef(null)
   useEffect(() => { setText(f.q) }, [f.q])
+  // Typing filters every tab live, after a short pause; Enter applies at once.
+  const fRef = useRef(f); fRef.current = f
+  useEffect(() => {
+    const q = text.trim()
+    if (q === (fRef.current.q || '')) return
+    const t = setTimeout(() => { if (q !== (fRef.current.q || '')) setF({ ...fRef.current, q, scope: searchScope() }) }, 250)
+    return () => clearTimeout(t)
+  }, [text]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!open) return
     const out = (e) => { if (!box.current?.contains(e.target)) setOpen(false) }
@@ -193,6 +201,7 @@ export function FilterBar({ children, inline = true }) {
   return (
     <div className="bdv-fbar">
       <div className="bdv-fbar-1">
+        {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
         <SearchBox />
         {(!inline || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={() => setSheet(true)}><SlidersHorizontal size={13} />Filters{n > 0 && <span className="num">{n}</span>}</button>}
         <ViewsMenu />
@@ -200,7 +209,6 @@ export function FilterBar({ children, inline = true }) {
         <span className="grow" />
         {!narrow && <MatchSeg />}
         <span className="m-hide"><Tip label="Apollo credits left"><span className="bdv-credit"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
-        {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
         {children}
       </div>
       {inline && !narrow && (
@@ -508,6 +516,7 @@ export function ViewStrip() {
   const n = activeCount(f)
   return (
     <div className="bdv-strip">
+      {!narrow && bdFilters() !== 'panel' && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
       <div className="bdv-strip-s">
         <button className={'chip sl-tog' + (!n ? ' on' : '')} aria-pressed={!n} onClick={() => setF(F_EMPTY)}>All</button>
         {st.views.map((v) => {
@@ -523,7 +532,6 @@ export function ViewStrip() {
       </div>
       {(bdFilters() !== 'panel' || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={() => setSheet(true)} aria-label="Filters"><SlidersHorizontal size={13} /><span className="m-hide">Filters</span>{n > 0 && <span className="num">{n}</span>}</button>}
       {(bdFilters() !== 'panel' || narrow) && <ViewsMenu icon />}
-      {!narrow && bdFilters() !== 'panel' && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
       <FilterSheet open={sheet} onClose={() => setSheet(false)} />
     </div>
   )
