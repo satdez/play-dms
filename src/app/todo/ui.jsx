@@ -12,7 +12,7 @@ import {
   indexOf, search, settled, exact, linkOf, phoneLink, findPhones, parseDate, cut, hrefOf, segments, dueLabel, bucketOf, meId, mine,
   KIND_LABEL, linkedTo, dayDiff, at, parseRange, whosOf, asList, spanLabel, top,
 } from './logic'
-import { openTodoAdd, openTodos, openTodo, setTodoPref, todoStyle, TODO_STYLES } from './state'
+import { openTodoAdd, openTodos, openTodo } from './state'
 
 export const userOf = (id) => team.find((u) => u.id === id)
 const KIND_ICON = { campaign: Megaphone, invoice: Receipt, phone: Phone }
@@ -438,28 +438,6 @@ export function TodoButton({ path }) {
         <ListChecks size={16} />{n > 0 && <span className="td-tb-n num">{n}</span>}
       </button>
     </Tip>
-  )
-}
-
-/** Switch variation from where you are (writes the same preference as Settings). */
-export function StyleMenu() {
-  const cur = todoStyle()
-  return (
-    <Popover width={290} trigger={({ toggle }) => (
-      <Tip label="To-do style"><button className="b sm ghost td-style" onClick={toggle}><Shapes size={14} /><span className="m-hide">{TODO_STYLES.find((x) => x.value === cur)?.label}</span></button></Tip>
-    )}>
-      {(close) => (
-        <>
-          <div className="pop-h">To-do style</div>
-          {TODO_STYLES.map((x) => (
-            <button key={x.value} className="td-sopt" onClick={() => { close(); setTodoPref('todo', x.value) }}>
-              <span className="grow"><b>{x.label}</b><span className="mute xs td-sopt-d">{x.desc}</span></span>
-              {cur === x.value && <Check size={14} />}
-            </button>
-          ))}
-        </>
-      )}
-    </Popover>
   )
 }
 

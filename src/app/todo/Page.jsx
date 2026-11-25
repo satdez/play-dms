@@ -8,15 +8,11 @@ import { BrandLogo } from '../../shared/brands'
 import { Popover, Seg } from '../ui'
 import { TODAY, fmt } from '../data'
 import { bucketOf, mine, brandOfItem, top, whosOf, meId, dayDiff, at, spanLabel } from './logic'
-import { todoStyle, openTodos, openTodo } from './state'
-import { Composer, TodoRow, StyleMenu, Tick, TodoText, userOf, Span } from './ui'
+import { openTodo } from './state'
+import { Composer, TodoRow, Tick, TodoText, userOf, Span } from './ui'
 
 export function TodoPage() {
-  const style = todoStyle()
-  // No page in Panel: land on Home and open the panel instead.
-  useEffect(() => { if (style !== 'list') { location.replace('#/hub'); setTimeout(openTodos, 0) } }, [style])
-  if (style === 'list') return <ListPage />
-  return null
+  return <ListPage />
 }
 
 const byOrder = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (a.order ?? 0) - (b.order ?? 0)
@@ -146,7 +142,6 @@ function ListPage() {
         <Popover width={200} trigger={({ toggle }) => <Tip label="Group by"><button className="b sm ghost" onClick={toggle}><span className="mute">Group</span>{GROUP_BY.find((x) => x.value === by)?.label}<ChevronDown size={13} className="mute" /></button></Tip>}>
           {(close) => GROUP_BY.map((x) => <button key={x.value} onClick={() => { setBy(x.value); close() }}><span className="grow">{x.label}</span>{by === x.value && <Check size={14} />}</button>)}
         </Popover>
-        <StyleMenu />
       </div>
       <Composer className="td-top" placeholder="Add a to-do · @ links anything or assigns · “from mon to fri” sets a timeline" autoFocus={!window.matchMedia('(pointer: coarse)').matches} />
       {view === 'timeline' ? <Timeline groups={groups} /> : (

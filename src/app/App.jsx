@@ -49,7 +49,7 @@ import './todo/todo.css'
 import { TodoHost } from './todo/Host'
 import { TodoPage } from './todo/Page'
 import { TodoButton, TodoBellRows, dueMine } from './todo/ui'
-import { TODO_STYLES, TODO_HOME, TODO_WIDTHS, setTodoStyle, setTodoWidth, hasPage, openTodoAdd, openTodos } from './todo/state'
+import { TODO_HOME, openTodoAdd, openTodos } from './todo/state'
 import { ListChecks, ListPlus } from 'lucide-react'
 import { Palette, Settings as Gear, Menu as MenuIcon } from 'lucide-react'
 import { PopTuner, PRESETS, TUNE_AXES, normTune, presetOf, applyTune, clearTune, toneSwatch, Orb } from './popTune'
@@ -116,7 +116,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'prospect', bdFilters: 'panel', bdFilterSide: 'left', todo: 'panel', todoHome: 'strip', todoWidth: '30', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'prospect', bdFilters: 'panel', bdFilterSide: 'left', todoHome: 'strip', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -152,12 +152,8 @@ function BdTabBar({ path, openNav }) {
 function useNav(role, s) {
   return navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to))
 }
-/** List has a To-do page; it sits at the end of every workspace's pages (and BD's phone More). */
+/** To-do is global, beside Home, so it is not one of a workspace's pages. */
 function navFor(role, s) {
-  const base = navBase(role, s)
-  return hasPage() ? [...base, { to: '/todo', label: 'To-do', icon: ListChecks, n: dueMine(s.todo.items).length, todo: true }] : base
-}
-function navBase(role, s) {
   const inLead = s.invoices.filter((x) => x.stage === 'lead').length
   const inFin = s.invoices.filter((x) => x.stage === 'finance').length
   const sched = s.invoices.filter((x) => x.stage === 'scheduled').length
@@ -227,9 +223,6 @@ function Shell({ path }) {
   const setPrefs = (p) => { setPrefsRaw(p); try { localStorage.setItem('wldd-prefs', JSON.stringify(p)) } catch {} }
   VIEW = personaOf(prefs.viewAs); setView(VIEW)
   BDL = BD_HOME[prefs.bd] ? prefs.bd : 'prospect'; setBdLayout(BDL); setBdFilters(prefs.bdFilters); setBdFilterSide(prefs.bdFilterSide)
-  setTodoStyle(prefs.todo); setTodoWidth(prefs.todoWidth)
-  // Pages switch the to-do variation or Home slot with the same preference Settings writes.
-  useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, [e.detail.key]: e.detail.value }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('todo:pref', on); return () => window.removeEventListener('todo:pref', on) }, [])
   // The in-page "side panel / bar" switch writes the same preference as Settings.
   useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, ...(e.detail.mode && { bdFilters: e.detail.mode }), ...(e.detail.side && { bdFilterSide: e.detail.side }) }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('bd:filters', on); return () => window.removeEventListener('bd:filters', on) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [role, setRole] = useState(() => {
@@ -428,10 +421,10 @@ function Shell({ path }) {
       <div className={'d' + (prefs.collapsed && prefs.sidebar === 'icons' ? ' no-side' : '')}>
         <Sidebar role={role} switchRole={switchRole} path={path} look={look} open={navOpen} />
         {scrim}
-        <main className={'d-main' + (mod === 'bd' || (mod === 'todo' && role === 'bd') ? ' has-tabbar' : '')}>
+        <main className={'d-main' + (mod === 'bd' ? ' has-tabbar' : '')}>
           <TopBar parts={parts} role={role} setCmd={setCmd} openNav={() => setNavOpen(true)} look={look} />
           {body}
-          {(mod === 'bd' || (mod === 'todo' && role === 'bd')) && <BdTabBar path={path} openNav={() => setNavOpen(true)} />}
+          {(mod === 'bd') && <BdTabBar path={path} openNav={() => setNavOpen(true)} />}
         </main>
         {cmdk}
       </div>
@@ -527,6 +520,7 @@ function AskPill() {
 /* ───────── Vercel: flat sidebar (scope · Find · nav) + header bar ───────── */
 function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
   const s = useStore()
+  const todoDue = dueMine(s.todo.items).length
   const nav = useNav(role, s)
   const r = ROLES.find((x) => x.id === role)
   const pinned = s.campaigns.filter((c) => c.pinned)
@@ -550,6 +544,7 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
       <button className="vx-find" onClick={() => setCmd(true)}><Search size={15} /><span>Find</span><kbd className="k">F</kbd></button>
       <nav className="vx-nav">
         <a href="#/hub" className={'vx-item' + (onHub(path) ? ' on' : '')}><House size={16} strokeWidth={1.75} />Home</a>
+        <a href="#/todo" className={'vx-item' + (onTodo(path) ? ' on' : '')}><ListChecks size={16} strokeWidth={1.75} />To-do{todoDue > 0 && <span className="vx-n num">{todoDue}</span>}</a>
         {nav.map((n) => (
           <a key={n.to} href={'#' + n.to} className={'vx-item' + (active(n.to) ? ' on' : '')}>
             <n.icon size={16} strokeWidth={1.75} />{n.label}
@@ -787,6 +782,14 @@ function useSide(role, path) {
 /** Home sits beside the workspaces for everyone: KPIs from every workspace the person can open, plus chat. */
 const HUB = { id: 'hub', label: 'Home', color: 'var(--fg)', icon: House }
 const onHub = (path) => path === '/hub'
+const onTodo = (path) => path === '/todo'
+/** Open to-dos due today or overdue: the dot / count that rides on the global To-do entry. */
+const useTodoDue = () => dueMine(useStore().todo.items).length
+const TODO_WS = { id: 'todo', label: 'To-do', color: 'var(--fg)', icon: ListChecks }
+function TodoItem({ path }) {
+  const n = useTodoDue()
+  return <Tip label="To-do" side="right"><a href="#/todo" className={'d-item d-hub' + (onTodo(path) ? ' on' : '')}><ListChecks size={16} strokeWidth={1.75} /> <span className="d-lbl">To-do</span>{n > 0 && <span className="n num">{n}</span>}</a></Tip>
+}
 const HubIcon = ({ size = 22 }) => <span className="role-ic hub-ic" style={{ width: size, height: size }}><House size={Math.round(size * 0.62)} strokeWidth={2.25} /></span>
 function HubItem({ path, tips }) {
   const a = <a href="#/hub" className={'d-item d-hub' + (onHub(path) ? ' on' : '')} aria-label={tips ? 'Home' : undefined}><House size={16} strokeWidth={1.75} /> <span className="d-lbl">Home</span></a>
@@ -802,7 +805,7 @@ function PanelSidebar({ role, switchRole, path, look, open }) {
         <span className="sb-tools"><ThemeToggle look={look} /><CollapseBtn look={look} /></span>
       </div>
 
-      <nav className="d-nav d-hubnav"><HubItem path={path} /></nav>
+      <nav className="d-nav d-hubnav"><HubItem path={path} /><TodoItem path={path} /></nav>
 
       {seen().length > 1 ? (
         <Popover align="left" width={216} match trigger={({ toggle }) => (
@@ -835,10 +838,10 @@ function PanelSidebar({ role, switchRole, path, look, open }) {
 }
 
 /** A workspace on the rail: line icon + short label; the open one sits on a filled tile in its module colour. */
-function WsButton({ x, i, on, due, onClick }) {
+function WsButton({ x, i, on, due, onClick, kbd }) {
   const I = x.icon || ROLE_ICON[x.id]
   return (
-    <Tip label={x.label} kbd={ALT + i} side="right">
+    <Tip label={x.label} kbd={kbd === undefined ? ALT + i : kbd} side="right">
       <button className={'sb-ws' + (on ? ' on' : '')} style={{ '--rc': x.color }} onClick={onClick} aria-label={x.label} aria-current={on || undefined}>
         <span className="sb-ws-t"><I size={18} strokeWidth={on ? 2 : 1.75} />{due > 0 && !on && <i className="sb-due" />}</span>
         <span className="sb-ws-l">{x.label}</span>
@@ -849,16 +852,18 @@ function WsButton({ x, i, on, due, onClick }) {
 
 /** Workspaces live on the rail, one click each; the panel only lists the current workspace's pages. */
 function RailSidebar({ role, switchRole, path, look, open }) {
+  const todoDue = useTodoDue()
   const { s, nav, r, idx, pinned, active } = useSide(role, path)
   return (
     <aside className={'d-side sb-rail' + (open ? ' open' : '')}>
       <div className="sb-railcol">
         <a href="#/hub" className="sb-mark" aria-label="WLDD home"><Mark /></a>
         <WsButton x={HUB} i={0} on={onHub(path)} onClick={() => go('/hub')} />
+        <WsButton x={TODO_WS} i={0} kbd={null} on={onTodo(path)} due={todoDue} onClick={() => go('/todo')} />
         {seen().map((x, i) => {
           const due = pendingOf(x.id, s)
           return (
-            <WsButton key={x.id} x={x} i={i + 1} on={x.id === role && !onHub(path)} due={due} onClick={() => switchRole(x.id)} />
+            <WsButton key={x.id} x={x} i={i + 1} on={x.id === role && !onHub(path) && !onTodo(path)} due={due} onClick={() => switchRole(x.id)} />
           )
         })}
         <div className="sb-railf">
@@ -885,16 +890,18 @@ function RailSidebar({ role, switchRole, path, look, open }) {
     Workspaces are one click each (like the rail); every label lives in a tooltip, a dot marks a live count.
     In the phone drawer the page labels come back (mobile.css). */
 function IconSidebar({ role, switchRole, path, look, open }) {
+  const todoDue = useTodoDue()
   const { s, nav, pinned, active } = useSide(role, path)
   return (
     <aside className={'d-side sb-icons' + (open ? ' open' : '')}>
       <a href="#/hub" className="sb-mark" aria-label="WLDD home"><Mark /></a>
       <div className="sb-wsrow">
         <WsButton x={HUB} i={0} on={onHub(path)} onClick={() => go('/hub')} />
+        <WsButton x={TODO_WS} i={0} kbd={null} on={onTodo(path)} due={todoDue} onClick={() => go('/todo')} />
         {seen().map((x, i) => {
           const due = pendingOf(x.id, s)
           return (
-            <WsButton key={x.id} x={x} i={i + 1} on={x.id === role && !onHub(path)} due={due} onClick={() => switchRole(x.id)} />
+            <WsButton key={x.id} x={x} i={i + 1} on={x.id === role && !onHub(path) && !onTodo(path)} due={due} onClick={() => switchRole(x.id)} />
           )
         })}
       </div>
@@ -931,6 +938,7 @@ function Mark() {
 }
 
 function StackSidebar({ role, switchRole, path, look, open }) {
+  const todoDue = useTodoDue()
   const { s, nav, pinned, active } = useSide(role, path)
   return (
     <aside className={'d-side sb-stack' + (open ? ' open' : '')}>
@@ -946,12 +954,17 @@ function StackSidebar({ role, switchRole, path, look, open }) {
               <a href="#/hub" className="sb-wsh" aria-current={onHub(path) || undefined}><HubIcon size={24} /> <span className="grow ell">Home</span></a>
             </Tip>
           </div>
+          <div className={'sb-ws-g sb-hub' + (onTodo(path) ? ' on' : '')} style={{ '--rc': 'var(--fg)' }}>
+            <Tip label="To-do" side="right">
+              <a href="#/todo" className="sb-wsh" aria-current={onTodo(path) || undefined}><span className="role-ic hub-ic" style={{ width: 24, height: 24 }}><ListChecks size={15} strokeWidth={2.25} /></span> <span className="grow ell">To-do</span>{todoDue > 0 && <span className="n num">{todoDue}</span>}</a>
+            </Tip>
+          </div>
           {seen().map((x, i) => {
             const on = x.id === role
             const due = pendingOf(x.id, s)
             return (
               /* On Home the last workspace stays open (no jump) but steps back: one "you are here" at a time. */
-              <div key={x.id} className={'sb-ws-g' + (on ? ' on' : '') + (on && onHub(path) ? ' rest' : '')} style={{ '--rc': x.color }}>
+              <div key={x.id} className={'sb-ws-g' + (on ? ' on' : '') + (on && (onHub(path) || onTodo(path)) ? ' rest' : '')} style={{ '--rc': x.color }}>
                 <Tip label={on ? x.label : 'Switch to ' + x.label} kbd={ALT + (i + 1)} side="right">
                   <button className="sb-wsh" onClick={() => switchRole(x.id)} aria-expanded={on}>
                     <RoleIcon role={x.id} size={24} /> <span className="grow ell">{x.label}</span>
@@ -1005,7 +1018,7 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
       </div>
       <div className="sb-scroll">
         <div className="sbs-h">Work</div>
-        <nav className="d-nav"><HubItem path={path} /><NavItems nav={work} active={active} /></nav>
+        <nav className="d-nav"><HubItem path={path} /><TodoItem path={path} /><NavItems nav={work} active={active} /></nav>
         <div className="sbs-h">Company</div>
         <nav className="d-nav">
           {company.map((n) => (
@@ -1043,7 +1056,7 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
 }
 
 /** Sum of a workspace's live counts (approvals, invoices, payments, inbound…). */
-const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to) && !n.todo).reduce((t, n) => t + (n.n || 0), 0)
+const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
 
 /* ───────── Top bar ───────── */
 const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'BD', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Case Library', prospect: 'Prospecting', companies: 'Companies', stream: 'Stream' }
@@ -1165,8 +1178,6 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         <Command.Group heading="To-do">
           <Command.Item value="add to-do todo task remind" onSelect={run(() => setTimeout(() => openTodoAdd(), 0))}><ListPlus size={15} /> Add to-do<kbd className="k" style={{ marginLeft: 'auto' }}>T</kbd></Command.Item>
           <Command.Item value="open to-dos todo list tasks" onSelect={run(() => setTimeout(openTodos, 0))}><ListChecks size={15} /> Open to-dos</Command.Item>
-          {TODO_STYLES.map((x) => <Command.Item key={x.value} value={'to-do style todo ' + x.label + ' ' + x.desc} onSelect={run(() => look.setPrefs({ ...look.prefs, todo: x.value }))}><ListChecks size={15} /> To-do style · {x.label}<span className="cmdk-meta">{x.desc}</span>{look.prefs.todo === x.value && <Check size={14} style={{ marginLeft: 8 }} />}</Command.Item>)}
-          {TODO_WIDTHS.map((x) => <Command.Item key={'w' + x.value} value={'to-do panel width ' + x.label + ' ' + (100 - x.value) + '/' + x.value} onSelect={run(() => look.setPrefs({ ...look.prefs, todo: 'panel', todoWidth: x.value }))}><ListChecks size={15} /> To-do panel width · {100 - x.value}/{x.value}<span className="cmdk-meta">{x.desc}</span>{look.prefs.todoWidth === x.value && <Check size={14} style={{ marginLeft: 8 }} />}</Command.Item>)}
           {TODO_HOME.map((x) => <Command.Item key={x.value} value={'to-dos on home todo ' + x.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, todoHome: x.value }); go('/hub') })}><House size={15} /> To-dos on Home · {x.label}{look.prefs.todoHome === x.value && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
         </Command.Group>
         <Command.Group heading="Home layout">

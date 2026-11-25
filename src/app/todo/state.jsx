@@ -1,4 +1,4 @@
-// To-do slice: one localStorage-backed list shared by every variation (List and Panel).
+// To-do slice: one localStorage-backed list. To-do is a global page beside Home (#/todo), the same for every role.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { revive } from '../sales/data'
@@ -7,36 +7,13 @@ import { dayAt } from './logic'
 
 const KEY = 'wldd-todo-v2'
 
-/** Variation (Settings › Preferences › To-do style). Shell sets it every render, like the BD layout. */
-let STYLE = 'panel'
-export const setTodoStyle = (v) => { STYLE = TODO_STYLES.some((x) => x.value === v) ? v : 'panel' }
-export const todoStyle = () => STYLE
-export const TODO_STYLES = [
-  { value: 'list', label: 'List', desc: 'A Notion-style page: Today, Upcoming, Someday, Done.' },
-  { value: 'panel', label: 'Panel', desc: 'Always one tap away: a panel on the right of any page.' },
-]
 export const TODO_HOME = [{ value: 'strip', label: 'Strip' }, { value: 'card', label: 'Card' }, { value: 'off', label: 'Off' }]
-/** The To-do page exists only in List. (A saved Canvas or In context choice falls back to Panel.) */
-export const hasPage = () => STYLE === 'list'
-
-/** Panel width as a share of the window. All float over the page: 30 and 40 as an edge drawer, 50 and 60 as an inset sheet over a dimmed page. */
-export const TODO_WIDTHS = [
-  { value: '30', label: '30%', desc: 'Over the page' },
-  { value: '40', label: '40%', desc: 'Over the page' },
-  { value: '50', label: '50%', desc: 'Sheet over the page' },
-  { value: '60', label: '60%', desc: 'Sheet over the page' },
-]
-let WIDTH = '30'
-export const setTodoWidth = (v) => { WIDTH = TODO_WIDTHS.some((x) => x.value === String(v)) ? String(v) : '30' }
-export const todoWidth = () => WIDTH
-export const isSheet = (w = WIDTH) => +w >= 50
 
 /* Events: any page can ask for capture or the to-do surface; the shell decides what that means for the variation. */
 export const openTodoAdd = (links = [], opts = {}) => window.dispatchEvent(new CustomEvent('todo:add', { detail: { links, ...opts } }))
 /** Open one to-do's detail (subtasks, timeline, assignee, links, notes). */
 export const openTodo = (id) => window.dispatchEvent(new CustomEvent('todo:detail', { detail: { id } }))
 export const openTodos = () => window.dispatchEvent(new CustomEvent('todo:open'))
-export const setTodoPref = (key, value) => window.dispatchEvent(new CustomEvent('todo:pref', { detail: { key, value } }))
 
 /* ───────── Seeds: real brands, deals and campaigns from the other slices ───────── */
 const B = (label, id) => ({ kind: 'brand', id, label, brand: label })
