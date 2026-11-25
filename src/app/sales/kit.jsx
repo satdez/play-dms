@@ -197,13 +197,15 @@ export function FilterBar({ children, inline = true }) {
   const [sheet, setSheet] = useState(false)
   const n = activeCount(f)
   const more = FILTERS.filter((x) => !INLINE.includes(x.id)).filter((x) => isOn(f[x.id])).length
+  // On desktop the full filter set is the left panel, never a second sheet; phones keep the bottom sheet.
+  const openAll = () => (narrow ? setSheet(true) : setFilterMode('panel'))
   const groups = GROUPS.map((g) => INLINE.filter((id) => filterById[id].group === g.id)).filter((l) => l.length)
   return (
     <div className="bdv-fbar">
       <div className="bdv-fbar-1">
         {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
         <SearchBox />
-        {(!inline || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={() => setSheet(true)}><SlidersHorizontal size={13} />Filters{n > 0 && <span className="num">{n}</span>}</button>}
+        {(!inline || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={openAll}><SlidersHorizontal size={13} />Filters{n > 0 && <span className="num">{n}</span>}</button>}
         <ViewsMenu />
         {n > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear{!narrow && <span className="mute num">{n}</span>}</button>}
         <span className="grow" />
@@ -220,7 +222,7 @@ export function FilterBar({ children, inline = true }) {
             </span>
           ))}
           <i className="bdv-gsep" aria-hidden />
-          <button className={'bdv-fc bdv-fc-b' + (more ? ' on' : '')} onClick={() => setSheet(true)}><SlidersHorizontal size={12} />More{more > 0 && <b className="num">{more}</b>}</button>
+          <button className={'bdv-fc bdv-fc-b' + (more ? ' on' : '')} onClick={openAll}><SlidersHorizontal size={12} />More{more > 0 && <b className="num">{more}</b>}</button>
         </div>
       )}
       <FilterSheet open={sheet} onClose={() => setSheet(false)} />
@@ -528,9 +530,9 @@ export function ViewStrip() {
             <div className="inp"><input autoFocus value={name} onChange={(e) => setName(e.target.value)} onBlur={() => !name && setNaming(false)} placeholder={describe(f) || 'Name'} aria-label="View name" /></div>
             <button className="b sm ink" type="submit" disabled={!n}>Save</button>
           </form>
-        ) : <button className="chip sl-tog bdv-plus" onClick={() => (n ? setNaming(true) : setSheet(true))}><Plus size={12} />New view</button>}
+        ) : <button className="chip sl-tog bdv-plus" onClick={() => (n ? setNaming(true) : narrow ? setSheet(true) : setFilterMode('panel'))}><Plus size={12} />New view</button>}
       </div>
-      {(bdFilters() !== 'panel' || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={() => setSheet(true)} aria-label="Filters"><SlidersHorizontal size={13} /><span className="m-hide">Filters</span>{n > 0 && <span className="num">{n}</span>}</button>}
+      {(bdFilters() !== 'panel' || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={() => (narrow ? setSheet(true) : setFilterMode('panel'))} aria-label="Filters"><SlidersHorizontal size={13} /><span className="m-hide">Filters</span>{n > 0 && <span className="num">{n}</span>}</button>}
       {(bdFilters() !== 'panel' || narrow) && <ViewsMenu icon />}
       <FilterSheet open={sheet} onClose={() => setSheet(false)} />
     </div>
