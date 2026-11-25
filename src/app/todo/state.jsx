@@ -5,7 +5,7 @@ import { revive } from '../sales/data'
 import { TODAY } from '../data'
 import { dayAt } from './logic'
 
-const KEY = 'wldd-todo-v2'
+const KEY = 'wldd-todo-v3'
 
 export const TODO_HOME = [{ value: 'strip', label: 'Strip' }, { value: 'card', label: 'Card' }, { value: 'off', label: 'Off' }]
 
@@ -25,6 +25,14 @@ const T = (id, text, links, due, by, extra = {}) => ({ id, text, links, due, rem
 const S = (id, parent, text, due, who, extra = {}) => T(id, text, [], due, 'u1', { parent, who: [who], ...extra })
 function seed() {
   const items = [
+    // System: deal steps and team tasks the DMS creates. They close by themselves; you can tick one by hand.
+    T('s1', 'Send intro email', [DL('d101', 'Rare Rabbit'), PE('ct1', 'Juhi Mathur', 'Rare Rabbit')], dayAt(1), 'system', { who: ['u1'], sys: 'Deal step' }),
+    T('s2', 'Follow up if no reply', [DL('d115', 'Bisleri')], dayAt(0, 15), 'system', { who: ['u1'], sys: 'Deal step' }),
+    T('s3', 'Prepare for the call', [DL('d109', 'Licious')], dayAt(2, 11), 'system', { who: ['u1'], sys: 'Deal step' }),
+    T('s4', 'Agreement and PO', [DL('d102', 'PhonePe')], dayAt(5), 'system', { who: ['u1'], sys: 'Team task' }),
+    // Assigned: someone else gave it to you.
+    T('a1', 'Review pitch deck v1', [DL('d109', 'Licious')], dayAt(0), 'u3', { who: ['u1'] }),
+    T('a2', 'Send Ishaan the Q4 rate card', [B('Rare Rabbit', 'rare-rabbit')], dayAt(1, 12), 'u2', { who: ['u1'] }),
     T('t3', 'Chase Unacademy, no reply in 6 days', [DL('d103', 'Unacademy')], dayAt(-1), 'u1'),
     T('t7', 'Lock the creator shortlist for Philips × Sale Countdown', [CP('c8', 'Philips × Sale Countdown')], dayAt(-2), 'u5', { who: ['u1', 'u5'], start: dayAt(-6) }),
     S('t7a', 't7', 'Shortlist 20 meme pages', dayAt(-4), 'u5', { done: true, doneAt: dayAt(-4, 17) }),
@@ -51,10 +59,10 @@ function seed() {
     T('t14', 'Intro Spinny to the Neon pod', [DL('d113', 'Spinny')], dayAt(-1), 'u1', { done: true, doneAt: dayAt(-1, 18) }),
     T('t15', 'Send Atomberg the summer fan case studies', [PE('ct5', 'Naina Sood', 'Atomberg')], dayAt(-2), 'u1', { done: true, doneAt: dayAt(-2, 16) }),
   ]
-  return { v: 2, items: items.map((t, i) => ({ ...t, order: i })) }
+  return { v: 3, items: items.map((t, i) => ({ ...t, order: i })) }
 }
 const load = () => {
-  try { const v = JSON.parse(localStorage.getItem(KEY) || 'null', revive); if (v?.v === 2 && Array.isArray(v.items)) return v } catch {}
+  try { const v = JSON.parse(localStorage.getItem(KEY) || 'null', revive); if (v?.v === 3 && Array.isArray(v.items)) return v } catch {}
   return seed()
 }
 const uid = () => 't' + Math.random().toString(36).slice(2, 8)

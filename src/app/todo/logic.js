@@ -31,6 +31,12 @@ export const whosOf = (t) => (t.who === undefined ? asList(t.by) : asList(t.who)
 export const whoOf = (t) => whosOf(t)[0] || null
 export const assigned = (t, id) => whosOf(t).includes(id)
 export const mine = (t) => assigned(t, meId())
+/** Where a to-do came from, for whoever the app is showing:
+    yours (you wrote it) · assigned (someone gave it to you) · system (a deal step or team task the DMS created) · team (someone else's). */
+export const originOf = (t) => (t.by === 'system' ? 'system' : t.by === meId() ? 'yours' : mine(t) ? 'assigned' : 'team')
+export const ORIGINS = [{ value: 'yours', label: 'Yours' }, { value: 'assigned', label: 'Assigned' }, { value: 'system', label: 'System' }]
+/** System to-dos close by themselves and given ones can't be deleted, only done. */
+export const deletable = (t) => ['yours', 'team'].includes(originOf(t))
 /** Top-level to-dos only; subtasks show under their parent. */
 export const top = (t) => !t.parent
 export const subsOf = (items, id) => items.filter((x) => x.parent === id)

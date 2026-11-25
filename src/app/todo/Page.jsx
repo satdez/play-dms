@@ -1,13 +1,13 @@
 // #/todo — the List style's page. Two views of the same to-dos: List (grouped by date, company or assignee) and Timeline (start → due bars).
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, GripVertical, X, Link2, User, AlarmClock, Check, Rows3, GanttChart, ArrowLeft, ArrowRight } from 'lucide-react'
+import { ChevronDown, GripVertical, X, Link2, User, Cog, Inbox, AlarmClock, Check, Rows3, GanttChart, ArrowLeft, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
 import { Avatar, AvatarStack } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
 import { Popover, Seg } from '../ui'
 import { TODAY, fmt } from '../data'
-import { bucketOf, mine, brandOfItem, top, whosOf, meId, dayDiff, at, spanLabel } from './logic'
+import { bucketOf, originOf, ORIGINS, brandOfItem, top, whosOf, meId, dayDiff, at, spanLabel } from './logic'
 import { openTodo } from './state'
 import { Composer, TodoRow, Tick, TodoText, userOf, Span } from './ui'
 
@@ -86,7 +86,7 @@ function useReorder(onDrop) {
 
 function ListPage() {
   const s = useStore()
-  const [me, setMe] = useState(false)
+  const [org, setOrg] = useState(null) // yours · assigned · system
   const [late, setLate] = useState(false)
   const [link, setLink] = useState(null) // brand name
   const [showDone, setShowDone] = useState(false)
@@ -95,13 +95,15 @@ function ListPage() {
   const [sel, setSel] = useState(null)
   const { grip, line } = useReorder((id, ids, to) => s.todo.move(id, ids, to))
   const all = s.todo.items.filter(top)
-  const items = all.filter((t) => (!me || mine(t)) && (!link || t.links.some((l) => l.brand === link)) && (!late || bucketOf(t) === 'overdue'))
+  const items = all.filter((t) => (!org || originOf(t) === org) && (!link || t.links.some((l) => l.brand === link)) && (!late || bucketOf(t) === 'overdue'))
   const open = items.filter((t) => !t.done)
   const groups = groupsOf(open, by)
   const done = items.filter((t) => t.done).sort((a, b) => b.doneAt - a.doneAt)
   const brands = {}
   all.forEach((t) => { const b = brandOfItem(t); if (b && !t.done) brands[b] = (brands[b] || 0) + 1 })
-  const lateN = all.filter((t) => bucketOf(t) === 'overdue' && (!me || mine(t))).length
+  const orgN = {}
+  all.forEach((t) => { if (!t.done) orgN[originOf(t)] = (orgN[originOf(t)] || 0) + 1 })
+  const lateN = all.filter((t) => bucketOf(t) === 'overdue' && (!org || originOf(t) === org)).length
 
   // j / k move, x ticks, Enter opens. Instant (keyboard).
   const order = view === 'list' ? groups.flatMap((g) => g.list.map((t) => t.id)) : []
@@ -127,7 +129,10 @@ function ListPage() {
       <div className="td-bar">
         <span className="td-vseg"><Seg id="td-view" value={view} onChange={setView} options={[{ value: 'list', label: <><Rows3 size={13} />List</> }, { value: 'timeline', label: <><GanttChart size={13} />Timeline</> }]} /></span>
         <span className="td-bar-sep" />
-        <button className={'b sm td-f' + (me ? ' on' : '')} aria-pressed={me} onClick={() => setMe((x) => !x)}><User size={13} />Mine</button>
+        {ORIGINS.map((o) => {
+          const I = { yours: User, assigned: Inbox, system: Cog }[o.value]
+          return <button key={o.value} className={'b sm td-f' + (org === o.value ? ' on' : '')} aria-pressed={org === o.value} onClick={() => setOrg((x) => (x === o.value ? null : o.value))}><I size={13} />{o.label}{orgN[o.value] > 0 && <span className="mute num">{orgN[o.value]}</span>}</button>
+        })}
         {link ? (
           <button className="b sm td-f on" onClick={() => setLink(null)}><BrandLogo name={link} size={14} radius={3} />{link}<X size={12} className="mute" /></button>
         ) : (

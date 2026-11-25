@@ -1,7 +1,7 @@
 // To-do pieces every variation shares: link chips, the tick, a row, the smart composer, the record block, the top-bar button.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart, ArrowRight } from 'lucide-react'
+import { Cog, Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
 import { Avatar, AvatarStack } from '../../shared/ui'
@@ -10,7 +10,7 @@ import { Popover, go } from '../ui'
 import { team, TODAY } from '../data'
 import {
   indexOf, search, settled, exact, linkOf, phoneLink, findPhones, parseDate, cut, hrefOf, segments, dueLabel, bucketOf, meId, mine,
-  KIND_LABEL, linkedTo, dayDiff, at, parseRange, whosOf, asList, spanLabel, top,
+  KIND_LABEL, linkedTo, dayDiff, at, parseRange, whosOf, asList, spanLabel, top, originOf, deletable,
 } from './logic'
 import { openTodoAdd, openTodos, openTodo } from './state'
 
@@ -176,6 +176,14 @@ export function Ring({ n, of, size = 14 }) {
 }
 const byDueOrder = (a, b) => (a.due ? +a.due : 9e15) - (b.due ? +b.due : 9e15) || (a.order ?? 0) - (b.order ?? 0)
 
+/** Where it came from, only when it isn't simply yours: "Deal step", "Team task", "From Aarav". */
+function OriginTag({ t }) {
+  const o = originOf(t)
+  if (o === 'system') return <span className="td-org"><Cog size={11} />{t.sys || 'System'}</span>
+  if (o === 'assigned') return <span className="td-org">From {userOf(t.by)?.short || 'a teammate'}</span>
+  return null
+}
+
 /** One to-do. Click opens its detail; double-click edits the text in place (`edit`). `grip`: a drag handle (the List page passes one).
     A to-do with subtasks shows "1/3"; clicking it folds the subtasks open under the row. `crumb`: show the parent of a subtask seen on its own. */
 export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs = true, crumb, sel }) {
@@ -213,9 +221,10 @@ export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs 
             </Tip>
           )}
           {t.pinned && !t.done && <Pin size={12} className="mute td-pin" />}
+          <OriginTag t={t} />
           <DueButton t={t} />
           {by && crew.length > 0 && <Tip label={crew.map((u) => (u.id === meId() ? 'You' : u.short)).join(', ')}><span className="td-by"><AvatarStack users={crew.slice(0, 3)} size={18} ring="var(--surface)" />{crew.length > 3 && <span className="td-by-n num">+{crew.length - 3}</span>}</span></Tip>}
-          {actions && <Tip label="Delete"><button className="b ghost icon sm td-del" onClick={(e) => { e.stopPropagation(); s.todo.remove(t.id) }} aria-label="Delete"><Trash2 size={13} /></button></Tip>}
+          {actions && deletable(t) && <Tip label="Delete"><button className="b ghost icon sm td-del" onClick={(e) => { e.stopPropagation(); s.todo.remove(t.id) }} aria-label="Delete"><Trash2 size={13} /></button></Tip>}
         </span>
       </div>
       {open && kids.length > 0 && <div className="td-subs">{[...kids].sort(byDueOrder).map((k) => <TodoRow key={k.id} t={k} by={by} actions={actions} subs={false} />)}</div>}
