@@ -367,7 +367,7 @@ html[data-td-drag], html[data-td-drag] * { cursor: col-resize !important; user-s
 .pop .td-ctx-t { font-weight: 400; color: var(--fg); }
 .td-ctx-more { padding: 2px 10px 4px 30px; }
 .td-ctx-due { display: flex; gap: 4px; padding: 0 4px 4px; }
-.pop .td-ctx-due button { width: auto; flex: 1; justify-content: center; gap: 4px; height: 28px; padding: 0 6px; font-size: 12.5px; background: var(--sunken); }
+.pop .td-ctx-due button { width: auto; flex: 1 0 auto; white-space: nowrap; justify-content: center; gap: 4px; height: 28px; padding: 0 8px; font-size: 12.5px; background: var(--sunken); }
 .pop .td-ctx-due button.on { background: var(--ink); color: var(--ink-fg); }
 .pop .td-ctx-del:hover { color: var(--pink); }
 
