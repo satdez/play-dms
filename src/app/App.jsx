@@ -47,10 +47,11 @@ import './noir.css'
 import './mobile.css'
 import './todo/todo.css'
 import { TodoHost } from './todo/Host'
+import { ShortcutsPanel, openShortcuts } from './shortcuts'
 import { TodoPage } from './todo/Page'
 import { TodoButton, TodoBellRows, dueMine } from './todo/ui'
 import { TODO_HOME, openTodoAdd, openTodos } from './todo/state'
-import { ListChecks, ListPlus } from 'lucide-react'
+import { ListChecks, ListPlus, Keyboard } from 'lucide-react'
 import { Palette, Settings as Gear, Menu as MenuIcon } from 'lucide-react'
 import { PopTuner, PRESETS, TUNE_AXES, normTune, presetOf, applyTune, clearTune, toneSwatch, Orb } from './popTune'
 import { NoirTuner, NOIR_AXES, NOIR_DEFAULTS, DESK_ON, DESK_OFF, deskIsOn, DeskPreset, DockPanel, useAssistant, applyNoir, clearNoir, noirSwatch, toastDesk } from './noir'
@@ -392,7 +393,7 @@ function Shell({ path }) {
     else page = { prospect: <Prospect />, companies: <CompaniesFirst id={parts[2]} />, stream: <Stream />, feed: <Feed />, discover: <Discover id={parts[2]} />, inbound: <SalesInbound />, accounts: <Accounts id={parts[2]} />, contacts: <Contacts />, pipeline: <Pipeline />, cases: <Cases id={parts[2]} />, dashboard: <Pipeline />, outreach: <Pipeline />, proposals: <Pipeline />, kb: <Knowledge base="/bd/kb" id={parts[2]} /> }[parts[1]] || <Feed />
   }
 
-  const cmdk = <><AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />{VIEW.roles.includes('bd') && <><AskDialog /><AddLeadSheet /></>}<TodoHost path={path} /></>
+  const cmdk = <><AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />{VIEW.roles.includes('bd') && <><AskDialog /><AddLeadSheet /></>}<TodoHost path={path} /><ShortcutsPanel /></>
   const scroll = <MotionConfig reducedMotion={prefs.motion === 'reduced' ? 'always' : 'user'}><div className="d-scroll" key={mod === 'settings' ? 'settings' : mod + '/' + (parts[1] || '') + '/' + (mod === 'bd' && ['discover', 'accounts', 'cases', 'companies'].includes(parts[1]) ? '' : parts[2] || '')}>{page}</div></MotionConfig>
   // Docking is opt-in: without it the page tree is exactly what it was.
   const reduced = prefs.motion === 'reduced' || (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
@@ -1141,6 +1142,7 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         <Command.Empty>Nothing found</Command.Empty>
         {!q && (
           <Command.Group heading="Go to">
+            <Command.Item value="keyboard shortcuts keys help" onSelect={run(() => setTimeout(openShortcuts, 0))}><Keyboard size={15} /> Keyboard shortcuts<kbd className="k" style={{ marginLeft: 'auto' }}>?</kbd></Command.Item>
             <Command.Item value="go home" onSelect={run(() => go('/hub'))}><House size={15} /> Home<kbd className="k" style={{ marginLeft: 'auto' }}>{ALT}0</kbd></Command.Item>
             {nav.map((n) => <Command.Item key={n.to} value={'go ' + n.label} onSelect={run(() => go(n.to))}><n.icon size={15} /> {n.label}</Command.Item>)}
           </Command.Group>

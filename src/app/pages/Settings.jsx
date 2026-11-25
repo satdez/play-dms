@@ -17,6 +17,7 @@ import { PERSONAS } from '../personas'
 import { HOME_LAYOUTS } from './Hub'
 import { LAYOUTS as BD_LAYOUTS } from '../sales/prospect'
 import { TODO_HOME } from '../todo/state'
+import { SHORTCUTS, Keys, openShortcuts } from '../shortcuts'
 import { NoirTuner, DeskPreset } from '../noir'
 
 /* ───────── sections ───────── */
@@ -466,19 +467,17 @@ function Notifications() {
 }
 
 /* ───────── Shortcuts ───────── */
-const K = ({ k }) => <span className="st-keys">{k.split(' ').map((x, i) => <kbd key={i} className="k">{x}</kbd>)}</span>
 function Shortcuts() {
-  const groups = [
-    ['General', [['Search and commands', MOD + 'K'], ['Settings', MOD + ','], ['Collapse sidebar', MOD + 'B'], ['Ask WLDD (when docked)', MOD + 'J'], ['Home', ALT + '0'], ['Switch to Pod', ALT + '1'], ['Switch to Finance', ALT + '2'], ['Switch to BD', ALT + '3']]],
-    ['Look', [['Cycle Home layout', ALT + 'H'], ['Cycle experience', ALT + 'E'], ['Cycle style', ALT + 'S'], ['Cycle Pop presets', ALT + 'P']]],
-    ['Lists & boards', [['New campaign', 'C'], ['Add to-do', 'T'], ['To-do on anything', 'Right-click'], ['Tick a to-do', 'X'], ['List ⇄ board', MOD_SHIFT + 'B'], ['Next / previous row', 'J K'], ['Open row', 'Enter'], ['Close panel', 'Esc']]],
-    ['Vercel experience', [['Find', 'F']]],
-  ]
-  return groups.map(([g, items]) => (
-    <Group key={g} title={g}>
-      {items.map(([l, k]) => <Row key={l} label={l}><K k={k} /></Row>)}
-    </Group>
-  ))
+  return (
+    <>
+      <div className="st-bar"><button className="b sm" onClick={openShortcuts}><Keyboard size={13} />Open as a panel<kbd className="k">?</kbd></button></div>
+      {SHORTCUTS().map(([g, items]) => (
+        <Group key={g} title={g}>
+          {items.map(([l, k]) => <Row key={l} label={l}><Keys k={k} /></Row>)}
+        </Group>
+      ))}
+    </>
+  )
 }
 
 /* ───────── Security ───────── */
