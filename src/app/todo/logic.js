@@ -187,11 +187,11 @@ export const KIND_LABEL = { brand: 'Companies', signal: 'Signals', person: 'Peop
 export const KIND_ONE = { brand: 'Company', signal: 'Signal', person: 'Person', deal: 'Deal', campaign: 'Campaign', invoice: 'Invoice', vendor: 'Creator', member: 'Teammate', phone: 'Phone' }
 const CAP = { brand: 5, signal: 3, person: 4, deal: 3, campaign: 3, invoice: 3, vendor: 3, member: 3 }
 /** Picker results for "@query": grouped in KIND_ORDER, best first. */
-export function search(idx, q) {
+export function search(idx, q, only = null) {
   const t = q.trim().toLowerCase()
   const score = (e) => {
     const l = e.label.toLowerCase()
-    if (!t) return e.kind === 'brand' || e.kind === 'signal' || e.kind === 'deal' || e.kind === 'campaign' || e.kind === 'member' ? 0 : 9
+    if (!t) return only || e.kind === 'brand' || e.kind === 'signal' || e.kind === 'deal' || e.kind === 'campaign' || e.kind === 'member' ? 0 : 9
     if (e.kind === 'member' && e.short.toLowerCase().startsWith(t)) return 0
     if (l.startsWith(t)) return 0
     if (l.split(/[\s×·.-]+/).some((w) => w.startsWith(t))) return 1
@@ -200,22 +200,23 @@ export function search(idx, q) {
     return 9
   }
   const out = []
-  for (const k of KIND_ORDER) {
+  for (const k of only ? [only] : KIND_ORDER) {
     const list = idx.all.filter((e) => e.kind === k).map((e) => [score(e), e]).filter(([s]) => s < 9).sort((a, b) => a[0] - b[0] || a[1].label.length - b[1].label.length)
-    out.push(...list.slice(0, t ? CAP[k] : k === 'brand' ? 4 : k === 'signal' ? 2 : k === 'deal' ? 3 : k === 'campaign' ? 2 : k === 'member' ? 3 : 0).map(([, e]) => e))
+    out.push(...list.slice(0, only ? 12 : t ? CAP[k] : k === 'brand' ? 4 : k === 'signal' ? 2 : k === 'deal' ? 3 : k === 'campaign' ? 2 : k === 'member' ? 3 : 0).map(([, e]) => e))
   }
   return out
 }
 /** "@Rare Rabbit t…": the name is complete once the next word can't continue any label. */
-export function settled(idx, q) {
+export function settled(idx, q, only = null) {
   const t = q.toLowerCase()
   if (!t.includes(' ')) return null
-  if (idx.all.some((e) => e.label.toLowerCase().startsWith(t))) return null
-  const hits = idx.all.filter((e) => t.startsWith(e.label.toLowerCase() + ' '))
+  const pool = only ? idx.all.filter((e) => e.kind === only) : idx.all
+  if (pool.some((e) => e.label.toLowerCase().startsWith(t))) return null
+  const hits = pool.filter((e) => t.startsWith(e.label.toLowerCase() + ' '))
   if (!hits.length) return null
   return hits.sort((a, b) => b.label.length - a.label.length || KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind))[0]
 }
-export const exact = (idx, q) => { const t = q.trim().toLowerCase(); return t ? idx.all.filter((e) => e.label.toLowerCase() === t).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind))[0] || null : null }
+export const exact = (idx, q, only = null) => { const t = q.trim().toLowerCase(); return t ? idx.all.filter((e) => (!only || e.kind === only) && e.label.toLowerCase() === t).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind))[0] || null : null }
 
 /** A stored link from an index entry. */
 export const linkOf = (e) => ({ kind: e.kind, id: e.id, label: e.label, brand: e.brand || null })

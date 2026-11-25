@@ -457,3 +457,11 @@ html[data-exp='linear'] .td-panel-hd, html[data-exp='attio'] .td-panel-hd { heig
 
 /* Origin tag: only on to-dos that aren't simply yours. */
 .td-org { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11.5px; font-weight: 500; color: var(--muted); background: color-mix(in oklab, var(--fg) 6%, transparent); white-space: nowrap; }
+
+/* @ picker: a strip of kinds so one group can be picked from. */
+.td-pick-tabs { display: flex; gap: 2px; padding: 2px 2px 6px; overflow-x: auto; scrollbar-width: none; position: sticky; top: -4px; z-index: 1; background: var(--surface); }
+.td-pick-tabs::-webkit-scrollbar { display: none; }
+.td-pick-tab { flex: none; height: 24px; padding: 0 9px; border-radius: 7px; font-size: 12px; font-weight: 500; color: var(--muted); }
+.td-pick-tab:hover { color: var(--fg); background: color-mix(in oklab, var(--fg) 6%, transparent); }
+.td-pick-tab.on { color: var(--fg); background: color-mix(in oklab, var(--fg) 9%, transparent); }
+.td-pick-none { padding: 6px 8px 8px; }

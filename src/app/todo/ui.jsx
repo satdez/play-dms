@@ -240,8 +240,13 @@ function activeMention(text, caret) {
   if (i < 0 || (i > 0 && !/\s/.test(before[i - 1]))) return null
   const q = before.slice(i + 1)
   if (q.length > 40 || /\n/.test(q) || /\s{2}/.test(q)) return null
-  return { start: i, q }
+  // "@c:Rare" narrows to one kind: c companies · s signals · p people · m colleagues · d deals · k campaigns · i invoices · v creators.
+  const pm = /^([cspmdkiv]):/i.exec(q)
+  return pm ? { start: i, q: q.slice(2), kind: SCOPE_KEYS[pm[1].toLowerCase()], pl: 2 } : { start: i, q, kind: null, pl: 0 }
 }
+const SCOPE_KEYS = { c: 'brand', s: 'signal', p: 'person', m: 'member', d: 'deal', k: 'campaign', i: 'invoice', v: 'vendor' }
+const SCOPE_TABS = [['', 'All'], ['brand', 'Companies'], ['signal', 'Signals'], ['person', 'People'], ['member', 'Colleagues'], ['deal', 'Deals'], ['campaign', 'Campaigns'], ['invoice', 'Invoices'], ['vendor', 'Creators']]
+const scopeLetter = (k) => Object.keys(SCOPE_KEYS).find((x) => SCOPE_KEYS[x] === k)
 /** Hide link labels and numbers from the date reader ("Sun Pharma" is not a Sunday). */
 const mask = (v, labels) => {
   let out = v
@@ -272,14 +277,18 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
   const [caret, setCaret] = useState(0)
   const [closed, setClosed] = useState(-1)
   const [hi, setHi] = useState(0)
+  const [tab, setTab] = useState('') // the kind chosen on the picker's strip; '' = everything
   const inp = useRef()
   const want = useRef(null)
   useLayoutEffect(() => { if (want.current != null && inp.current) { inp.current.setSelectionRange(want.current, want.current); want.current = null } })
   useEffect(() => { if (autoFocus) setTimeout(() => inp.current?.focus({ preventScroll: true }), 40) }, [autoFocus])
 
   const m = activeMention(text, caret)
-  const results = m && m.start !== closed ? search(idx, m.q) : []
-  const pickOn = results.length > 0
+  const kind = m?.kind || tab || null
+  const results = m && m.start !== closed ? search(idx, m.q, kind) : []
+  const has = results.length > 0
+  const pickOn = !!m && m.start !== closed && (has || !!kind)
+  useEffect(() => { if (!m) setTab('') }, [!!m]) // eslint-disable-line react-hooks/exhaustive-deps
   const present = links.filter((l) => text.toLowerCase().includes(l.label.toLowerCase()))
   const phones = findPhones(text).filter((p) => !skipPh.includes(p.digits)).map((p) => ({ ...p, link: phoneLink(p, idx) }))
   const masked = mask(text, [...present.map((l) => l.label), ...phones.map((p) => p.raw)])
@@ -290,9 +299,9 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     let v = e.target.value
     let c = e.target.selectionStart ?? v.length
     const mm = activeMention(v, c)
-    const hit = mm && settled(idx, mm.q)
+    const hit = mm && settled(idx, mm.q, mm.kind || tab || null)
     if (hit) {
-      v = v.slice(0, mm.start) + hit.label + v.slice(mm.start + 1 + hit.label.length)
+      v = v.slice(0, mm.start) + hit.label + v.slice(mm.start + 1 + mm.pl + hit.label.length)
       c -= 1; want.current = c
       setLinks((l) => (l.some((x) => sameLink(x, hit)) ? l : [...l, linkOf(hit)]))
       if (hit.kind === 'member') addWho(hit.id) // a colleague is tagged and given the to-do
@@ -313,8 +322,8 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     let ls = [...links]
     let w = who
     if (m) {
-      const e = exact(idx, m.q)
-      if (e) { v = v.slice(0, m.start) + e.label + v.slice(m.start + 1 + m.q.length); ls.push(linkOf(e)) }
+      const e = exact(idx, m.q, kind)
+      if (e) { v = v.slice(0, m.start) + e.label + v.slice(m.start + 1 + m.pl + m.q.length); ls.push(linkOf(e)) }
     }
     ls = ls.filter((l) => v.toLowerCase().includes(l.label.toLowerCase()))
     // Tagged colleagues get the to-do too, so it shows on their side as well as on yours.
@@ -334,16 +343,23 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     onAdded?.(t)
   }
   const key = (e) => {
-    if (pickOn && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); setHi((h) => (h + (e.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length); return }
-    if (pickOn && (e.key === 'Enter' || e.key === 'Tab')) { e.preventDefault(); pick(results[Math.min(hi, results.length - 1)]); return }
+    if (pickOn && has && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); setHi((h) => (h + (e.key === 'ArrowDown' ? 1 : -1) + results.length) % results.length); return }
+    if (pickOn && has && (e.key === 'Enter' || e.key === 'Tab')) { e.preventDefault(); pick(results[Math.min(hi, results.length - 1)]); return }
     if (e.key === 'Enter') { e.preventDefault(); submit(); return }
-    if (e.key === 'Escape') { if (m && m.start !== closed && results.length) { e.preventDefault(); e.stopPropagation(); setClosed(m.start) } else onEscape?.(e) }
+    if (e.key === 'Escape') { if (m && m.start !== closed && pickOn) { e.preventDefault(); e.stopPropagation(); setClosed(m.start) } else onEscape?.(e) }
   }
   const sync = (e) => setCaret(e.target.selectionStart ?? 0)
 
   let gi = -1
   const picker = pickOn && (
     <div className="td-pick" role="listbox" aria-label="Link to">
+      <div className="td-pick-tabs" role="tablist" aria-label="Kind">
+        {SCOPE_TABS.map(([k, l]) => (
+          <button key={k} type="button" role="tab" aria-selected={(kind || '') === k} className={'td-pick-tab' + ((kind || '') === k ? ' on' : '')} title={k ? 'Type @' + scopeLetter(k) + ': to jump here' : undefined}
+            onMouseDown={(e) => e.preventDefault()} onClick={() => { setTab(k); setHi(0); inp.current?.focus() }}>{l}</button>
+        ))}
+      </div>
+      {!has && <div className="td-pick-none mute xs">No match</div>}
       {KIND_ORDER.map((k) => {
         const rows = results.filter((r) => r.kind === k)
         if (!rows.length) return null
