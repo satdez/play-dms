@@ -473,7 +473,8 @@ html[data-exp='linear'] .td-panel-hd, html[data-exp='attio'] .td-panel-hd { heig
 :is(.td-look-quiet, .td-look-grouped) .td-chip.k-phone, :is(.td-look-quiet, .td-look-grouped) .td-chip.k-campaign, :is(.td-look-quiet, .td-look-grouped) .td-chip.k-invoice { padding-left: 0; }
 :is(.td-look-quiet, .td-look-grouped) a.td-chip:hover .td-chip-t { text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--fg) 35%, transparent); text-underline-offset: 3px; }
 :is(.td-look-quiet, .td-look-grouped) .td-sep { margin: 0 4px 0 6px; color: var(--muted); }
-:is(.td-look-quiet, .td-look-grouped, .td-look-two) .td-dueb { min-width: 92px; justify-content: flex-end; }
+/* The column width lives on the popover wrapper, so the date's hover fill hugs the label with even padding. */
+:is(.td-look-quiet, .td-look-grouped, .td-look-two) .td-meta > span:has(> .td-dueb) { min-width: 92px; justify-content: flex-end; }
 :is(.td-look-quiet, .td-look-grouped) .td-pin { display: none; }
 :is(.td-look-quiet, .td-look-grouped) .td-row:not(:hover):not(.sel) .td-prog:not(.open) { opacity: 0; }
 .td-orgi { display: inline-flex; color: var(--muted); }
