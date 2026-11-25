@@ -399,7 +399,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
 
   let gi = -1
   const picker = pickOn && (
-    <div className="td-pick" role="listbox" aria-label="Link to">
+    <div className="td-pick" role="listbox" aria-label="Link to" onMouseDown={(e) => e.preventDefault()}>
       <div className="td-pick-tabs" role="tablist" aria-label="Kind">
         {SCOPE_TABS.map(([k, l]) => (
           <button key={k} type="button" role="tab" aria-selected={(kind || '') === k} className={'td-pick-tab' + ((kind || '') === k ? ' on' : '')} title={k ? 'Type @' + scopeLetter(k) + ': to jump here' : undefined}
@@ -442,7 +442,8 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
       {up && picker}
       <div className="td-comp-r">
         <Plus size={16} className="td-comp-i" />
-        <input ref={inp} className="td-in" value={text} onChange={change} onKeyDown={key} onKeyUp={sync} onClick={(e) => { sync(e); setClosed(-1) }} placeholder={placeholder} aria-label="Add a to-do"
+        <input ref={inp} className="td-in" value={text} onChange={change} onKeyDown={key} onKeyUp={sync} onClick={(e) => { sync(e); setClosed(-1) }}
+          onFocus={() => setClosed(-1)} onBlur={() => setTimeout(() => { if (!root.current?.contains(document.activeElement)) { const mm = activeMention(inp.current?.value || '', inp.current?.selectionStart ?? 0); if (mm) setClosed(mm.start) } }, 0)} placeholder={placeholder} aria-label="Add a to-do"
           enterKeyHint="done" autoComplete="off" spellCheck={false} role="combobox" aria-expanded={pickOn} aria-autocomplete="list" />
         <Tip label="Tag a company, signal, person or colleague"><button type="button" className="b ghost icon sm td-at" onMouseDown={(e) => e.preventDefault()} onClick={() => { const v = text + (text && !/\s$/.test(text) ? ' @' : '@'); setText(v); setCaret(v.length); want.current = v.length; inp.current?.focus() }} aria-label="Link"><AtSign size={15} /></button></Tip>
         <Tip label="Add" kbd="↵"><button type="button" className="b ink icon sm td-go" onMouseDown={(e) => e.preventDefault()} onClick={submit} disabled={!text.trim()} aria-label="Add"><ArrowUp size={14} /></button></Tip>
