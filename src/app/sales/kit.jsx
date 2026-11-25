@@ -210,7 +210,7 @@ export function FilterBar({ children, inline = true }) {
         {n > 0 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear{!narrow && <span className="mute num">{n}</span>}</button>}
         <span className="grow" />
         {!narrow && <MatchSeg />}
-        <span className="m-hide"><Tip label="Apollo credits left"><span className="bdv-credit"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
+        <span className="m-hide"><Tip label="Apollo credits left"><span className="bdv-credit"><BrandLogo name="Apollo" size={14} radius={4} /><span className="num">{st.credits}</span></span></Tip></span>
         {children}
       </div>
       {inline && !narrow && (
@@ -455,7 +455,7 @@ function ActiveChips({ children }) {
       {!chips.length && <span className="mute xs">No filters · showing everything</span>}
       {chips.length > 1 && <button className="b sm ghost" onClick={() => setF(F_EMPTY)}>Clear</button>}
       <span className="grow" />
-      <span className="m-hide"><Tip label="Apollo credits left"><span className="bdv-credit"><KeyRound size={12} /><span className="num">{st.credits}</span></span></Tip></span>
+      <span className="m-hide"><Tip label="Apollo credits left"><span className="bdv-credit"><BrandLogo name="Apollo" size={14} radius={4} /><span className="num">{st.credits}</span></span></Tip></span>
       {children}
     </div>
   )

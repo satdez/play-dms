@@ -13,6 +13,8 @@ export const BRAND_DOMAINS = {
   Flipkart: 'flipkart.com', OnePlus: 'oneplus.in', Dream11: 'dream11.com', 'Sugar Cosmetics': 'sugarcosmetics.com',
   Zee5: 'zee5.com', Ola: 'olacabs.com', Noise: 'gonoise.com', Slice: 'sliceit.com', 'T-Series': 'tseries.com',
   Blinkit: 'blinkit.com', Minimalist: 'beminimalist.co', 'Paytm Insider': 'insider.in',
+  // Tools
+  Apollo: 'apollo.io',
   // Sales prospects
   Bisleri: 'bisleri.com', Tanishq: 'tanishq.co.in', 'Bira 91': 'bira91.com', Licious: 'licious.in', 'Boat Lifestyle': 'boat-lifestyle.com',
   Ixigo: 'ixigo.com', 'Cult.fit': 'cult.fit', 'Nothing India': 'nothing.tech', Pilgrim: 'discoverpilgrim.com', Snitch: 'snitch.co.in',
