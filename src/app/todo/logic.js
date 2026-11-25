@@ -157,7 +157,7 @@ let cache = { key: null, idx: null }
 /** Brands, people, deals, campaigns and invoices, each as { kind, id, label, sub, logo, brand, phone }. Rebuilt when the store changes. */
 export function indexOf(s) {
   const st = s.sales
-  const key = [st.db, st.contacts, st.inbound, st.deals, s.campaigns, s.invoices, s.vendors, meId()]
+  const key = [st.db, st.signals, st.contacts, st.inbound, st.deals, s.campaigns, s.invoices, s.vendors, meId()]
   if (cache.key && cache.key.every((x, i) => x === key[i])) return cache.idx
   const seen = new Set()
   const co = dbCompanies(st).filter((c) => { const k = c.name.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true })
@@ -168,6 +168,7 @@ export function indexOf(s) {
     ...st.inbound.map((x) => ({ kind: 'person', id: x.id, label: x.name, sub: 'Inbound · ' + x.company, brand: x.company, phone: x.phone || PHONES[x.id] || null, hue: hueOf(x.name) })),
     ...[...brands, ...extras].flatMap((b) => b.people.map((p) => ({ kind: 'person', id: p.id, label: p.name, sub: p.title + ' · ' + b.name, brand: b.name, phone: PHONES[p.id] || p.phone, hue: hueOf(p.name) }))),
   ]
+  const sigs = (st.signals || []).filter((g) => g.status !== 'dismissed').map((g) => ({ kind: 'signal', id: g.id, label: g.title, sub: g.brand, brand: g.brand }))
   const deals = st.deals.map((d) => ({ kind: 'deal', id: d.id, label: d.brand + ' deal', sub: d.code + ' · ' + ({ new: 'New lead', brief: 'Brief', negotiation: 'Negotiation', pitch: 'Pitch', won: 'Won', lost: 'Closed lost' }[d.stage] || d.stage), logo: d.brand, brand: d.brand }))
   const camps = s.campaigns.map((c) => ({ kind: 'campaign', id: c.id, label: c.name, sub: c.code + ' · ' + c.pod, logo: c.client, brand: c.client }))
   const invs = s.invoices.map((x) => ({ kind: 'invoice', id: x.id, label: x.no, sub: x.vendor.name + ' · ' + x.campaign, brand: x.campaign.split(' × ')[0] }))
@@ -176,21 +177,21 @@ export function indexOf(s) {
   const crew = team.map((u) => ({ kind: 'member', id: u.id, label: u.name, sub: u.id === meId() ? 'You · ' + u.role : u.role, hue: u.hue, short: u.short }))
   const byPhone = {}
   people.forEach((p) => { if (p.phone && !byPhone[digits10(p.phone)]) byPhone[digits10(p.phone)] = p })
-  const idx = { all: [...co, ...pod, ...people, ...deals, ...camps, ...invs, ...vends, ...crew], byPhone, co: [...co, ...pod], byName: {} }
+  const idx = { all: [...co, ...pod, ...sigs, ...people, ...crew, ...deals, ...camps, ...invs, ...vends], byPhone, co: [...co, ...pod], byName: {} }
   idx.all.forEach((e) => { const k = e.label.toLowerCase(); if (!idx.byName[k]) idx.byName[k] = e })
   cache = { key, idx }
   return idx
 }
-export const KIND_ORDER = ['brand', 'person', 'deal', 'campaign', 'invoice', 'vendor', 'member']
-export const KIND_LABEL = { brand: 'Companies', person: 'People', deal: 'Deals', campaign: 'Campaigns', invoice: 'Invoices', vendor: 'Creators & vendors', member: 'Assign to' }
-export const KIND_ONE = { brand: 'Company', person: 'Person', deal: 'Deal', campaign: 'Campaign', invoice: 'Invoice', vendor: 'Creator', member: 'Teammate', phone: 'Phone' }
-const CAP = { brand: 5, person: 4, deal: 3, campaign: 3, invoice: 3, vendor: 3, member: 3 }
+export const KIND_ORDER = ['brand', 'signal', 'person', 'member', 'deal', 'campaign', 'invoice', 'vendor']
+export const KIND_LABEL = { brand: 'Companies', signal: 'Signals', person: 'People', deal: 'Deals', campaign: 'Campaigns', invoice: 'Invoices', vendor: 'Creators & vendors', member: 'Colleagues' }
+export const KIND_ONE = { brand: 'Company', signal: 'Signal', person: 'Person', deal: 'Deal', campaign: 'Campaign', invoice: 'Invoice', vendor: 'Creator', member: 'Teammate', phone: 'Phone' }
+const CAP = { brand: 5, signal: 3, person: 4, deal: 3, campaign: 3, invoice: 3, vendor: 3, member: 3 }
 /** Picker results for "@query": grouped in KIND_ORDER, best first. */
 export function search(idx, q) {
   const t = q.trim().toLowerCase()
   const score = (e) => {
     const l = e.label.toLowerCase()
-    if (!t) return e.kind === 'brand' || e.kind === 'deal' || e.kind === 'campaign' || e.kind === 'member' ? 0 : 9
+    if (!t) return e.kind === 'brand' || e.kind === 'signal' || e.kind === 'deal' || e.kind === 'campaign' || e.kind === 'member' ? 0 : 9
     if (e.kind === 'member' && e.short.toLowerCase().startsWith(t)) return 0
     if (l.startsWith(t)) return 0
     if (l.split(/[\s×·.-]+/).some((w) => w.startsWith(t))) return 1
@@ -201,7 +202,7 @@ export function search(idx, q) {
   const out = []
   for (const k of KIND_ORDER) {
     const list = idx.all.filter((e) => e.kind === k).map((e) => [score(e), e]).filter(([s]) => s < 9).sort((a, b) => a[0] - b[0] || a[1].label.length - b[1].label.length)
-    out.push(...list.slice(0, t ? CAP[k] : k === 'brand' ? 4 : k === 'deal' ? 3 : k === 'campaign' ? 2 : k === 'member' ? 3 : 0).map(([, e]) => e))
+    out.push(...list.slice(0, t ? CAP[k] : k === 'brand' ? 4 : k === 'signal' ? 2 : k === 'deal' ? 3 : k === 'campaign' ? 2 : k === 'member' ? 3 : 0).map(([, e]) => e))
   }
   return out
 }
@@ -237,7 +238,7 @@ export function hrefOf(l) {
   if (l.kind === 'deal') return can('bd') ? '/bd/pipeline/' + l.id : null
   if (l.kind === 'campaign') return can('pod') ? '/pod/campaigns/' + l.id : can('finance') ? '/finance/campaigns' : null
   if (l.kind === 'invoice') return can('finance') ? '/finance/invoices' : can('pod') ? '/pod/approvals' : null
-  if (l.kind === 'person') return l.brand ? brandHref(brandOf(l.brand)?.id || '', l.brand) : null
+  if (l.kind === 'person' || l.kind === 'signal') return l.brand ? brandHref(brandOf(l.brand)?.id || '', l.brand) : null
   if (l.kind === 'vendor') return can('finance') ? '/finance/vendors' : null
   return null
 }

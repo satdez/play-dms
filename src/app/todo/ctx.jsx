@@ -118,7 +118,7 @@ function EntMenu({ e, run }) {
   const s = useStore()
   const member = e.kind === 'member'
   const ctx = { keys: new Set([e.kind + ':' + e.id]), brand: e.kind === 'brand' || e.kind === 'deal' ? e.brand : null }
-  const open = s.todo.items.filter((t) => !t.done && top(t) && (member ? assigned(t, e.id) : linkedTo(t, ctx)))
+  const open = s.todo.items.filter((t) => !t.done && top(t) && (member ? assigned(t, e.id) || linkedTo(t, ctx) : linkedTo(t, ctx)))
     .sort((a, b) => (a.due ? +a.due : 9e15) - (b.due ? +b.due : 9e15))
   const href = !member && e.kind !== 'phone' ? hrefOf(e) : null
   const here = href && location.hash.slice(1).startsWith(href)

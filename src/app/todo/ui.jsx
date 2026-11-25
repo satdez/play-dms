@@ -1,7 +1,7 @@
 // To-do pieces every variation shares: link chips, the tick, a row, the smart composer, the record block, the top-bar button.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Cog, Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart, ArrowRight } from 'lucide-react'
+import { Radar, Cog, Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
 import { Avatar, AvatarStack } from '../../shared/ui'
@@ -10,12 +10,12 @@ import { Popover, go } from '../ui'
 import { team, TODAY } from '../data'
 import {
   indexOf, search, settled, exact, linkOf, phoneLink, findPhones, parseDate, cut, hrefOf, segments, dueLabel, bucketOf, meId, mine,
-  KIND_LABEL, linkedTo, dayDiff, at, parseRange, whosOf, asList, spanLabel, top, originOf, deletable,
+  KIND_LABEL, KIND_ORDER, linkedTo, dayDiff, at, parseRange, whosOf, asList, spanLabel, top, originOf, deletable,
 } from './logic'
 import { openTodoAdd, openTodos, openTodo } from './state'
 
 export const userOf = (id) => team.find((u) => u.id === id)
-const KIND_ICON = { campaign: Megaphone, invoice: Receipt, phone: Phone }
+const KIND_ICON = { signal: Radar, campaign: Megaphone, invoice: Receipt, phone: Phone }
 
 /** The picture for a link or index entry: a real logo for companies, an avatar for people, an icon otherwise. */
 export function Mark({ e, size = 16 }) {
@@ -31,7 +31,7 @@ export function Mark({ e, size = 16 }) {
 export function LinkChip({ l }) {
   const href = l.kind === 'phone' ? 'tel:' + l.label.replace(/\s/g, '') : hrefOf(l)
   const text = l.kind === 'phone' && l.person ? l.person.name : l.label
-  const tip = l.kind === 'phone' ? [l.person ? l.label : l.tip, l.brand].filter(Boolean).join(' · ') : l.kind === 'person' ? l.brand : l.kind === 'deal' ? 'Deal' : l.kind === 'campaign' ? 'Campaign' : l.kind === 'invoice' ? 'Invoice' : l.kind === 'vendor' ? 'Creator' : null
+  const tip = l.kind === 'phone' ? [l.person ? l.label : l.tip, l.brand].filter(Boolean).join(' · ') : l.kind === 'person' ? l.brand : l.kind === 'deal' ? 'Deal' : l.kind === 'campaign' ? 'Campaign' : l.kind === 'invoice' ? 'Invoice' : l.kind === 'vendor' ? 'Creator' : l.kind === 'signal' ? 'Signal · ' + l.brand : l.kind === 'member' ? 'Colleague' : null
   const body = <><Mark e={l} size={15} /><span className="td-chip-t">{text}</span></>
   const chip = href ? <a className={'td-chip k-' + l.kind} href={href.startsWith('tel:') ? href : '#' + href} onClick={(e) => e.stopPropagation()}>{body}</a> : <span className={'td-chip k-' + l.kind}>{body}</span>
   return tip ? <Tip label={tip}>{chip}</Tip> : chip
@@ -291,26 +291,17 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     let c = e.target.selectionStart ?? v.length
     const mm = activeMention(v, c)
     const hit = mm && settled(idx, mm.q)
-    if (hit && hit.kind === 'member') {
-      // "@Riya Kapoor " assigns: the name leaves the text and becomes the assignee.
-      v = v.slice(0, mm.start) + v.slice(mm.start + 1 + hit.label.length).replace(/^\s+/, '')
-      c = mm.start; want.current = c
-      addWho(hit.id)
-    } else if (hit) {
+    if (hit) {
       v = v.slice(0, mm.start) + hit.label + v.slice(mm.start + 1 + hit.label.length)
       c -= 1; want.current = c
       setLinks((l) => (l.some((x) => sameLink(x, hit)) ? l : [...l, linkOf(hit)]))
+      if (hit.kind === 'member') addWho(hit.id) // a colleague is tagged and given the to-do
     }
     setText(v); setCaret(c); setHi(0)
     if (closed >= 0 && (!mm || mm.start !== closed)) setClosed(-1)
   }
   const pick = (e) => {
-    if (e.kind === 'member') {
-      const v = text.slice(0, m.start) + text.slice(caret).replace(/^\s+/, '')
-      setText(v); setCaret(m.start); want.current = m.start; setHi(0); addWho(e.id)
-      inp.current?.focus()
-      return
-    }
+    if (e.kind === 'member') addWho(e.id)
     const v = text.slice(0, m.start) + e.label + ' ' + text.slice(caret)
     const c = m.start + e.label.length + 1
     setText(v); setCaret(c); want.current = c; setHi(0)
@@ -323,10 +314,11 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
     let w = who
     if (m) {
       const e = exact(idx, m.q)
-      if (e?.kind === 'member') { v = v.slice(0, m.start) + v.slice(m.start + 1 + m.q.length); if (!w.includes(e.id)) w = [...w, e.id] }
-      else if (e) { v = v.slice(0, m.start) + e.label + v.slice(m.start + 1 + m.q.length); ls.push(linkOf(e)) }
+      if (e) { v = v.slice(0, m.start) + e.label + v.slice(m.start + 1 + m.q.length); ls.push(linkOf(e)) }
     }
     ls = ls.filter((l) => v.toLowerCase().includes(l.label.toLowerCase()))
+    // Tagged colleagues get the to-do too, so it shows on their side as well as on yours.
+    for (const l of ls) if (l.kind === 'member' && !w.includes(l.id)) w = [...w, l.id]
     const ph = findPhones(v).filter((p) => !skipPh.includes(p.digits))
     const phl = ph.map((p) => phoneLink(p, idx))
     for (const p of [...ph].sort((a, b) => b.start - a.start)) v = v.slice(0, p.start) + phoneLink(p, idx).label + v.slice(p.end)
@@ -352,7 +344,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
   let gi = -1
   const picker = pickOn && (
     <div className="td-pick" role="listbox" aria-label="Link to">
-      {['brand', 'person', 'deal', 'campaign', 'invoice', 'vendor', 'member'].map((k) => {
+      {KIND_ORDER.map((k) => {
         const rows = results.filter((r) => r.kind === k)
         if (!rows.length) return null
         return (
@@ -377,10 +369,10 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
   )
   const chips = [
     ...prel.map((l) => ({ k: 'p' + l.kind + l.id, e: l, label: l.label, drop: () => setPrel((x) => x.filter((y) => !sameLink(y, l))) })),
-    ...present.filter((l) => !prel.some((p) => sameLink(p, l))).map((l) => ({ k: 'm' + l.kind + l.id, e: l, label: l.label, drop: () => setLinks((x) => x.filter((y) => !sameLink(y, l))) })),
+    ...present.filter((l) => !prel.some((p) => sameLink(p, l))).map((l) => ({ k: 'm' + l.kind + l.id, e: l, label: l.label, sub: l.kind === 'member' ? 'Assignee' : undefined, drop: () => { setLinks((x) => x.filter((y) => !sameLink(y, l))); if (l.kind === 'member') setWho((w) => w.filter((x) => x !== l.id)) } })),
     ...phones.map((p) => ({ k: 'ph' + p.digits, e: p.link, label: p.link.label, sub: p.link.person ? p.link.person.name + (p.link.brand ? ' · ' + p.link.brand : '') : 'Not on file', drop: () => setSkipPh((x) => [...x, p.digits]) })),
     date && { k: 'due', due: true, label: date.label, drop: () => setSkipDate(date.key) },
-    ...who.map(userOf).filter(Boolean).filter((u) => !(who.length === 1 && u.id === meId())).map((u) => ({ k: 'who' + u.id, e: { kind: 'member', label: u.name, hue: u.hue }, label: u.id === meId() ? 'You' : u.short, sub: 'Assignee', drop: () => setWho((w) => w.filter((x) => x !== u.id)) })),
+    ...who.map(userOf).filter(Boolean).filter((u) => !(who.length === 1 && u.id === meId())).filter((u) => !present.some((l) => l.kind === 'member' && l.id === u.id)).map((u) => ({ k: 'who' + u.id, e: { kind: 'member', label: u.name, hue: u.hue }, label: u.id === meId() ? 'You' : u.short, sub: 'Assignee', drop: () => setWho((w) => w.filter((x) => x !== u.id)) })),
   ].filter(Boolean)
   return (
     <div className={'td-comp' + (up ? ' up' : '') + (pickOn ? ' picking' : '') + (bare ? ' bare' : '') + ' ' + className}>
@@ -389,7 +381,7 @@ export function Composer({ pre = [], assign = null, autoFocus, placeholder = 'Ad
         <Plus size={16} className="td-comp-i" />
         <input ref={inp} className="td-in" value={text} onChange={change} onKeyDown={key} onKeyUp={sync} onClick={sync} placeholder={placeholder} aria-label="Add a to-do"
           enterKeyHint="done" autoComplete="off" spellCheck={false} role="combobox" aria-expanded={pickOn} aria-autocomplete="list" />
-        <Tip label="Link anything, or assign a teammate"><button type="button" className="b ghost icon sm td-at" onMouseDown={(e) => e.preventDefault()} onClick={() => { const v = text + (text && !/\s$/.test(text) ? ' @' : '@'); setText(v); setCaret(v.length); want.current = v.length; inp.current?.focus() }} aria-label="Link"><AtSign size={15} /></button></Tip>
+        <Tip label="Tag a company, signal, person or colleague"><button type="button" className="b ghost icon sm td-at" onMouseDown={(e) => e.preventDefault()} onClick={() => { const v = text + (text && !/\s$/.test(text) ? ' @' : '@'); setText(v); setCaret(v.length); want.current = v.length; inp.current?.focus() }} aria-label="Link"><AtSign size={15} /></button></Tip>
         <Tip label="Add" kbd="↵"><button type="button" className="b ink icon sm td-go" onMouseDown={(e) => e.preventDefault()} onClick={submit} disabled={!text.trim()} aria-label="Add"><ArrowUp size={14} /></button></Tip>
       </div>
       {chips.length > 0 && (
