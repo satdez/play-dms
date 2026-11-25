@@ -465,3 +465,25 @@ html[data-exp='linear'] .td-panel-hd, html[data-exp='attio'] .td-panel-hd { heig
 .td-pick-tab:hover { color: var(--fg); background: color-mix(in oklab, var(--fg) 6%, transparent); }
 .td-pick-tab.on { color: var(--fg); background: color-mix(in oklab, var(--fg) 9%, transparent); }
 .td-pick-none { padding: 6px 8px 8px; }
+
+/* ───── Row looks (to-do page, picked from Rows ▾) ───── */
+/* Quiet + By origin: links read as words with a small logo; the date sits in one right-aligned column. */
+:is(.td-look-quiet, .td-look-grouped) .td-text:has(.td-chip) { line-height: 1.55; }
+:is(.td-look-quiet, .td-look-grouped) .td-chip { height: auto; padding: 0; margin: 0 1px; gap: 4px; background: none; font-size: inherit; font-weight: inherit; border-radius: 0; }
+:is(.td-look-quiet, .td-look-grouped) .td-chip.k-phone, :is(.td-look-quiet, .td-look-grouped) .td-chip.k-campaign, :is(.td-look-quiet, .td-look-grouped) .td-chip.k-invoice { padding-left: 0; }
+:is(.td-look-quiet, .td-look-grouped) a.td-chip:hover .td-chip-t { text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--fg) 35%, transparent); text-underline-offset: 3px; }
+:is(.td-look-quiet, .td-look-grouped) .td-sep { margin: 0 4px 0 6px; color: var(--muted); }
+:is(.td-look-quiet, .td-look-grouped, .td-look-two) .td-dueb { min-width: 92px; justify-content: flex-end; }
+:is(.td-look-quiet, .td-look-grouped) .td-pin { display: none; }
+:is(.td-look-quiet, .td-look-grouped) .td-row:not(:hover):not(.sel) .td-prog:not(.open) { opacity: 0; }
+.td-orgi { display: inline-flex; color: var(--muted); }
+/* Two lines: the context line is muted and small; its links keep a tiny logo, no pill. */
+.td-l2 { display: flex; align-items: center; flex-wrap: wrap; gap: 0 2px; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+.td-l2 .td-chip { height: auto; padding: 0; margin: 0; gap: 4px; background: none; font-weight: 400; font-size: inherit; color: inherit; }
+.td-l2 a.td-chip:hover { color: var(--fg); }
+.td-l2-s { margin: 0 5px; }
+.td-look-two .td-row { padding-block: 10px; }
+/* By origin: small groups inside each day. */
+.td-og + .td-og { margin-top: 6px; }
+.td-og-h { display: flex; align-items: center; gap: 6px; padding: 8px 4px 2px 36px; font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.td-og-h .num { opacity: .7; }

@@ -1,7 +1,7 @@
 // To-do pieces every variation shares: link chips, the tick, a row, the smart composer, the record block, the top-bar button.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Radar, Cog, Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart, ArrowRight } from 'lucide-react'
+import { Radar, Cog, Inbox, Check, Phone, Megaphone, Receipt, X, ArrowUp, CalendarDays, ListChecks, Plus, Trash2, Pin, Shapes, AtSign, CornerDownRight, GanttChart, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
 import { Tip } from '../../shared/motion'
 import { Avatar, AvatarStack } from '../../shared/ui'
@@ -28,24 +28,42 @@ export function Mark({ e, size = 16 }) {
 }
 
 /** A link inside item text. Companies, people, deals and campaigns open their page; a phone number dials. */
-export function LinkChip({ l }) {
+export function LinkChip({ l, sm }) {
   const href = l.kind === 'phone' ? 'tel:' + l.label.replace(/\s/g, '') : hrefOf(l)
   const text = l.kind === 'phone' && l.person ? l.person.name : l.label
   const tip = l.kind === 'phone' ? [l.person ? l.label : l.tip, l.brand].filter(Boolean).join(' · ') : l.kind === 'person' ? l.brand : l.kind === 'deal' ? 'Deal' : l.kind === 'campaign' ? 'Campaign' : l.kind === 'invoice' ? 'Invoice' : l.kind === 'vendor' ? 'Creator' : l.kind === 'signal' ? 'Signal · ' + l.brand : l.kind === 'member' ? 'Colleague' : null
-  const body = <><Mark e={l} size={15} /><span className="td-chip-t">{text}</span></>
+  const body = <><Mark e={l} size={sm ? 13 : 15} /><span className="td-chip-t">{text}</span></>
   const chip = href ? <a className={'td-chip k-' + l.kind} href={href.startsWith('tel:') ? href : '#' + href} onClick={(e) => e.stopPropagation()}>{body}</a> : <span className={'td-chip k-' + l.kind}>{body}</span>
   return tip ? <Tip label={tip}>{chip}</Tip> : chip
 }
 
-/** Item text with its links as chips, in place. */
-export function TodoText({ t, clamp }) {
-  const { parts, trail } = useMemo(() => segments(t.text, t.links), [t.text, t.links])
+/** Links the text already names don't trail again: "Send Rare Rabbit the deck" drops a trailing "Rare Rabbit deal". */
+const named = (text, parts) => {
+  const lo = text.toLowerCase()
+  const inText = new Set(parts.filter((p) => typeof p !== 'string' && p.brand).map((p) => p.brand.toLowerCase()))
+  return (l) => !(l.brand && (inText.has(l.brand.toLowerCase()) || lo.includes(l.brand.toLowerCase())))
+}
+/** Links for a two-line row's second line: one per thing, the text's own first. */
+export const contextLinks = (t) => {
+  const { parts, trail } = segments(t.text, t.links)
+  const all = [...parts.filter((p) => typeof p !== 'string'), ...trail]
+  return all.filter((l, i) => all.findIndex((x) => (x.brand && l.brand ? x.brand === l.brand : x.kind === l.kind && x.id === l.id)) === i)
+}
+
+/** Item text with its links. look: chips (filled pills) · quiet (logo + text, no repeats) · plain (words only; links live on line two). */
+export function TodoText({ t, clamp, look = 'chips' }) {
+  const seg = useMemo(() => segments(t.text, t.links), [t.text, t.links])
+  const quiet = look === 'quiet'
+  if (look === 'plain') return <span className={'td-text' + (clamp ? ' clamp' : '')}>{seg.parts.map((p, i) => <span key={i} className="td-tx">{typeof p === 'string' ? p : p.kind === 'phone' && p.person ? p.person.name : p.label}</span>)}</span>
+  const parts = seg.parts
+  const trail = quiet ? seg.trail.filter(named(t.text, parts)) : seg.trail
   // A number whose person is already a chip shows as the number.
-  const named = (l) => l.kind === 'phone' && l.person && t.links.some((x) => x.kind === 'person' && x.id === l.person.id) ? { ...l, person: null, tip: l.person.name } : l
+  const byName = (l) => l.kind === 'phone' && l.person && t.links.some((x) => x.kind === 'person' && x.id === l.person.id) ? { ...l, person: null, tip: l.person.name } : l
   return (
     <span className={'td-text' + (clamp ? ' clamp' : '')}>
-      {parts.map((p, i) => (typeof p === 'string' ? <span key={i} className="td-tx" style={{ '--i': i }}>{p}</span> : <LinkChip key={i} l={named(p)} />))}
-      {trail.map((l, i) => <LinkChip key={'t' + i} l={named(l)} />)}
+      {parts.map((p, i) => (typeof p === 'string' ? <span key={i} className="td-tx" style={{ '--i': i }}>{p}</span> : <LinkChip key={i} l={byName(p)} sm={quiet} />))}
+      {quiet && trail.length > 0 && <span className="td-sep" aria-hidden>·</span>}
+      {trail.map((l, i) => <LinkChip key={'t' + i} l={byName(l)} sm={quiet} />)}
     </span>
   )
 }
@@ -177,16 +195,35 @@ export function Ring({ n, of, size = 14 }) {
 const byDueOrder = (a, b) => (a.due ? +a.due : 9e15) - (b.due ? +b.due : 9e15) || (a.order ?? 0) - (b.order ?? 0)
 
 /** Where it came from, only when it isn't simply yours: "Deal step", "Team task", "From Aarav". */
-function OriginTag({ t }) {
+function OriginTag({ t, icon }) {
   const o = originOf(t)
+  if (icon && o === 'system') return <Tip label={t.sys || 'System'}><span className="td-orgi" aria-label={t.sys || 'System'}><Cog size={13} /></span></Tip>
+  if (icon && o === 'assigned') return <Tip label={'From ' + (userOf(t.by)?.short || 'a teammate')}><span className="td-orgi" aria-label="Given to you"><Inbox size={13} /></span></Tip>
   if (o === 'system') return <span className="td-org"><Cog size={11} />{t.sys || 'System'}</span>
   if (o === 'assigned') return <span className="td-org">From {userOf(t.by)?.short || 'a teammate'}</span>
   return null
 }
 
+/** Two-line rows: what it's about, where it came from, how far along. */
+function Line2({ t, kids, kd }) {
+  const ls = contextLinks(t)
+  const o = originText(t)
+  if (!ls.length && !o && !kids.length) return null
+  const bits = [
+    ...ls.map((l, i) => <LinkChip key={'l' + i} l={l} sm />),
+    o && <span key="o">{o}</span>,
+    kids.length > 0 && <span key="k" className="num">{kd}/{kids.length} done</span>,
+  ].filter(Boolean)
+  return <div className="td-l2">{bits.flatMap((b, i) => (i ? [<span key={'s' + i} className="td-l2-s" aria-hidden>·</span>, b] : [b]))}</div>
+}
+
 /** One to-do. Click opens its detail; double-click edits the text in place (`edit`). `grip`: a drag handle (the List page passes one).
     A to-do with subtasks shows "1/3"; clicking it folds the subtasks open under the row. `crumb`: show the parent of a subtask seen on its own. */
-export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs = true, crumb, sel }) {
+/** Origin as words, for a row's second line. */
+const originText = (t) => { const o = originOf(t); return o === 'system' ? t.sys || 'System' : o === 'assigned' ? 'From ' + (userOf(t.by)?.short || 'a teammate') : null }
+
+/** look: chips (the original) · quiet (one calm line) · two (text, then a muted context line) · grouped (quiet, origin shown by the group). */
+export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs = true, crumb, sel, look = 'chips' }) {
   const s = useStore()
   const going = useGoing(t.id)
   const [ed, setEd] = useState(false)
@@ -209,11 +246,12 @@ export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs 
           {ed ? (
             <input className="td-edit" value={v} autoFocus onChange={(e) => setV(e.target.value)} onBlur={save} aria-label="Edit to-do"
               onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setEd(false) } }} />
-          ) : <TodoText t={t} clamp={clamp} />}
+          ) : <TodoText t={t} clamp={clamp} look={look === 'two' ? 'plain' : look === 'chips' ? 'chips' : 'quiet'} />}
+          {look === 'two' && !ed && <Line2 t={t} kids={kids} kd={kd} />}
           {parent && <span className="td-crumb ell"><CornerDownRight size={11} />{parent.text}</span>}
         </div>
         <span className="td-meta">
-          {kids.length > 0 && (
+          {kids.length > 0 && look !== 'two' && (
             <Tip label={open ? 'Hide subtasks' : 'Show subtasks'}>
               <button className={'td-prog' + (open ? ' open' : '') + (kd === kids.length ? ' all' : '')} onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }} aria-expanded={open} aria-label={kd + ' of ' + kids.length + ' subtasks done'}>
                 <Ring n={kd} of={kids.length} /><span className="num">{kd}/{kids.length}</span>
@@ -221,13 +259,14 @@ export function TodoRow({ t, edit, grip, by = true, clamp, actions = true, subs 
             </Tip>
           )}
           {t.pinned && !t.done && <Pin size={12} className="mute td-pin" />}
-          <OriginTag t={t} />
+          {look === 'chips' && <OriginTag t={t} />}
+          {look === 'quiet' && <OriginTag t={t} icon />}
           <DueButton t={t} />
           {by && crew.length > 0 && <Tip label={crew.map((u) => (u.id === meId() ? 'You' : u.short)).join(', ')}><span className="td-by"><AvatarStack users={crew.slice(0, 3)} size={18} ring="var(--surface)" />{crew.length > 3 && <span className="td-by-n num">+{crew.length - 3}</span>}</span></Tip>}
           {actions && deletable(t) && <Tip label="Delete"><button className="b ghost icon sm td-del" onClick={(e) => { e.stopPropagation(); s.todo.remove(t.id) }} aria-label="Delete"><Trash2 size={13} /></button></Tip>}
         </span>
       </div>
-      {open && kids.length > 0 && <div className="td-subs">{[...kids].sort(byDueOrder).map((k) => <TodoRow key={k.id} t={k} by={by} actions={actions} subs={false} />)}</div>}
+      {open && kids.length > 0 && <div className="td-subs">{[...kids].sort(byDueOrder).map((k) => <TodoRow key={k.id} t={k} by={by} actions={actions} subs={false} look={look} />)}</div>}
     </>
   )
 }

@@ -18,6 +18,14 @@ export function TodoPage() {
 const byOrder = (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (a.order ?? 0) - (b.order ?? 0)
 const byDue = (a, b) => (a.due ? +a.due : 9e15) - (b.due ? +b.due : 9e15) || (a.order ?? 0) - (b.order ?? 0)
 const SECTIONS = [['today', 'Today'], ['upcoming', 'Upcoming'], ['someday', 'Someday']]
+/** Row looks, side by side for now: pick one from the toolbar. */
+const LOOKS = [
+  { value: 'quiet', label: 'Quiet', desc: 'One calm line: logos without pills, no repeated links, origin as an icon' },
+  { value: 'two', label: 'Two lines', desc: 'The text, then a muted line: what it links to, where it came from' },
+  { value: 'grouped', label: 'By origin', desc: 'Yours, given to you and from the system as small groups; no tags' },
+  { value: 'chips', label: 'Chips', desc: 'The original: filled chips and origin tags' },
+]
+const ORIGIN_GROUPS = [['yours', 'Yours'], ['assigned', 'Given to you'], ['system', 'From the system'], ['team', 'Team']]
 const GROUP_BY = [{ value: 'date', label: 'Date' }, { value: 'company', label: 'Company' }, { value: 'who', label: 'Assignee' }]
 
 function useLocal(key, init) {
@@ -92,6 +100,7 @@ function ListPage() {
   const [showDone, setShowDone] = useState(false)
   const [view, setView] = useLocal('wldd-todo-view', 'list')
   const [by, setBy] = useLocal('wldd-todo-group', 'date')
+  const [look, setLook] = useLocal('wldd-todo-look', 'quiet')
   const [sel, setSel] = useState(null)
   const { grip, line } = useReorder((id, ids, to) => s.todo.move(id, ids, to))
   const all = s.todo.items.filter(top)
@@ -125,7 +134,7 @@ function ListPage() {
   }, [view, sel, s.todo])
 
   return (
-    <div className={'d-page td-page' + (view === 'timeline' ? ' wide' : '')}>
+    <div className={'d-page td-page td-look-' + look + (view === 'timeline' ? ' wide' : '')}>
       <div className="td-bar">
         <span className="td-vseg"><Seg id="td-view" value={view} onChange={setView} options={[{ value: 'list', label: <><Rows3 size={13} />List</> }, { value: 'timeline', label: <><GanttChart size={13} />Timeline</> }]} /></span>
         <span className="td-bar-sep" />
@@ -144,6 +153,9 @@ function ListPage() {
         )}
         <button className={'b sm td-f' + (late ? ' on' : '')} aria-pressed={late} onClick={() => setLate((x) => !x)}><AlarmClock size={13} />Overdue{lateN > 0 && <span className="num td-f-n">{lateN}</span>}</button>
         <span className="grow" />
+        <Popover width={280} trigger={({ toggle }) => <Tip label="Row style"><button className="b sm ghost" onClick={toggle}><span className="mute">Rows</span>{LOOKS.find((x) => x.value === look)?.label}<ChevronDown size={13} className="mute" /></button></Tip>}>
+          {(close) => LOOKS.map((x) => <button key={x.value} className="td-sopt" onClick={() => { setLook(x.value); close() }}><span className="grow"><b>{x.label}</b><span className="mute xs td-sopt-d">{x.desc}</span></span>{look === x.value && <Check size={14} />}</button>)}
+        </Popover>
         <Popover width={200} trigger={({ toggle }) => <Tip label="Group by"><button className="b sm ghost" onClick={toggle}><span className="mute">Group</span>{GROUP_BY.find((x) => x.value === by)?.label}<ChevronDown size={13} className="mute" /></button></Tip>}>
           {(close) => GROUP_BY.map((x) => <button key={x.value} onClick={() => { setBy(x.value); close() }}><span className="grow">{x.label}</span>{by === x.value && <Check size={14} />}</button>)}
         </Popover>
@@ -157,10 +169,21 @@ function ListPage() {
             return (
               <section key={g.key} className="td-sec">
                 <div className="group-h td-sec-h">{g.icon}{g.label}<span className="mute num">{g.list.length}</span></div>
-                <div className="td-rows">
-                  {g.list.map((t) => <TodoRow key={t.id} t={t} edit sel={sel === t.id} by={by !== 'who'} grip={g.reorder ? grip(t.id, g.key, ids) : null} />)}
-                  {line?.sec === g.key && <i className="td-drop" style={{ top: line.top }} />}
-                </div>
+                {look === 'grouped' ? ORIGIN_GROUPS.map(([o, ol]) => {
+                  const sub = g.list.filter((t) => originOf(t) === o)
+                  if (!sub.length) return null
+                  return (
+                    <div key={o} className="td-og">
+                      <div className="td-og-h">{ol}<span className="num">{sub.length}</span></div>
+                      <div className="td-rows">{sub.map((t) => <TodoRow key={t.id} t={t} edit sel={sel === t.id} by={by !== 'who'} look={look} />)}</div>
+                    </div>
+                  )
+                }) : (
+                  <div className="td-rows">
+                    {g.list.map((t) => <TodoRow key={t.id} t={t} edit sel={sel === t.id} by={by !== 'who'} look={look} grip={g.reorder ? grip(t.id, g.key, ids) : null} />)}
+                    {line?.sec === g.key && <i className="td-drop" style={{ top: line.top }} />}
+                  </div>
+                )}
                 {!g.list.length && <div className="td-none mute"><Check size={14} />Clear</div>}
               </section>
             )
@@ -168,7 +191,7 @@ function ListPage() {
           {done.length > 0 && !late && (
             <section className="td-sec">
               <button className="group-h td-sec-h td-fold" onClick={() => setShowDone((x) => !x)} aria-expanded={showDone}>Done<span className="mute num">{done.length}</span><ChevronDown size={14} className={'mute td-chev' + (showDone ? ' on' : '')} /></button>
-              {showDone && <div className="td-rows">{done.map((t) => <TodoRow key={t.id} t={t} />)}</div>}
+              {showDone && <div className="td-rows">{done.map((t) => <TodoRow key={t.id} t={t} look={look === 'grouped' ? 'quiet' : look} />)}</div>}
             </section>
           )}
         </>
