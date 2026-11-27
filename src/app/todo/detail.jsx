@@ -19,7 +19,7 @@ function DayField({ value, onChange, empty, min, late }) {
   const keep = (d) => { if (value && d) { const x = new Date(d); x.setHours(value.getHours(), value.getMinutes()); return x } return d }
   return (
     <Popover align="left" width={230} trigger={({ toggle, open }) => (
-      <button className={'td-dt-v' + (value ? '' : ' empty') + (open ? ' open' : '') + (late ? ' late' : '')} onClick={toggle}>{value ? dueLabel(value) : empty}</button>
+      <button className={'td-dt-v' + (value ? '' : ' unset') + (open ? ' open' : '') + (late ? ' late' : '')} onClick={toggle}>{value ? dueLabel(value) : empty}</button>
     )}>
       {(close) => (
         <div className="td-duem">

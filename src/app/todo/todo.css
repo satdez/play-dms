@@ -330,7 +330,7 @@ html[data-td-drag], html[data-td-drag] * { cursor: col-resize !important; user-s
 .td-dt-props dd { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 32px; margin: 0; min-width: 0; }
 .td-dt-v { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; }
 .td-dt-v:hover, .td-dt-v.open { background: var(--hover); }
-.td-dt-v.empty { color: var(--muted); font-weight: 400; }
+.td-dt-v.unset { color: var(--muted); font-weight: 400; }
 .td-dt-v.late { color: var(--pink); }
 .td-dt-add { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px; border-radius: 7px; font-size: 12.5px; color: var(--muted); }
 .td-dt-add:hover { color: var(--fg); background: var(--hover); }

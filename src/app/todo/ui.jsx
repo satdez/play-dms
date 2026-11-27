@@ -85,7 +85,7 @@ export function DueButton({ t }) {
   if (t.done) return <DueChip t={t} />
   return (
     <Popover align="right" width={220} trigger={({ toggle, open }) => (
-      <button className={'td-dueb' + (t.due ? '' : ' empty') + (open ? ' open' : '')} onClick={(e) => { e.stopPropagation(); toggle() }} aria-label={t.due ? 'Change date, ' + dueLabel(t.due) : 'Add a date'}>
+      <button className={'td-dueb' + (t.due ? '' : ' unset') + (open ? ' open' : '')} onClick={(e) => { e.stopPropagation(); toggle() }} aria-label={t.due ? 'Change date, ' + dueLabel(t.due) : 'Add a date'}>
         {t.due ? <DueChip t={t} /> : <span className="td-due td-due-add"><CalendarDays size={12} />Date</span>}
       </button>
     )}>
