@@ -5,6 +5,7 @@ import { Popover, Tabs } from '../ui'
 import { Src } from './ui'
 import { useProspect, FilterTop, FilterFrame, SigRow, CoRow, PersonRow, InboundRow, MomentRow, BeyondRow, BulkBar } from './kit'
 import { isKnown, setSearchScope } from './prospect'
+import { Tour } from './Tour'
 
 const TABS = { signals: 'Signals', companies: 'Companies', people: 'People', inbound: 'Inbound', moments: 'Moments' }
 const ORDER0 = Object.keys(TABS)
@@ -49,6 +50,7 @@ export function Prospect() {
   const locked = res.people.filter((p) => !isKnown(p, st))
   const tog = (p) => setPick((l) => (l.includes(p.id) ? l.filter((x) => x !== p.id) : [...l, p.id]))
   return (
+    <>
     <FilterFrame>
     <div className="d-page wide bdv-page">
       <div className="d-head"><h1 className="d-h1">Prospecting</h1></div>
@@ -93,6 +95,8 @@ export function Prospect() {
       )}
     </div>
     </FilterFrame>
+    <Tour st={st} res={res} setF={setF} />
+    </>
   )
 }
 export const Empty = () => <div className="empty"><Check size={18} /><b>No matches</b></div>

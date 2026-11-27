@@ -1,0 +1,27 @@
+/* Prospecting walkthrough: floating controller, caption, ring and the fake cursor. Tokens only. */
+.tour-fab { position: fixed; z-index: 70; left: 50%; bottom: 18px; transform: translateX(-50%); }
+.tour { position: fixed; z-index: 70; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(720px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.tour-cap { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--pop, var(--surface)); color: var(--fg); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 16px 40px -12px rgba(0,0,0,.25)); font-size: 14px; line-height: 1.45; text-align: center; text-wrap: balance; }
+.tour-row { display: flex; align-items: center; gap: 4px; padding: 5px; border-radius: 14px; background: var(--pop, var(--surface)); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 16px 40px -12px rgba(0,0,0,.25)); }
+.tour-cases { display: flex; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tour-case { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border: 0; border-radius: 9px; background: transparent; color: var(--fg-2); font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; transition: background .15s, color .15s, transform .15s; }
+.tour-case .num { color: var(--muted); font-size: 12px; }
+.tour-case:hover { background: color-mix(in oklab, var(--fg) 6%, transparent); color: var(--fg); }
+.tour-case:active { transform: scale(.97); }
+.tour-case.on { background: var(--ink); color: var(--ink-fg); }
+.tour-case.on .num { color: inherit; opacity: .7; }
+.tour-sep { width: 1px; height: 18px; margin: 0 4px; background: var(--line); flex: none; }
+.tour-vo { display: flex; flex-direction: column; padding: 4px; }
+.tour-vo-s { padding: 2px 6px 8px; }
+.tour-vo > button { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--fg); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.tour-vo > button:hover { background: color-mix(in oklab, var(--fg) 6%, transparent); }
+.tour-vo > button.on { font-weight: 600; }
+
+/* Fake cursor: lives above everything, never takes a click. Moves by transform so it glides. */
+.tour-cursor { position: fixed; z-index: 90; left: 0; top: 0; pointer-events: none; opacity: 0; transform: translate(-100px, -100px); transition: transform 600ms cubic-bezier(.23, 1, .32, 1), opacity .2s; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+.tour-cursor path { fill: var(--fg); stroke: var(--surface); stroke-width: 1.6; stroke-linejoin: round; }
+.tour-cursor.press path { fill: var(--muted); }
+.tour-cursor.press { filter: drop-shadow(0 0 0 transparent) drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+/* The element being talked about. */
+.tour-ring { position: fixed; z-index: 89; pointer-events: none; opacity: 0; border-radius: 10px; box-shadow: 0 0 0 2px var(--fg), 0 0 0 5px color-mix(in oklab, var(--fg) 14%, transparent); transition: opacity .18s, left .25s cubic-bezier(.23, 1, .32, 1), top .25s cubic-bezier(.23, 1, .32, 1), width .25s cubic-bezier(.23, 1, .32, 1), height .25s cubic-bezier(.23, 1, .32, 1); }
+@media (max-width: 760px) { .tour-cursor, .tour-ring { display: none; } }
