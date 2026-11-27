@@ -19,6 +19,8 @@ html[data-theme='dark'] .st-card { box-shadow: 0 0 0 1px var(--line-2); }
 .st-card.flush > .st-row, .st-card.flush .st-pod > .st-row { padding-left: 16px; padding-right: 16px; }
 .st-row.stack { flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 0; }
 .st-row.click:hover { background: var(--hover); }
+.st-fold { width: 100%; background: none; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; justify-content: space-between; }
+.st-fold:hover .st-l { color: var(--fg); }
 .st-l { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; color: var(--fg); }
 .st-c { flex: none; display: flex; align-items: center; gap: 8px; }
 .st-i { display: inline-grid; place-items: center; color: var(--faint); cursor: help; }

@@ -9,7 +9,7 @@ import { Ticker } from '../../shared/motion'
 import { ClientLogo, Popover, Track, go } from '../ui'
 import { Sheet } from './Finance'
 
-export default function Knowledge({ base, id }) {
+export default function Knowledge({ base, id, lead }) {
   const s = useStore()
   const [q, setQ] = useState('')
   const [ind, setInd] = useState(null)
@@ -24,6 +24,7 @@ export default function Knowledge({ base, id }) {
     <div className="d-page">
       <div className="d-head">
         <h1 className="d-h1">Knowledge base <span className="mute num" style={{ fontWeight: 500 }}>{kbTotal}</span></h1>
+        {lead}
         <div className="inp" style={{ width: 240 }}><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search clients" /></div>
         <Popover width={220} trigger={({ toggle: t }) => <button className="b" onClick={t}><ListFilter size={14} />{ind || 'Industry'}</button>}>
           {(close) => [null, ...industries].map((i) => <button key={i || 'all'} onClick={() => { setInd(i); close() }}>{i || 'All industries'}{ind === i && <Check size={14} style={{ marginLeft: 'auto' }} />}</button>)}

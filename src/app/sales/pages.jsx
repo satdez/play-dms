@@ -749,7 +749,7 @@ export function StageTag({ id }) {
   return <span className={'sl-stag s-' + id}><i />{sg.label}</span>
 }
 /* ═════════ Case Library ═════════ */
-export function Cases({ id }) {
+export function Cases({ id, lead }) {
   const s = useStore(); const st = s.sales
   const [sel, setSel] = useState([])
   const [creds, setCreds] = useState(false)
@@ -760,7 +760,8 @@ export function Cases({ id }) {
   return (
     <div className="d-page wide">
       <div className="d-head">
-        <h1 className="d-h1">Case Library</h1>
+        <h1 className="d-h1">Knowledge base</h1>
+        {lead}
         <div className="inp" style={{ width: 220 }}><Search size={14} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Client or category" /></div>
         <button className={'b ink' + (sel.length ? '' : ' dis')} disabled={!sel.length} onClick={() => setCreds(true)}><Presentation size={15} />Creds deck{sel.length > 0 && <span className="num">{sel.length}</span>}</button>
       </div>

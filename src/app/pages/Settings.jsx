@@ -7,7 +7,7 @@ import {
   UserRound, SlidersHorizontal, Bell, Keyboard, ShieldCheck, Users, Boxes, KeyRound, CheckCheck, Receipt, Plug, History,
   Search, Plus, MoreHorizontal, Laptop, Smartphone, Check, Lock, LogOut, ArrowRight, Crown, PackageCheck, Archive, UserCog,
   Upload, Info, ChevronRight, Monitor, Sun, Moon, ChevronDown, ChevronsUpDown,
-} from 'lucide-react'
+  RotateCcw } from 'lucide-react'
 import { Tip, ALT, MOD, MOD_SHIFT, EASE, ConfirmButton } from '../../shared/motion'
 import { BrandLogo } from '../../shared/brands'
 import { Seg, Tabs, Select, Switch, Popover, RoleIcon } from '../ui'
@@ -15,10 +15,9 @@ import { team, me, PODS, BRAND, campaigns, fmt, TODAY } from '../data'
 import { PopTuner, THEMES, themeActive } from '../popTune'
 import { PERSONAS } from '../personas'
 import { HOME_LAYOUTS } from './Hub'
-import { LAYOUTS as BD_LAYOUTS } from '../sales/prospect'
 import { TODO_HOME } from '../todo/state'
 import { SHORTCUTS, Keys, openShortcuts } from '../shortcuts'
-import { NoirTuner, DeskPreset } from '../noir'
+import { NoirTuner } from '../noir'
 
 /* ───────── sections ───────── */
 export const SETTINGS_SECTIONS = [
@@ -290,6 +289,7 @@ function Preferences({ look }) {
   const { theme, mode, setMode, exp, setExp, style, setStyle, tune, setTune, prefs, setPrefs, exps } = look
   const set = (k) => (v) => setPrefs({ ...prefs, [k]: v })
   const [tab, setTab] = useState('themes')
+  const [fold, setFold] = useState(false)
   const pickTheme = (t) => {
     if (prefs.accent) setPrefs({ ...prefs, accent: null }) // a theme brings its own accent
     if (t.style === 'pop') setTune({ ...tune, tone: t.tone }); else setStyle(t.style)
@@ -300,12 +300,8 @@ function Preferences({ look }) {
         <Row label="View as" tip="See the DMS the way each role sees it: their workspaces, pages and settings"><Select value={prefs.viewAs} onChange={set('viewAs')} options={PERSONAS} width={200} /></Row>
       </Group>
 
-      <Group title="Desk">
-        <Row label="Preset" tip="Noir desk: Noir style, Sections sidebar, Brief home, docked peek and the assistant, all at once. Back to default: Velin, Khadi, Stacked sidebar, Stack home."><DeskPreset look={look} /></Row>
+      <Group title="Appearance" aside={<button className="b sm ghost" onClick={look.resetLook}><RotateCcw size={13} />Reset to default</button>}>
         {style === 'noir' && <Row label="Noir" tip="Highlight colour, canvas and table grid lines" stack><NoirTuner prefs={prefs} setPrefs={setPrefs} /></Row>}
-      </Group>
-
-      <Group title="Appearance">
         <Row label="Font" tip="Theme default follows the theme's own type"><FontSelect value={prefs.font} onChange={set('font')} /></Row>
         <Row label="Mode" stack>
           <div className="st-modes">
@@ -314,23 +310,22 @@ function Preferences({ look }) {
             ))}
           </div>
         </Row>
+        <button className="st-row st-fold" onClick={() => setFold((v) => !v)} aria-expanded={fold}>
+          <div className="st-l">Layout &amp; behaviour<span className="mute xs" style={{ marginLeft: 8 }}>Experience, Home, Sidebar, Density, Motion</span></div>
+          <div className="st-c"><ChevronDown size={14} className="mute" style={{ transform: fold ? 'rotate(180deg)' : 'none' }} /></div>
+        </button>
+        {fold && <>
         <Row label="Experience" tip={'Shell and navigation model · ' + ALT + 'E'}><Seg id="st-exp" value={exp} onChange={setExp} options={exps.map((x) => ({ value: x.id, label: x.label }))} /></Row>
         <Row label="Home" tip={'Stack: dashboard over chat · Split: chat with a KPI column · Focus: chat first · Dock: dashboard with a chat panel · ' + ALT + 'H'}><Seg id="st-home" value={prefs.home} onChange={set('home')} options={HOME_LAYOUTS} /></Row>
-        <Row label="BD layout" tip="How the BD portal is organised. Every layout shares the same signals, companies, credits, views and deals, so switching never loses work." stack>
-          <div className="st-modes bdv-lays">
-            {BD_LAYOUTS.map((x) => (
-              <button key={x.value} className={'st-mode bdv-lay' + (prefs.bd === x.value ? ' on' : '')} onClick={() => set('bd')(x.value)} aria-pressed={prefs.bd === x.value}><b>{x.label}</b><span>{x.desc}</span></button>
-            ))}
-          </div>
-        </Row>
         <Row label="To-dos on Home" tip="Strip: one quiet line above the KPIs that opens into today's list · Card: a KPI-sized card with today's and overdue to-dos · Off"><Seg id="st-tdhome" value={prefs.todoHome || 'strip'} onChange={set('todoHome')} options={TODO_HOME} /></Row>
-        <Row label="BD filters" tip="Where the global filter lives in Prospecting, Companies first and Stream. Bar: chips above the results · Side panel: every filter grouped down the left, with a count on each option. Phones always use a sheet."><Seg id="st-bdf" value={prefs.bdFilters || 'bar'} onChange={set('bdFilters')} options={[{ value: 'bar', label: 'Bar' }, { value: 'panel', label: 'Side panel' }]} /></Row>
+        <Row label="BD filters" tip="Where the global filter lives in Prospecting. Bar: chips above the results · Side panel: every filter grouped down the left, with a count on each option. Phones always use a sheet."><Seg id="st-bdf" value={prefs.bdFilters || 'bar'} onChange={set('bdFilters')} options={[{ value: 'bar', label: 'Bar' }, { value: 'panel', label: 'Side panel' }]} /></Row>
         {prefs.bdFilters === 'panel' && <Row label="Filter panel side" tip="Which side of the page the filter panel docks to. Right-click the panel to switch too."><Seg id="st-bdfs" value={prefs.bdFilterSide || 'left'} onChange={set('bdFilterSide')} options={[{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }]} /></Row>}
         {exp !== 'vercel' && <Row label="Sidebar" tip="Panel · Rail: workspaces on a rail · Icons: collapsed · Stacked: every workspace in one list · Sections: Work, Company and your pods as flat lists"><Seg id="st-sidebar" value={prefs.sidebar} onChange={set('sidebar')} options={SIDEBARS} /></Row>}
         <Row label="Record peek" tip="Overlay: a sheet over the page (Attio) or the full page · Docked: the record opens in a panel beside the list, which shrinks to fit"><Seg id="st-peek" value={prefs.peek} onChange={set('peek')} options={[{ value: 'overlay', label: 'Overlay' }, { value: 'docked', label: 'Docked' }]} /></Row>
         <Row label="Assistant" tip={'Docked: Ask WLDD in the top bar opens a chat panel on any page · ' + MOD + 'J'}><Seg id="st-assistant" value={prefs.assistant} onChange={set('assistant')} options={[{ value: 'off', label: 'Off' }, { value: 'docked', label: 'Docked' }]} /></Row>
         <Row label="Density"><Seg id="st-density" value={prefs.density} onChange={set('density')} options={[{ value: 'comfortable', label: 'Comfortable' }, { value: 'compact', label: 'Compact' }]} /></Row>
         <Row label="Motion" tip="Reduced turns off slides, morphs and springs"><Seg id="st-motion" value={prefs.motion} onChange={set('motion')} options={[{ value: 'full', label: 'Full' }, { value: 'reduced', label: 'Reduced' }]} /></Row>
+        </>}
       </Group>
 
       <section className="st-g">

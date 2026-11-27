@@ -13,7 +13,7 @@ import { ROLES, PODS, clients, team, me, fmt } from './data'
 import { PERSONAS, personaOf, setView } from './personas'
 import { kbTotal } from '../data'
 import { StoreProvider, useStore } from './store'
-import { go, Popover, RoleIcon, ROLE_ICON, ExpCtx, DockCtx, useDock } from './ui'
+import { go, Seg, Popover, RoleIcon, ROLE_ICON, ExpCtx, DockCtx, useDock } from './ui'
 import Home from './pages/Home'
 import Hub, { HOME_LAYOUTS } from './pages/Hub'
 import { Wldd } from '../loaders/Wldd'
@@ -52,7 +52,7 @@ import { TodoPage } from './todo/Page'
 import { TodoButton, TodoBellRows, dueMine } from './todo/ui'
 import { TODO_HOME, openTodoAdd, openTodos } from './todo/state'
 import { ListChecks, ListPlus, Keyboard } from 'lucide-react'
-import { Palette, Settings as Gear, Menu as MenuIcon } from 'lucide-react'
+import { Settings as Gear, Menu as MenuIcon } from 'lucide-react'
 import { PopTuner, PRESETS, TUNE_AXES, normTune, presetOf, applyTune, clearTune, toneSwatch, Orb } from './popTune'
 import { NoirTuner, NOIR_AXES, NOIR_DEFAULTS, DESK_ON, DESK_OFF, deskIsOn, DeskPreset, DockPanel, useAssistant, applyNoir, clearNoir, noirSwatch, toastDesk } from './noir'
 
@@ -117,7 +117,7 @@ const readableOn = (hex) => {
   const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#141414' : '#ffffff'
 }
-const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'prospect', bdFilters: 'panel', bdFilterSide: 'left', todoHome: 'strip', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
+const PREF_DEFAULTS = { font: 'style', accent: null, density: 'comfortable', motion: 'full', sidebar: 'stack', home: 'stack', peek: 'overlay', assistant: 'off', bd: 'prospect', bdFilters: 'bar', bdFilterSide: 'left', todoHome: 'strip', ...NOIR_DEFAULTS, viewAs: 'admin', collapsed: false, startRole: 'last', confirmApprove: false, numbers: 'indian', date: 'dmy', week: 'mon', tz: 'Asia/Kolkata' }
 
 /** The persona being previewed (Settings › View as). Shell sets it every render, before any child reads it. */
 let VIEW = PERSONAS[0]
@@ -150,6 +150,11 @@ function BdTabBar({ path, openNav }) {
   )
 }
 
+/** Case Library and the knowledge base are one place in BD: a switch in the page header. */
+function KbSwitch({ at }) {
+  return <Seg value={at} onChange={(v) => go('/bd/' + v)} options={[{ value: 'kb', label: 'Clients' }, { value: 'cases', label: 'Cases' }]} />
+}
+
 function useNav(role, s) {
   return navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to))
 }
@@ -180,13 +185,12 @@ function navFor(role, s) {
       { to: '/bd/accounts', label: 'Accounts', icon: Building2 },
       { to: '/bd/contacts', label: 'Contacts', icon: BookUser },
       { to: '/bd/pipeline', label: 'Pipeline', icon: Kanban },
-      { to: '/bd/cases', label: 'Case Library', icon: Library },
       { to: '/bd/kb', label: 'Knowledge base', icon: BookOpen },
     ],
   }[role]
 }
 
-/** The other BD layouts share Discover, Accounts, Pipeline, Case Library and the knowledge base. */
+/** The other BD layouts share Accounts, Pipeline, Case Library and the knowledge base. */
 function bdNav(l, s) {
   const first = {
     prospect: { to: '/bd/prospect', label: 'Prospecting', icon: Filter, n: s.sales.signals.filter((x) => x.status === 'new').length },
@@ -195,10 +199,8 @@ function bdNav(l, s) {
   }[l]
   return [
     first,
-    { to: '/bd/discover', label: 'Discover', icon: Compass },
     { to: '/bd/accounts', label: 'Accounts', icon: Building2 },
     { to: '/bd/pipeline', label: 'Pipeline', icon: Kanban },
-    { to: '/bd/cases', label: 'Case Library', icon: Library },
     { to: '/bd/kb', label: 'Knowledge base', icon: BookOpen },
   ]
 }
@@ -220,10 +222,10 @@ function Shell({ path }) {
   }, [])
   const theme = mode === 'system' ? (sysDark ? 'dark' : 'light') : mode
   const setTheme = (t) => setMode(typeof t === 'function' ? t(theme) : t)
-  const [prefs, setPrefsRaw] = useState(() => { try { const p = { ...PREF_DEFAULTS, ...JSON.parse(read('wldd-prefs', '{}')) }; if (!read('wldd-bdf-open', '')) { p.bdFilters = 'panel'; localStorage.setItem('wldd-bdf-open', '1') } return p } catch { return PREF_DEFAULTS } })
+  const [prefs, setPrefsRaw] = useState(() => { try { const p = { ...PREF_DEFAULTS, ...JSON.parse(read('wldd-prefs', '{}')) }; return p } catch { return PREF_DEFAULTS } })
   const setPrefs = (p) => { setPrefsRaw(p); try { localStorage.setItem('wldd-prefs', JSON.stringify(p)) } catch {} }
   VIEW = personaOf(prefs.viewAs); setView(VIEW)
-  BDL = BD_HOME[prefs.bd] ? prefs.bd : 'prospect'; setBdLayout(BDL); setBdFilters(prefs.bdFilters); setBdFilterSide(prefs.bdFilterSide)
+  BDL = 'prospect'; setBdLayout(BDL); setBdFilters(prefs.bdFilters); setBdFilterSide(prefs.bdFilterSide)
   // The in-page "side panel / bar" switch writes the same preference as Settings.
   useEffect(() => { const on = (e) => setPrefsRaw((p) => { const n = { ...p, ...(e.detail.mode && { bdFilters: e.detail.mode }), ...(e.detail.side && { bdFilterSide: e.detail.side }) }; try { localStorage.setItem('wldd-prefs', JSON.stringify(n)) } catch {} return n }); window.addEventListener('bd:filters', on); return () => window.removeEventListener('bd:filters', on) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [role, setRole] = useState(() => {
@@ -299,7 +301,16 @@ function Shell({ path }) {
     } catch {}
     toastDesk(on)
   }
-  const look = { persona: VIEW, exp, setExp, style, setStyle, theme, setTheme, mode, setMode, tune, setTune, prefs, setPrefs, styles: STYLES, exps: EXPERIENCES, setDesk }
+  /** One button back to the shipped look: Dark · Khadi · Velin · Stack home, every desk piece and tuner at its default.
+      Region (numbers, dates, time zone) and View as are not part of the look, so they stay. */
+  const resetLook = () => {
+    const keep = Object.fromEntries(['numbers', 'date', 'week', 'tz', 'viewAs', 'startRole', 'confirmApprove'].map((k) => [k, prefs[k]]))
+    setPrefs({ ...PREF_DEFAULTS, ...keep })
+    setMode('dark'); setStyle('paper'); setExp('velin'); setTuneRaw(normTune({})); setDock(null)
+    try { const k = 'wldd-display-linear', snap = 'wldd-desk-layout'; if (localStorage.getItem(snap) !== null) { const d = JSON.parse(localStorage.getItem(k) || '{}'); d.layout = localStorage.getItem(snap) || undefined; localStorage.removeItem(snap); localStorage.setItem(k, JSON.stringify(d)) } } catch {}
+    toast('Back to default')
+  }
+  const look = { resetLook, persona: VIEW, exp, setExp, style, setStyle, theme, setTheme, mode, setMode, tune, setTune, prefs, setPrefs, styles: STYLES, exps: EXPERIENCES, setDesk }
 
   const parts = path.split('/').filter(Boolean) // e.g. ['pod','campaigns','c1','plan']
   const mod = parts[0] || 'home'
@@ -390,7 +401,7 @@ function Shell({ path }) {
     if (parts[1] === 'pipeline' && parts[2]) page = <DealPage id={parts[2]} tab={parts[3]} />
     else if (BDL !== 'sources' && parts[1] === 'discover') page = <CompanySearch id={parts[2]} />
     else if (BDL !== 'sources' && (!parts[1] || !BD_PAGES[BDL].includes(parts[1]))) page = { prospect: <Prospect />, accounts: <CompaniesFirst />, stream: <Stream /> }[BDL]
-    else page = { prospect: <Prospect />, companies: <CompaniesFirst id={parts[2]} />, stream: <Stream />, feed: <Feed />, discover: <Discover id={parts[2]} />, inbound: <SalesInbound />, accounts: <Accounts id={parts[2]} />, contacts: <Contacts />, pipeline: <Pipeline />, cases: <Cases id={parts[2]} />, dashboard: <Pipeline />, outreach: <Pipeline />, proposals: <Pipeline />, kb: <Knowledge base="/bd/kb" id={parts[2]} /> }[parts[1]] || <Feed />
+    else page = { prospect: <Prospect />, companies: <CompaniesFirst id={parts[2]} />, stream: <Stream />, feed: <Feed />, discover: <Discover id={parts[2]} />, inbound: <SalesInbound />, accounts: <Accounts id={parts[2]} />, contacts: <Contacts />, pipeline: <Pipeline />, cases: <Cases id={parts[2]} lead={<KbSwitch at="cases" />} />, dashboard: <Pipeline />, outreach: <Pipeline />, proposals: <Pipeline />, kb: <Knowledge base="/bd/kb" id={parts[2]} lead={<KbSwitch at="kb" />} /> }[parts[1]] || <Feed />
   }
 
   const cmdk = <><AppCommand open={cmd} setOpen={setCmd} role={role} switchRole={switchRole} look={look} toggleTheme={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))} />{VIEW.roles.includes('bd') && <><AskDialog /><AddLeadSheet /></>}<TodoHost path={path} /><ShortcutsPanel /></>
@@ -433,77 +444,6 @@ function Shell({ path }) {
   )
 }
 
-/* ───────── Appearance: experience · style · theme ───────── */
-function Appearance({ look, close }) {
-  const { exp, setExp, style, setStyle, theme, setTheme, tune, setTune } = look
-  return (
-    <>
-      <div className="pop-h">Experience</div>
-      {EXPERIENCES.map((x, i) => (
-        <button key={x.id} onClick={() => { setExp(x.id); close() }}>
-          <ExpGlyph id={x.id} /> {x.label}
-          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{exp === x.id && <Check size={14} />}{i === 0 && <kbd className="k">{ALT}E</kbd>}</span>
-        </button>
-      ))}
-      <div className="pop-sep" />
-      <div className="pop-h">Home</div>
-      {HOME_LAYOUTS.map((x, i) => (
-        <button key={x.value} onClick={() => { look.setPrefs({ ...look.prefs, home: x.value }); go('/hub'); close() }}>
-          <HomeGlyph id={x.value} /> {x.label}
-          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{look.prefs.home === x.value && <Check size={14} />}{i === 0 && <kbd className="k">{ALT}H</kbd>}</span>
-        </button>
-      ))}
-      {VIEW.roles.includes('bd') && (
-        <>
-          <div className="pop-sep" />
-          <div className="pop-h">BD layout</div>
-          {BD_LAYOUTS.map((x) => (
-            <button key={x.value} onClick={() => { look.setPrefs({ ...look.prefs, bd: x.value }); go(BD_HOME[x.value]); close() }}>
-              <BdGlyph id={x.value} /> {x.label}
-              <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{look.prefs.bd === x.value && <Check size={14} />}</span>
-            </button>
-          ))}
-        </>
-      )}
-      <div className="pop-sep" />
-      <div className="pop-h">Style</div>
-      {STYLES.map((x, i) => (
-        <button key={x.id} onClick={() => setStyle(x.id)}>
-          <Swatch id={x.id} tune={tune} prefs={look.prefs} /> {x.label}
-          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>{style === x.id && <Check size={14} />}{i === 0 && <kbd className="k">{ALT}S</kbd>}{x.id === 'pop' && <kbd className="k">{ALT}P</kbd>}</span>
-        </button>
-      ))}
-      {style === 'pop' ? <PopTuner tune={tune} setTune={setTune} /> : style === 'noir' ? <NoirTuner prefs={look.prefs} setPrefs={look.setPrefs} /> : <PopTuner tune={tune} setTune={setTune} axes={['font', 'corner']} presets={false} />}
-      <div className="pop-sep" />
-      <div className="pop-h">Desk</div>
-      <DeskPreset look={look} compact />
-      <DeskToggles look={look} />
-      <div className="pop-sep" />
-      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-        {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />} {theme === 'light' ? 'Dark' : 'Light'} mode
-      </button>
-      <button onClick={() => { go('/settings/preferences'); close() }}>
-        <Gear size={15} /> All preferences<kbd className="k" style={{ marginLeft: 'auto' }}>{MOD},</kbd>
-      </button>
-    </>
-  )
-}
-
-/** The desk pieces one by one, as switches. Sections needs a sidebar, so Vercel hides it. */
-function DeskToggles({ look }) {
-  const { prefs, setPrefs, exp } = look
-  const rows = [
-    exp !== 'vercel' && ['Sections sidebar', prefs.sidebar === 'sections', (v) => setPrefs({ ...prefs, sidebar: v ? 'sections' : 'stack', collapsed: false })],
-    ['Docked peek', prefs.peek === 'docked', (v) => setPrefs({ ...prefs, peek: v ? 'docked' : 'overlay' })],
-    ['Assistant', prefs.assistant === 'docked', (v) => setPrefs({ ...prefs, assistant: v ? 'docked' : 'off' })],
-  ].filter(Boolean)
-  return rows.map(([l, on, set]) => (
-    <button key={l} role="switch" aria-checked={on} onClick={() => set(!on)}>
-      {l}<span className={'sw' + (on ? ' on' : '')} style={{ marginLeft: 'auto' }} aria-hidden><i /></span>
-    </button>
-  ))
-}
-
 /** Top-bar pill that opens the assistant dock. Only there when Preferences › Assistant is Docked. */
 function AskPill() {
   const dk = useDock()
@@ -525,7 +465,7 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
   const nav = useNav(role, s)
   const r = ROLES.find((x) => x.id === role)
   const pinned = s.campaigns.filter((c) => c.pinned)
-  const active = (to) => path === to || (to !== '/home' && path.startsWith(to)) || (to === '/home' && (path === '/' || path === ''))
+  const active = (to) => path === to || (to !== '/home' && (path.startsWith(to) || (to === '/bd/kb' && path.startsWith('/bd/cases')))) || (to === '/home' && (path === '/' || path === ''))
   return (
     <aside className={'vx-side' + (open ? ' open' : '')}>
       <Popover align="left" width={232} trigger={({ toggle }) => (
@@ -566,11 +506,6 @@ function VxSidebar({ role, switchRole, path, setCmd, look, open }) {
       <div className="vx-foot">
         <Avatar size={22} />
         <span className="ell grow">{VIEW.person.name}</span>
-        <Popover align="left" width={264} className="appear" trigger={({ toggle }) => (
-          <Tip label="Appearance" kbd={ALT + 'E'} side="top"><button className="b ghost icon sm" onClick={toggle} aria-label="Appearance"><Palette size={15} /></button></Tip>
-        )}>
-          {(close) => <Appearance look={look} close={close} />}
-        </Popover>
         <Tip label="Settings" kbd={MOD + ','} side="top"><a className={'b ghost icon sm' + (path.startsWith('/settings') ? ' on' : '')} href="#/settings" aria-label="Settings"><Gear size={15} /></a></Tip>
         <Notifications role={role} />
       </div>
@@ -686,15 +621,6 @@ function RoleMenu({ role, switchRole, close }) {
 const initials = (n) => n.split(' ').map((p) => p[0]).join('').slice(0, 2)
 const Avatar = ({ size = 24 }) => <span className="av" style={{ width: size, height: size, fontSize: size > 22 ? 10 : 9, background: `oklch(0.52 0.12 ${VIEW.person.hue})` }}>{initials(VIEW.person.name)}</span>
 
-function AppearanceBtn({ look, side = 'top' }) {
-  return (
-    <Popover align="left" width={264} className="appear" trigger={({ toggle }) => (
-      <Tip label="Appearance" kbd={ALT + 'E'} side={side}><button className="b ghost icon sm" onClick={toggle} aria-label="Appearance"><Palette size={15} /></button></Tip>
-    )}>
-      {(close) => <Appearance look={look} close={close} />}
-    </Popover>
-  )
-}
 const SettingsBtn = ({ path, side = 'top' }) => (
   <Tip label="Settings" kbd={MOD + ','} side={side}><a className={'b ghost icon sm' + (path.startsWith('/settings') ? ' on' : '')} href="#/settings" aria-label="Settings"><Gear size={15} /></a></Tip>
 )
@@ -776,7 +702,7 @@ function useSide(role, path) {
     r: ROLES.find((x) => x.id === role),
     idx: seen().findIndex((x) => x.id === role),
     pinned: s.campaigns.filter((c) => c.pinned),
-    active: (to) => path === to || (to !== '/home' && path.startsWith(to)) || (to === '/home' && (path === '/' || path === '')),
+    active: (to) => path === to || (to !== '/home' && (path.startsWith(to) || (to === '/bd/kb' && path.startsWith('/bd/cases')))) || (to === '/home' && (path === '/' || path === '')),
   }
 }
 
@@ -831,7 +757,6 @@ function PanelSidebar({ role, switchRole, path, look, open }) {
       <div className="d-side-f">
         <Avatar />
         <span className="ell grow" style={{ fontWeight: 500 }}>{VIEW.person.name}</span>
-        <AppearanceBtn look={look} />
         <SettingsBtn path={path} />
       </div>
     </aside>
@@ -868,7 +793,6 @@ function RailSidebar({ role, switchRole, path, look, open }) {
           )
         })}
         <div className="sb-railf">
-          <AppearanceBtn look={look} side="right" />
           <SettingsBtn path={path} side="right" />
           <Tip label={VIEW.person.name} side="right"><span className="sb-av"><Avatar size={24} /></span></Tip>
         </div>
@@ -923,7 +847,6 @@ function IconSidebar({ role, switchRole, path, look, open }) {
       <div className="sb-railf">
         <CollapseBtn look={look} side="right" />
         <ThemeToggle look={look} side="right" />
-        <AppearanceBtn look={look} side="right" />
         <SettingsBtn path={path} side="right" />
         <Tip label={VIEW.person.name} side="right"><span className="sb-av"><Avatar size={24} /></span></Tip>
       </div>
@@ -984,7 +907,6 @@ function StackSidebar({ role, switchRole, path, look, open }) {
       <div className="d-side-f">
         <Avatar />
         <span className="ell grow" style={{ fontWeight: 500 }}>{VIEW.person.name}</span>
-        <AppearanceBtn look={look} />
         <SettingsBtn path={path} />
       </div>
     </aside>
@@ -1050,7 +972,6 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
       </div>
       <div className="d-side-f sbs-foot">
         <a href="#/settings/profile" className="sbs-me"><Avatar size={22} /><span className="ell">{VIEW.person.name}</span><ChevronRight size={13} className="mute" /></a>
-        <AppearanceBtn look={look} />
       </div>
     </aside>
   )
@@ -1060,7 +981,7 @@ function SectionsSidebar({ role, switchRole, path, look, open }) {
 const pendingOf = (role, s) => navFor(role, s).filter((n) => !VIEW.hide?.includes(n.to)).reduce((t, n) => t + (n.n || 0), 0)
 
 /* ───────── Top bar ───────── */
-const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'BD', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Case Library', prospect: 'Prospecting', companies: 'Companies', stream: 'Stream' }
+const LABEL = { home: 'Inbox', pod: 'Pod', finance: 'Finance', bd: 'BD', campaigns: 'Campaigns', approvals: 'Approvals', kb: 'Knowledge base', invoices: 'Invoices', payments: 'Payments', requests: 'Requests', vendors: 'Vendors', outreach: 'Pipeline', proposals: 'Pipeline', inbound: 'Inbound', dashboard: 'Pipeline', feed: 'Feed', discover: 'Discover', accounts: 'Accounts', contacts: 'Contacts', pipeline: 'Pipeline', cases: 'Knowledge base', prospect: 'Prospecting', companies: 'Companies', stream: 'Stream' }
 /** The page title lives here only — pages don't repeat it. Icon + live count make the space useful. */
 function usePageMeta(parts, role) {
   const s = useStore()
@@ -1184,18 +1105,6 @@ function AppCommand({ open, setOpen, role, switchRole, toggleTheme, look }) {
         </Command.Group>
         <Command.Group heading="Home layout">
           {HOME_LAYOUTS.map((x) => <Command.Item key={x.value} value={'home layout ' + x.label} onSelect={run(() => { look.setPrefs({ ...look.prefs, home: x.value }); go('/hub') })}><HomeGlyph id={x.value} /> {x.label}{look.prefs.home === x.value && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
-        </Command.Group>
-        {VIEW.roles.includes('bd') && (
-          <Command.Group heading="BD layout">
-            {BD_LAYOUTS.map((x) => <Command.Item key={x.value} value={'bd layout business development ' + x.label + ' ' + x.desc} onSelect={run(() => { look.setPrefs({ ...look.prefs, bd: x.value }); go(BD_HOME[x.value]) })}><BdGlyph id={x.value} /> {x.label}<span className="cmdk-meta">{x.desc}</span>{look.prefs.bd === x.value && <Check size={14} style={{ marginLeft: 8 }} />}</Command.Item>)}
-          </Command.Group>
-        )}
-        <Command.Group heading="Desk">
-          <Command.Item value="noir desk preset" onSelect={run(() => look.setDesk(true))}><Swatch id="noir" prefs={look.prefs} /> Noir desk{deskIsOn(look) && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>
-          <Command.Item value="back to default look" onSelect={run(() => look.setDesk(false))}><Swatch id="paper" /> Back to default</Command.Item>
-          {look.exp !== 'vercel' && <Command.Item value="sidebar sections" onSelect={run(() => look.setPrefs({ ...look.prefs, sidebar: look.prefs.sidebar === 'sections' ? 'stack' : 'sections', collapsed: false }))}><PanelLeftOpen size={15} /> Sections sidebar{look.prefs.sidebar === 'sections' && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>}
-          <Command.Item value="record peek docked" onSelect={run(() => look.setPrefs({ ...look.prefs, peek: look.prefs.peek === 'docked' ? 'overlay' : 'docked' }))}><PanelRight size={15} /> Docked peek{look.prefs.peek === 'docked' && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>
-          <Command.Item value="assistant docked ask wldd" onSelect={run(() => look.setPrefs({ ...look.prefs, assistant: look.prefs.assistant === 'docked' ? 'off' : 'docked' }))}><MessageCircle size={15} /> Assistant{look.prefs.assistant === 'docked' && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>
         </Command.Group>
         <Command.Group heading="Experience">
           {EXPERIENCES.map((x) => <Command.Item key={x.id} value={'experience ' + x.label} onSelect={run(() => look.setExp(x.id))}><ExpGlyph id={x.id} /> {x.label}{look.exp === x.id && <Check size={14} style={{ marginLeft: 'auto' }} />}</Command.Item>)}
