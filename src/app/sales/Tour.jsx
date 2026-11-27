@@ -1,33 +1,22 @@
-// Floating walkthrough controller for Prospecting: pick one of five cases, a fake cursor drives the real page, a system voice narrates.
+// Floating walkthrough controller for Prospecting: pick one of five cases, a fake cursor drives the real page,
+// the Kokoro "Heart" voice (af_heart, pre-rendered clips in public/tour-voice) narrates.
 import { useEffect, useRef, useState } from 'react'
-import { Presentation, Play, Pause, Square, Volume2, VolumeX, X, SkipForward, GripVertical } from 'lucide-react'
+import { Presentation, Play, Pause, Square, Volume2, VolumeX, X, SkipForward, GripVertical, Check } from 'lucide-react'
 import { Popover, Seg } from '../ui'
 import { Tip } from '../../shared/motion'
-import { F_EMPTY } from './data'
+import { F_EMPTY, seed } from './data'
+import { clipUrl } from './tourVoice'
 import { FRESH, bdFilters } from './prospect'
 import { setFilterMode } from './kit'
 import { CASES, $$, byText, norm } from './tourCases'
 import './tourStyle.css'
 
-const LS_VOICE = 'wldd-tour-voice'
 const LS_SPEED = 'wldd-tour-speed'
 const read = (k, d) => { try { return localStorage.getItem(k) || d } catch { return d } }
 const save = (k, v) => { try { localStorage.setItem(k, v) } catch {} }
 const STOP = { stop: true }
-
-/** Best free English voice first: Edge's "Natural" online voices, then Indian English, then anything English. */
-const rankVoice = (v) => (/natural/i.test(v.name) ? 0 : 4) + (/en[-_]IN/i.test(v.lang) ? 0 : /^en/i.test(v.lang) ? 1 : 9) + (/online|google/i.test(v.name) ? 0 : 1)
-function useVoices() {
-  const [list, setList] = useState([])
-  useEffect(() => {
-    const ss = window.speechSynthesis
-    if (!ss) return
-    const load = () => setList(ss.getVoices().filter((v) => /^en/i.test(v.lang)).sort((a, b) => rankVoice(a) - rankVoice(b)))
-    load(); ss.addEventListener?.('voiceschanged', load)
-    return () => ss.removeEventListener?.('voiceschanged', load)
-  }, [])
-  return list
-}
+const halted = (a) => { try { a?.pause() } catch {} }
+let seedBase = null // credits, database and reveals as they ship: the numbers the narration was recorded against
 
 export function Tour({ st, res, setF }) {
   const [open, setOpen] = useState(false)
@@ -36,15 +25,13 @@ export function Tour({ st, res, setF }) {
   const [cap, setCap] = useState('')
   const [speed, setSpeedRaw] = useState(() => +read(LS_SPEED, '1') || 1)
   const [muted, setMuted] = useState(false)
-  const [voiceName, setVoiceName] = useState(() => read(LS_VOICE, ''))
-  const voices = useVoices()
   const setSpeed = (v) => { setSpeedRaw(v); save(LS_SPEED, String(v)) }
-  const setVoice = (n) => { setVoiceName(n); save(LS_VOICE, n) }
 
   // Everything the script reads is held in a ref, so a long run always sees the latest page state.
   const live = useRef({})
-  live.current = { st, res, setF, speed, muted, voice: voices.find((v) => v.name === voiceName) || voices[0] }
+  live.current = { st, res, setF, speed, muted }
   const job = useRef({ id: 0, paused: false })
+  const audio = useRef(null) // the clip being played
   const cursor = useRef(null)
   const ring = useRef(null)
 
@@ -70,24 +57,32 @@ export function Tour({ st, res, setF }) {
     }
   }
 
-  /** One sentence at a time: some engines stop a long utterance after ~15s. */
+  /** Narration is one pre-rendered clip per sentence, in the Kokoro "Heart" voice. No browser voices, ever:
+      a sentence without a clip (or with the voice off) just holds its caption for as long as reading it takes. */
   const speak = async (id, text) => {
-    for (const s of text.split(/(?<=[.?!])\s+/)) { if (!alive(id)) throw STOP; await speakOne(id, s) }
+    const parts = text.split(/(?<=[.?!])\s+/)
+    for (let i = 0; i < parts.length; i++) {
+      if (!alive(id)) throw STOP
+      await speakOne(id, parts[i])
+      if (i < parts.length - 1) await tick(id, 170) // clips are trimmed tight, so breathe between sentences
+    }
   }
   const speakOne = (id, text) => new Promise((resolve) => {
-    const ss = window.speechSynthesis
-    const { muted: mu, voice, speed: sp } = live.current
+    const { muted: mu, speed: sp } = live.current
     const guess = (text.length * 62) / sp + 500
-    if (!ss || mu) { tick(id, guess * sp).then(resolve, resolve); return }
-    const u = new SpeechSynthesisUtterance(text)
-    if (voice) { u.voice = voice; u.lang = voice.lang }
-    u.rate = Math.min(1.5, 0.98 * sp)
+    const silent = () => tick(id, guess * sp).then(resolve, resolve)
+    if (mu) { silent(); return }
+    // Try the clip directly; a missing clip (or a blocked play) just holds the caption instead.
+    const a = new Audio(clipUrl(text))
+    a.playbackRate = sp
+    audio.current = a
     let done = false
-    const fin = () => { if (!done) { done = true; clearTimeout(guardT); resolve() } }
-    u.onend = fin; u.onerror = fin
-    const guardT = setTimeout(fin, guess * 2.6 + 4000) // some engines never fire onend
-    ss.cancel(); ss.speak(u)
-    if (job.current.paused) ss.pause()
+    const fin = () => { if (!done) { done = true; clearTimeout(guard); resolve() } }
+    const miss = () => { if (!done) { done = true; clearTimeout(guard); silent() } }
+    const guard = setTimeout(fin, guess * 3 + 8000)
+    a.onended = fin; a.onerror = miss
+    a.play().catch(miss)
+    if (job.current.paused) a.pause()
   })
 
   const moveCursor = async (id, x, y, instant) => {
@@ -122,13 +117,25 @@ export function Tour({ st, res, setF }) {
     c?.classList.add('press'); await tick(id, 150); c?.classList.remove('press')
   }
 
+  /** Wait until the page has finished reacting: results and state unchanged for a moment. Narration reads numbers right after. */
+  const quiet = async (id, ms = 380) => {
+    let { res: r0, st: s0 } = live.current
+    let since = Date.now()
+    const t0 = since
+    while (Date.now() - since < ms && Date.now() - t0 < 3500) {
+      await tick(id, 60 * live.current.speed)
+      const { res: r1, st: s1 } = live.current
+      if (r1 !== r0 || s1 !== s0) { r0 = r1; s0 = s1; since = Date.now() }
+    }
+  }
+
   /* ───────── the script API ───────── */
   const api = (id) => {
     const t = {
       n: () => { const r = live.current.res; return { signals: r.signals.length, companies: r.companies.length, people: r.people.length } },
       credits: () => live.current.st.credits,
       text: (sel) => document.querySelector(sel)?.textContent.replace(/\s+/g, ' ').trim() || '',
-      settle: (ms = 450) => tick(id, ms),
+      settle: () => quiet(id),
       async say(text) {
         if (!alive(id)) throw STOP
         setCap(text)
@@ -143,7 +150,7 @@ export function Tour({ st, res, setF }) {
         await press(id)
         el.click()
         hideRing()
-        await tick(id, 420)
+        await quiet(id)
       },
       /** Move the cursor to something and say a line about it, without clicking. */
       async look(get, text) {
@@ -205,17 +212,13 @@ export function Tour({ st, res, setF }) {
   }
   const halt = () => {
     job.current.id++; job.current.paused = false
-    window.speechSynthesis?.cancel()
+    halted(audio.current)
+    audio.current = null
     cursor.current && (cursor.current.style.opacity = 0)
     hideRing()
   }
   const stop = () => { halt(); restore(); setState('idle'); setCap('') }
-  useEffect(() => () => { job.current.id++; window.speechSynthesis?.cancel() }, [])
-  useEffect(() => { // the page can be left mid-tour: put things back
-    const leave = () => { window.speechSynthesis?.cancel() }
-    window.addEventListener('beforeunload', leave)
-    return () => window.removeEventListener('beforeunload', leave)
-  }, [])
+  useEffect(() => () => { job.current.id++; halted(audio.current) }, [])
 
   const play = async (caseId) => {
     if (innerWidth <= 760) { setCur(caseId); setCap('The tour needs a wider window.'); return }
@@ -224,10 +227,12 @@ export function Tour({ st, res, setF }) {
     const base = snapRef.current || { credits: s.credits, db: s.db, revealed: s.revealed, views: s.views, mode: bdFilters() }
     halt(); restore()
     snapRef.current = base
+    // Narration is recorded against the shipped data, so run on it (restored when the tour ends).
+    seedBase ||= (({ credits, db }) => ({ credits, db }))(seed())
+    live.current.st.set(() => ({ credits: seedBase.credits, db: seedBase.db, revealed: [] }))
     const sc = CASES.find((c) => c.id === caseId)
     const id = ++job.current.id
     setCur(caseId); setState('playing'); setCap('')
-    window.speechSynthesis?.cancel()
     try {
       // Start clean: bar filters, nothing selected, Match any, Signals tab.
       if (bdFilters() !== 'bar') { setFilterMode('bar'); await tick(id, 500) }
@@ -249,8 +254,8 @@ export function Tour({ st, res, setF }) {
     }
   }
   const pause = () => {
-    if (state === 'playing') { job.current.paused = true; window.speechSynthesis?.pause(); setState('paused') }
-    else if (state === 'paused') { job.current.paused = false; window.speechSynthesis?.resume(); setState('playing') }
+    if (state === 'playing') { job.current.paused = true; halted(audio.current); setState('paused') }
+    else if (state === 'paused') { job.current.paused = false; audio.current?.play().catch(() => {}); setState('playing') }
   }
   const next = () => { const i = CASES.findIndex((c) => c.id === cur); play(CASES[(i + 1) % CASES.length].id) }
   const running = state === 'playing' || state === 'paused'
@@ -320,13 +325,8 @@ export function Tour({ st, res, setF }) {
                   <div className="pop-h">Speed</div>
                   <div className="tour-vo-s"><Seg id="tour-sp" value={speed} onChange={setSpeed} options={[{ value: 0.85, label: '0.85×' }, { value: 1, label: '1×' }, { value: 1.2, label: '1.2×' }, { value: 1.4, label: '1.4×' }]} /></div>
                   <div className="pop-h">Voice</div>
-                  <button className={muted ? 'on' : ''} onClick={() => setMuted((m) => !m)}><span className="grow">No voice, captions only</span>{muted && <span className="mute xs">On</span>}</button>
-                  {!voices.length && <div className="mute xs" style={{ padding: '6px 10px' }}>No English voices found on this device</div>}
-                  {voices.slice(0, 12).map((v) => (
-                    <button key={v.name} className={(live.current.voice?.name === v.name && !muted) ? 'on' : ''} onClick={() => { setMuted(false); setVoice(v.name) }}>
-                      <span className="grow ell">{v.name.replace(/^Microsoft |^Google /, '').replace(/ Online \(Natural\)/, ' · Natural').replace(/ - English.*/, '')}</span><span className="mute xs">{v.lang}</span>
-                    </button>
-                  ))}
+                  <button className={!muted ? 'on' : ''} onClick={() => setMuted(false)}><span className="grow">Heart</span>{!muted && <Check size={14} />}</button>
+                  <button className={muted ? 'on' : ''} onClick={() => setMuted(true)}><span className="grow">Captions only</span>{muted && <Check size={14} />}</button>
                 </div>
               )}
             </Popover>
