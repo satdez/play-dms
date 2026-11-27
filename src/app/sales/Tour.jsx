@@ -1,6 +1,6 @@
 // Floating walkthrough controller for Prospecting: pick one of five cases, a fake cursor drives the real page, a system voice narrates.
 import { useEffect, useRef, useState } from 'react'
-import { Presentation, Play, Pause, Square, Volume2, VolumeX, X, SkipForward } from 'lucide-react'
+import { Presentation, Play, Pause, Square, Volume2, VolumeX, X, SkipForward, GripVertical } from 'lucide-react'
 import { Popover, Seg } from '../ui'
 import { Tip } from '../../shared/motion'
 import { F_EMPTY } from './data'
@@ -256,20 +256,50 @@ export function Tour({ st, res, setF }) {
   const running = state === 'playing' || state === 'paused'
   const sc = CASES.find((c) => c.id === cur)
 
+  /* Floating: drag the grip, the caption, any empty part of the bar, or the closed Tour button. Kept inside the window; remembered. */
+  const [pos, setPos] = useState(() => { try { const p = JSON.parse(read('wldd-tour-pos', 'null')); return p && isFinite(p.x) && isFinite(p.y) ? p : { x: 0, y: 0 } } catch { return { x: 0, y: 0 } } })
+  const setPos0 = (p) => { setPos(p); save('wldd-tour-pos', JSON.stringify(p)) }
+  const [dragging, setDragging] = useState(false)
+  const dock = useRef(null)
+  const moved = useRef(false)
+  const onDown = (e) => {
+    if (e.button !== 0 || (e.target.closest('button, input, select, a') && !e.target.closest('.tour-fab'))) return
+    const box = dock.current.getBoundingClientRect()
+    const x0 = e.clientX, y0 = e.clientY, p0 = pos
+    let last = p0
+    moved.current = false
+    const move = (ev) => {
+      const dx = Math.max(8 - box.left, Math.min(innerWidth - 8 - box.right, ev.clientX - x0))
+      const dy = Math.max(8 - box.top, Math.min(innerHeight - 8 - box.bottom, ev.clientY - y0))
+      if (!moved.current && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 4) return
+      if (!moved.current) { moved.current = true; setDragging(true) }
+      last = { x: Math.round(p0.x + dx), y: Math.round(p0.y + dy) }
+      setPos(last)
+    }
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up)
+      setDragging(false)
+      if (moved.current) { save('wldd-tour-pos', JSON.stringify(last)); setTimeout(() => { moved.current = false }, 0) }
+    }
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
+  }
+
   return (
     <>
       <div ref={ring} className="tour-ring" aria-hidden />
       <svg ref={cursor} className="tour-cursor" width="22" height="26" viewBox="0 0 22 26" aria-hidden>
         <path d="M3 2l15 12.2-6.4 1.2 3.7 7.6-3.2 1.5-3.7-7.6L3 21.5z" />
       </svg>
+      <div ref={dock} className={'tour-dock' + (dragging ? ' drag' : '')} style={{ transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)` }} onPointerDown={onDown}>
       {!open ? (
-        <Tip label="Guided tour">
-          <button className="tour-fab b" onClick={() => setOpen(true)} aria-label="Guided tour"><Presentation size={15} />Tour</button>
+        <Tip label="Guided tour · drag to move">
+          <button className="tour-fab b" onClick={() => { if (!moved.current) setOpen(true) }} aria-label="Guided tour"><Presentation size={15} />Tour</button>
         </Tip>
       ) : (
         <div className="tour" role="region" aria-label="Guided tour">
           {cap && <p className="tour-cap" aria-live="polite">{cap}</p>}
           <div className="tour-row">
+            <Tip label="Drag to move · double-click to reset"><span className="tour-grip" onDoubleClick={() => setPos0({ x: 0, y: 0 })} aria-hidden><GripVertical size={14} /></span></Tip>
             <div className="tour-cases" role="group" aria-label="Cases">
               {CASES.map((c, i) => (
                 <Tip key={c.id} label={c.who}>
@@ -304,6 +334,7 @@ export function Tour({ st, res, setF }) {
           </div>
         </div>
       )}
+      </div>
     </>
   )
 }

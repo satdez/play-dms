@@ -1,7 +1,11 @@
 /* Prospecting walkthrough: floating controller, caption, ring and the fake cursor. Tokens only. */
-.tour-fab { position: fixed; z-index: 70; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--pop, var(--surface)); color: var(--fg); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 16px 40px -12px rgba(0,0,0,.25)); }
-.tour-fab:active { transform: translateX(-50%) scale(.97); }
-.tour { position: fixed; z-index: 70; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(720px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+/* The dock is what floats: it sits bottom-centre by default and is moved by an inline transform. */
+.tour-dock { position: fixed; z-index: 70; left: 50%; bottom: 18px; touch-action: none; }
+.tour-dock.drag, .tour-dock.drag * { cursor: grabbing !important; user-select: none; }
+.tour-fab { cursor: grab; background: var(--pop, var(--surface)); color: var(--fg); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 16px 40px -12px rgba(0,0,0,.25)); }
+.tour { width: min(720px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.tour-cap, .tour-row { cursor: grab; }
+.tour-grip { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 30px; flex: none; color: var(--muted); cursor: grab; }
 .tour-cap { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--pop, var(--surface)); color: var(--fg); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 16px 40px -12px rgba(0,0,0,.25)); font-size: 14px; line-height: 1.45; text-align: center; text-wrap: balance; }
 .tour-row { display: flex; align-items: center; gap: 4px; padding: 5px; border-radius: 14px; background: var(--pop, var(--surface)); box-shadow: 0 0 0 1px var(--line), var(--shadow-pop, 0 16px 40px -12px rgba(0,0,0,.25)); }
 .tour-cases { display: flex; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
