@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, Check, ChevronDown, SlidersHorizontal, Bookmark, Plus, KeyRound, UserCheck, Database, Radar, Pin, PinOff, Megaphone, ArrowUpRight,
-  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, PanelLeftClose, PanelRight, Info, Building2, User, CornerDownLeft, Layers3, Flame,
+  BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, ListFilter, PanelLeftClose, PanelRight, Info, Building2, User, CornerDownLeft, Layers3, Flame,
   Mail, Globe, createLucideIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -203,7 +203,7 @@ export function FilterBar({ children, inline = true }) {
   return (
     <div className="bdv-fbar">
       <div className="bdv-fbar-1">
-        {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
+        {!narrow && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><ListFilter size={15} /></button></Tip>}
         <SearchBox />
         {(!inline || narrow) && <button className={'b sm' + (n ? ' on' : '')} onClick={openAll}><SlidersHorizontal size={13} />Filters{n > 0 && <span className="num">{n}</span>}</button>}
         <ViewsMenu />
@@ -518,7 +518,7 @@ export function ViewStrip() {
   const n = activeCount(f)
   return (
     <div className="bdv-strip">
-      {!narrow && bdFilters() !== 'panel' && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><PanelLeft size={15} /></button></Tip>}
+      {!narrow && bdFilters() !== 'panel' && <Tip label="Filters in a side panel"><button className="b ghost icon sm" onClick={() => setFilterMode('panel')} aria-label="Filters in a side panel"><ListFilter size={15} /></button></Tip>}
       <div className="bdv-strip-s">
         <button className={'chip sl-tog' + (!n ? ' on' : '')} aria-pressed={!n} onClick={() => setF(F_EMPTY)}>All</button>
         {st.views.map((v) => {
