@@ -11,7 +11,8 @@ import { Facts, Src, GenSteps } from './ui'
 import { Wldd } from '../../loaders/Wldd'
 import { useProspect, CoHead, CoMeta, PinBtn, AddBtn, SignalsTimeline, PeopleList, DealsList, ProofList, AdsList, KbNotes, coCtx } from './kit'
 import { TodoBlock } from '../todo/ui'
-import { dbCompanies, companyById, inDb, fetchName, heat, sigsOf, peopleOf } from './prospect'
+import { dbCompanies, companyById, inDb, fetchName, heat, sigsOf, peopleOf, unenriched } from './prospect'
+import { enrichCompanies } from './apolloApi'
 
 const norm = (t) => t.trim().toLowerCase()
 
@@ -124,7 +125,7 @@ function Fetching({ title, steps, i }) {
 function FetchCard({ name, onDone }) {
   const { st } = useProspect()
   const [i, setI] = useState(-1)
-  const steps = [{ label: 'Spending 1 credit', src: 'Apollo' }, { label: 'Pulling the company profile', src: 'Apollo' }, { label: 'Pulling people', src: 'Apollo' }, { label: 'Saving to our DB', src: 'DMS' }]
+  const steps = [{ label: 'Company search by name · 1 credit', src: 'Apollo' }, { label: 'Matching the name', src: 'Apollo' }, { label: 'Saving to our DB', src: 'DMS' }]
   const go1 = () => {
     if (st.credits < 1) { fetchName(st, name); return }
     const per = reduced() ? 90 : 420
@@ -136,8 +137,8 @@ function FetchCard({ name, onDone }) {
   return (
     <div className="bdv-fetch">
       <Database size={16} className="mute" />
-      <div className="grow"><b>Not in our DB</b><div className="mute xs">Fetch once, free after · {st.credits} credits left</div></div>
-      <button className="b ink" onClick={go1}><KeyRound size={14} />Fetch from Apollo · 1 credit</button>
+      <div className="grow"><b>Not in our DB</b><div className="mute xs">Company search returns name, domain, phone and founded year · {st.credits} credits left</div></div>
+      <button className="b ink" onClick={go1}><KeyRound size={14} />Find on Apollo · 1 credit</button>
     </div>
   )
 }
@@ -166,11 +167,19 @@ function CompanyPage({ c }) {
       </div>
     )
   }
-  const facts = [{ k: 'Funding', v: c.funding, src: 'Apollo' }, ...factsFor(c.name, st)]
+  const unk = unenriched(c, st)
+  const facts = [{ k: 'Funding', v: unk ? null : c.funding, src: 'Apollo' }, ...factsFor(c.name, st)]
   return (
     <div className="bdv-cp">
       <CoHead c={c} size={44} meta={false}><PinBtn c={c} /><AddBtn c={c} ink sm={false} /></CoHead>
-      {c.about ? <p className="fg2 bdv-about">{c.about} <Src s="Apollo" /></p> : <p className="bdv-about"><span className="sl-unk">Unknown</span></p>}
+      {unk && (
+        <div className="bdv-fetch">
+          <Database size={16} className="mute" />
+          <div className="grow"><b>From company search</b><div className="mute xs">Apollo gave its name, domain, phone and founded year · industry, employees, revenue and funding need enrichment</div></div>
+          <button className="b ink" onClick={() => enrichCompanies(st, [c])}><KeyRound size={14} />Enrich · 1 credit</button>
+        </div>
+      )}
+      {c.about && !unk ? <p className="fg2 bdv-about">{c.about} <Src s="Apollo" /></p> : <p className="bdv-about"><span className="sl-unk">Unknown</span></p>}
       <div className="bdv-cp-g">
         <div className="bdv-cp-m">
           <Sec title="Signals" n={nS} src="Signals engine"><SignalsTimeline c={c} /></Sec>

@@ -205,7 +205,7 @@ export function Tour({ st, res, setF }) {
     if (!s) return
     snapRef.current = null
     const { st: cur, setF: sf } = live.current
-    cur.set(() => ({ credits: s.credits, db: s.db, revealed: s.revealed, views: s.views }))
+    cur.set(() => ({ credits: s.credits, db: s.db, revealed: s.revealed, views: s.views, phones: s.phones }))
     FRESH.clear()
     if (!keepFilter) sf({ match: 'any' })
     if (bdFilters() !== s.mode) setFilterMode(s.mode)
@@ -224,12 +224,12 @@ export function Tour({ st, res, setF }) {
     if (innerWidth <= 760) { setCur(caseId); setCap('The tour needs a wider window.'); return }
     // Switching mid-run: the page state is not yet restored in `live`, so keep the first snapshot.
     const s = live.current.st
-    const base = snapRef.current || { credits: s.credits, db: s.db, revealed: s.revealed, views: s.views, mode: bdFilters() }
+    const base = snapRef.current || { credits: s.credits, db: s.db, revealed: s.revealed, views: s.views, phones: s.phones || {}, mode: bdFilters() }
     halt(); restore()
     snapRef.current = base
     // Narration is recorded against the shipped data, so run on it (restored when the tour ends).
     seedBase ||= (({ credits, db }) => ({ credits, db }))(seed())
-    live.current.st.set(() => ({ credits: seedBase.credits, db: seedBase.db, revealed: [] }))
+    live.current.st.set(() => ({ credits: seedBase.credits, db: seedBase.db, revealed: [], phones: {} }))
     const sc = CASES.find((c) => c.id === caseId)
     const id = ++job.current.id
     setCur(caseId); setState('playing'); setCap('')

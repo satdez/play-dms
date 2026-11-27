@@ -486,7 +486,10 @@ export const seed = () => ({
   credits: 48,
   // Prospecting (all four BD layouts share these)
   views: views.map((x) => ({ ...x, f: { ...x.f } })),
-  db: { co: [], pe: [], stubs: [] }, // what Apollo fetches moved into our DB: company ids, person ids, unknown-name stubs
+  // What Apollo calls moved into our DB: companies from company search (co, with the params that found them in `found`),
+  // companies enriched (enr), people from people search (pe), unknown-name stubs.
+  db: { co: [], pe: [], stubs: [], enr: [], found: {} },
+  phones: {}, // person id → mobile number from the bulk_match webhook, 'pending', or 'none'
   pins: [], // pinned company names
   hidden: [], // stream cards dismissed or snoozed: { id, until }
 })

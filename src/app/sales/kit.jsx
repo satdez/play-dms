@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import {
   Search, X, Check, ChevronDown, SlidersHorizontal, Bookmark, Plus, KeyRound, UserCheck, Database, Radar, Pin, PinOff, Megaphone, ArrowUpRight,
   BookOpen, Inbox, CalendarDays, Lock, Sparkle, Trash2, PanelLeft, ListFilter, PanelLeftClose, PanelRight, Info, Building2, User, CornerDownLeft, Layers3, Flame,
-  Mail, Globe, createLucideIcon,
+  Mail, Globe, createLucideIcon, Braces, Phone, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useStore } from '../store'
@@ -16,12 +16,13 @@ import { Avatar } from '../../shared/ui'
 import { BrandLogo } from '../../shared/brands'
 import { Popover, Switch, Svc, Tabs, Seg, go } from '../ui'
 import { Sheet } from '../pages/Finance'
-import { SIGNAL_KIND, F_EMPTY, repOf, proofFor, adsFor, budgetOf, brandOf } from './data'
+import { SIGNAL_KIND, F_EMPTY, repOf, proofFor, adsFor, budgetOf, brandOf, apollo } from './data'
+import { companyRequest, peopleRequest, runCompanySearch, runPeopleSearch, enrichCompanies, companyOfOrg, personOfId, orgOf, nameOf } from './apolloApi'
 import { relOf, stageLabel, isOpen } from './state'
 import { Src, Rel, Val, CaseChip, openAddLead } from './ui'
 import { TodoBlock } from '../todo/ui'
 import {
-  FILTERS, filterById, activeCount, describe, run, companyHref, inDb, peopleOf, isKnown, sigsOf, apolloFind, apolloFetch, revealPeople,
+  FILTERS, filterById, activeCount, describe, run, companyHref, inDb, peopleOf, isKnown, sigsOf, revealPeople, emailOf, phoneOf, unenriched,
   roleOf, FRESH, kbOf, heat, fmtDays, GROUPS, SCOPES, optsOf, facetCounts, quickFind, bdFilters, bdFilterSide, fetchName, companyByName, searchScope,
   MATCH, VIA, matchOf,
 } from './prospect'
@@ -171,7 +172,7 @@ export function SearchBox({ stacked }) {
               {r.kind !== rows[i - 1]?.kind && <div className="pop-h">{{ company: 'Companies', person: 'People', signal: 'Signals' }[r.kind]}</div>}
               <button className={'bdv-sb-r' + (hi === i + 1 ? ' hi' : '')} onMouseEnter={() => setHi(i + 1)} onClick={() => { r.go(); setOpen(false) }}>
                 {r.kind === 'company' && <><BrandLogo name={r.c.name} size={20} /><span className="grow ell"><b>{r.c.name}</b> <span className="mute">{[r.c.funding, r.c.cat, r.c.hq].filter(Boolean).join(' · ')}</span></span>{!inDb(r.c, st) && <span className="chip">Apollo</span>}</>}
-                {r.kind === 'person' && <><Avatar user={{ name: r.p.name, hue: r.p.name.length * 41 }} size={20} /><span className="grow ell"><b>{r.p.name}</b> <span className="mute">{r.p.title} · {r.p.brand}</span></span>{isKnown(r.p, st) ? <span className="mute xs">On file</span> : <Lock size={12} className="mute" />}</>}
+                {r.kind === 'person' && <><Avatar user={{ name: r.p.name, hue: r.p.name.length * 41 }} size={20} /><span className="grow ell"><b>{nameOf(r.p, st)}</b> <span className="mute">{r.p.title} · {r.p.brand}</span></span>{isKnown(r.p, st) ? <span className="mute xs">On file</span> : <Lock size={12} className="mute" />}</>}
                 {r.kind === 'signal' && <><Radar size={14} className="mute" /><span className="grow ell">{r.g.title} <span className="mute">· {r.g.brand}</span></span><span className="mute xs">{fmt.agoShort(r.g.at)}</span></>}
               </button>
             </span>
@@ -586,6 +587,9 @@ export function Enrich({ g, pitch = true }) {
 }
 export const facts = (c) => [c.funding, c.size != null ? c.size.toLocaleString('en-IN') + ' people' : null, c.hq, c.cat]
 export function CoMeta({ c, short }) {
+  const s = useStore()
+  // From company search only: Apollo gave us who it is, not its size, place or funding.
+  if (unenriched(c, s.sales)) { const o = orgOf(c); return <span className="bdv-meta"><span className="mono">{o.primary_domain}</span><span>Founded {o.founded_year}</span><Tip label="From company search: industry, size, revenue and funding need enrichment (1 credit)"><span className="sl-unk">Not enriched</span></Tip></span> }
   const l = short ? [c.funding, c.size != null ? c.size.toLocaleString('en-IN') : null, c.hq] : facts(c)
   return <span className="bdv-meta">{l.map((v, i) => <span key={i}>{v ?? <span className="sl-unk">Unknown</span>}</span>)}</span>
 }
@@ -675,19 +679,25 @@ export function PersonRow({ p, picked, onPick }) {
   const s = useStore(); const st = s.sales
   const known = isKnown(p, st)
   const c = brandOf(p.brand) || { name: p.brand, id: '' }
+  const mail = emailOf(p, st)
+  const ph = phoneOf(p, st)
+  const name = nameOf(p, st)
   return (
     <div className={'li bdv-p' + (picked ? ' sel' : '')}>
-      {onPick && (known ? <span className="bdv-ck-s" /> : <button className={'sl-ck' + (picked ? ' on' : '')} role="checkbox" aria-checked={!!picked} aria-label={'Pick ' + p.name} onClick={() => onPick(p)}>{picked && <Check size={11} strokeWidth={3} />}</button>)}
+      {onPick && (known ? <span className="bdv-ck-s" /> : <button className={'sl-ck' + (picked ? ' on' : '')} role="checkbox" aria-checked={!!picked} aria-label={'Pick ' + name} onClick={() => onPick(p)}>{picked && <Check size={11} strokeWidth={3} />}</button>)}
       <Avatar user={{ name: p.name, hue: p.name.length * 37 }} size={28} />
       <span className="grow bdv-co-m">
-        <span className="row" style={{ gap: 6 }}><span className="li-t ell">{p.name}</span><FreshTag id={p.id} /></span>
-        <span className="li-s ell">{p.title} · <a href={companyHref(c)} className="bdv-co">{p.brand}</a>{known && <span className="mono"> · {p.email}</span>}</span>
+        <span className="row" style={{ gap: 6 }}><span className="li-t ell">{name}</span><FreshTag id={p.id} /></span>
+        <span className="li-s ell">{p.title} · <a href={companyHref(c)} className="bdv-co">{p.brand}</a>{mail && <span className="mono"> · {mail}</span>}{ph && ph !== 'pending' && ph !== 'none' && <span className="mono"> · {ph}</span>}</span>
       </span>
       {p.born && <Tip label="Joined People from a signal"><span className="chip bdv-born m-hide"><Radar size={11} />Signal</span></Tip>}
       {p.moved && <Tip label={'Worked with us at ' + p.moved}><span className="chip y m-hide">Ex-{p.moved}</span></Tip>}
-      {known ? <span className="chip g"><UserCheck size={12} />{p.onFile ? 'On file' : 'Revealed'}</span>
-        : <Tip label="Reveal on Apollo · 1 credit"><button className="b sm" onClick={() => revealPeople(st, [p])}><Lock size={12} />Reveal</button></Tip>}
-      {known && <Tip label="Add to pipeline"><button className="b sm icon" aria-label="Add to pipeline" onClick={() => openAddLead({ brand: p.brand, source: 'Discover', contact: { name: p.name, title: p.title, email: p.email } })}><Plus size={14} /></button></Tip>}
+      {known && !ph && !p.born && <Tip label="people/bulk_match with reveal_phone_number · 8 credits if a mobile is found · arrives in a few seconds"><button className="b sm ghost" onClick={() => revealPeople(st, [p], { phone: true })}><Phone size={12} />Mobile · 8</button></Tip>}
+      {ph === 'pending' && <span className="chip"><Phone size={11} />Mobile pending</span>}
+      {ph === 'none' && <Tip label="Apollo found no mobile · not charged"><span className="chip"><Phone size={11} />No mobile</span></Tip>}
+      {known ? <span className="chip g"><UserCheck size={12} />{p.onFile ? 'On file' : mail ? 'Enriched' : 'No email'}</span>
+        : <Tip label="Enrich on Apollo (people/bulk_match) · 1 credit · email if Apollo has one"><button className="b sm" onClick={() => revealPeople(st, [p])}><Lock size={12} />Reveal</button></Tip>}
+      {mail && <Tip label="Add to pipeline"><button className="b sm icon" aria-label="Add to pipeline" onClick={() => openAddLead({ brand: p.brand, source: 'Discover', contact: { name: p.name, title: p.title, email: mail } })}><Plus size={14} /></button></Tip>}
     </div>
   )
 }
@@ -850,41 +860,177 @@ export function MomentRow({ m }) {
   )
 }
 
-/** End-of-list row: the same filter, run on Apollo. Cost first; what comes back stays in our DB. */
-export function BeyondRow({ kind, list }) {
-  const { st, f } = useProspect()
-  const found = apolloFind(f, st, kind)
-  const [ask, setAsk] = useState(false)
-  const [done, setDone] = useState(null)
-  const [got, setGot] = useState([])
-  const n = found.length
-  const noun = kind === 'companies' ? (n === 1 ? 'company' : 'companies') : n === 1 ? 'person' : 'people'
-  const go_ = () => {
-    if (!n) { setDone(0); setAsk(false); return }
-    const r = apolloFetch(st, kind === 'companies' ? { companies: found } : { people: found })
-    if (r > 0) { setDone(r); setAsk(false); setGot(found) }
-  }
+/* ───────── Apollo, as its API really answers ─────────
+   End of the Companies and People lists: the same filter sent to Apollo. First the request (what is sent, what Apollo can't take),
+   then the response exactly as Apollo shapes it, with its pages. Company search: 1 credit per page. People search: free. */
+const PER = [10, 25, 100]
+export function BeyondRow({ kind }) {
+  return kind === 'people' ? <ApolloPeople /> : <ApolloCompanies />
+}
+
+function ApoReq({ req, cost }) {
+  const ps = Object.entries(req.params).filter(([k]) => k !== 'page' && k !== 'per_page')
+  return (
+    <div className="apo-req">
+      <div className="apo-ep"><span className="apo-m">POST</span><span className="mono ell grow">{req.path}</span>{cost}</div>
+      <div className="apo-ps">
+        {ps.map(([k, v]) => <span key={k} className="apo-p"><span className="mono mute">{k}</span><span className="mono">{[].concat(v).join(', ')}</span></span>)}
+        {!ps.length && <span className="mute xs">No filters Apollo can take · this searches all of Apollo</span>}
+        {req.skipped.map(([l, why]) => <Tip key={l} label={why}><span className="apo-p skip"><X size={11} />{l} · not sent</span></Tip>)}
+      </div>
+    </div>
+  )
+}
+function ApoJson({ data }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Tip label="The response, as Apollo returns it"><button className={'b sm ghost' + (open ? ' on' : '')} onClick={() => setOpen((o) => !o)}><Braces size={13} />JSON</button></Tip>
+      {open && <pre className="apo-json">{JSON.stringify(data, null, 2)}</pre>}
+    </>
+  )
+}
+function ApoPager({ page, pages, total, onPage, cost }) {
+  if (pages <= 1) return <div className="apo-pg"><span className="mute xs num">{total} total · 1 page</span></div>
+  return (
+    <div className="apo-pg">
+      <span className="mute xs num">Page {page} of {pages} · {total} total</span>
+      <span className="grow" />
+      <button className="b sm" disabled={page <= 1} onClick={() => onPage(page - 1)}><ChevronLeft size={13} />Prev{cost}</button>
+      <button className="b sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>Next{cost}<ChevronRight size={13} /></button>
+    </div>
+  )
+}
+/** Shell shared by both panels: a row that opens into request → response. Resets when the filter changes. */
+function ApoPanel({ title, chip, req, per, setPer, cost, run, ran, children, closed }) {
+  const [open, setOpen] = useState(false)
   return (
     <div className="bdv-beyond">
       <AutoHeight>
-        {!ask ? (
-          <button className="li bdv-beyond-b" onClick={() => { setDone(null); setAsk(true) }}>
+        {!open ? (
+          <button className="li bdv-beyond-b" onClick={() => setOpen(true)}>
             <span className="bdv-ic"><Database size={14} /></span>
-            <span className="grow"><span className="li-t">Search beyond our DB</span>{done != null && <span className="mute xs"> · {done ? done + ' saved' : 'nothing new'}</span>}</span>
-            {n ? <span className="chip y"><KeyRound size={11} />Apollo · <span className="num">{n}</span> {n === 1 ? 'credit' : 'credits'}</span> : <span className="chip g">In our DB · free</span>}
+            <span className="grow"><span className="li-t">{title}</span>{closed && <span className="mute xs"> · {closed}</span>}</span>
+            {chip}
           </button>
         ) : (
-          <div className="bdv-beyond-q">
-            <div className="grow">
-              <b>{n ? `${n} new ${noun} on Apollo` : 'Nothing new on Apollo'}</b>
-              <div className="mute xs">{n ? `${n} ${n === 1 ? 'credit' : 'credits'} · ${st.credits} left · saved to our DB for good` : 'Everything that matches is already in our DB · free'}{describe(f) && ' · ' + describe(f)}</div>
+          <div className="apo">
+            <div className="apo-h">
+              <BrandLogo name="Apollo" size={16} radius={4} /><b className="grow">{title}</b>
+              <Tip label="per_page · Apollo allows up to 100"><span className="apo-per"><Seg id={'apo-per-' + title} value={per} onChange={setPer} options={PER.map((n) => ({ value: n, label: String(n) }))} /></span></Tip>
+              <button className="b ghost icon sm" onClick={() => setOpen(false)} aria-label="Close"><X size={14} /></button>
             </div>
-            <button className="b sm" onClick={() => setAsk(false)}>Cancel</button>
-            <button className="b sm ink" onClick={go_}>{n ? <><KeyRound size={13} />Spend {n}</> : 'Done'}</button>
+            <ApoReq req={req} cost={cost} />
+            {ran ? children : <div className="apo-go"><span className="grow" /><button className="b sm ink" onClick={() => run(1)}>{run.label}</button></div>}
           </div>
         )}
       </AutoHeight>
-      {list && got.length > 0 && <div className="list">{got.map((c) => <CoRow key={c.id} c={c} n={0} max={1} />)}</div>}
+    </div>
+  )
+}
+
+function ApolloCompanies() {
+  const { st, f } = useProspect()
+  const [per, setPer] = useState(25)
+  const [out, setOut] = useState(null)
+  const req = companyRequest(f, out?.res.pagination.page || 1, per)
+  const sig = JSON.stringify({ ...req.params, page: 0 })
+  useEffect(() => { setOut(null) }, [sig])
+  const run = (page) => { const r = runCompanySearch(st, f, page, per); if (r) setOut(r) }
+  run.label = <><KeyRound size={13} />Search · 1 credit</>
+  const pg = out?.res.pagination
+  const fresh = (out?.res.organizations || []).map((o) => companyOfOrg(o.id)).filter((c) => unenriched(c, st))
+  return (
+    <ApoPanel title="Search Apollo" req={req} per={per} setPer={setPer} run={run} ran={!!out}
+      chip={<span className="chip y"><KeyRound size={11} />1 credit per page</span>}
+      closed={out && pg.total_entries + ' found'}
+      cost={<span className="chip y num"><KeyRound size={11} />1 credit / page · {st.credits} left</span>}>
+      {out && (
+        <>
+          <div className="apo-rh">
+            <span className="grow"><b className="num">{pg.total_entries}</b> organizations <span className="mute xs">· name, domain, phone, founded, links · no industry, size, revenue or funding</span></span>
+            {fresh.length > 0 && <Tip label="organizations/enrich · industry, employees, revenue, funding stage"><button className="b sm" onClick={() => enrichCompanies(st, fresh)}><KeyRound size={12} />Enrich {fresh.length} · {fresh.length} {fresh.length === 1 ? 'credit' : 'credits'}</button></Tip>}
+            <ApoJson data={out.res} />
+          </div>
+          <div className="list">{out.res.organizations.map((o) => <OrgRow key={o.id} o={o} />)}</div>
+          {!out.res.organizations.length && <div className="empty"><b>No organizations</b></div>}
+          <ApoPager page={pg.page} pages={pg.total_pages} total={pg.total_entries} onPage={run} cost={<span className="mute xs"> · 1</span>} />
+        </>
+      )}
+    </ApoPanel>
+  )
+}
+function OrgRow({ o }) {
+  const { st } = useProspect()
+  const c = companyOfOrg(o.id)
+  const ours = !apollo.includes(c)
+  const unk = unenriched(c, st)
+  const links = [['LinkedIn', o.linkedin_url], ['X', o.twitter_url], ['Facebook', o.facebook_url], ['Crunchbase', o.crunchbase_url]].filter((x) => x[1])
+  return (
+    <div className="li apo-org">
+      <BrandLogo name={o.name} size={26} />
+      <span className="grow bdv-co-m">
+        <span className="row" style={{ gap: 6 }}><a className="li-t ell bdv-co" href={companyHref(c)}>{o.name}</a>{ours && <span className="chip g"><Database size={11} />In our DB</span>}</span>
+        <span className="bdv-meta"><span className="mono">{o.primary_domain}</span><span>Founded {o.founded_year}</span><span className="mono m-hide">{o.phone}</span><span className="m-hide">{o.languages.join(', ')}</span></span>
+      </span>
+      <span className="apo-links m-hide">{links.map(([l]) => <span key={l} className="apo-l">{l}</span>)}</span>
+      {unk ? <Tip label="organizations/enrich · industry, employees, revenue, funding stage"><button className="b sm" onClick={() => enrichCompanies(st, [c])}><KeyRound size={12} />Enrich · 1</button></Tip>
+        : <Tip label={ours ? 'Ours: we already hold its firmographics' : 'Enriched: industry, employees, revenue, funding'}><span className="chip"><Check size={11} />{ours ? 'Known' : 'Enriched'}</span></Tip>}
+    </div>
+  )
+}
+
+function ApolloPeople() {
+  const { st, f } = useProspect()
+  const [per, setPer] = useState(25)
+  const [out, setOut] = useState(null)
+  const [page, setPage] = useState(1)
+  const req = peopleRequest(f, page, per)
+  const sig = JSON.stringify({ ...req.params, page: 0 })
+  useEffect(() => { setOut(null); setPage(1) }, [sig])
+  const run = (p) => { setPage(p); setOut(runPeopleSearch(st, f, p, per)) }
+  run.label = <><Search size={13} />Search · free</>
+  const res = out?.res
+  const pages = res ? Math.max(1, Math.ceil(res.total_entries / per)) : 1
+  const locked = (res?.people || []).map((x) => personOfId(x.id).p).filter((p) => !isKnown(p, st))
+  const batch = locked.slice(0, 10)
+  return (
+    <ApoPanel title="Search Apollo people" req={req} per={per} setPer={setPer} run={run} ran={!!out}
+      chip={<span className="chip g">Free</span>}
+      closed={res && res.total_entries + ' found'}
+      cost={<span className="chip g">0 credits</span>}>
+      {res && (
+        <>
+          <div className="apo-rh">
+            <span className="grow"><b className="num">{res.total_entries}</b> people <span className="mute xs">· last name hidden, no email or phone · enrich to see them</span></span>
+            {batch.length > 0 && <Tip label="people/bulk_match · up to 10 per call · 1 credit each"><button className="b sm" onClick={() => revealPeople(st, batch)}><KeyRound size={12} />Enrich {batch.length} · {batch.length} {batch.length === 1 ? 'credit' : 'credits'}</button></Tip>}
+            <ApoJson data={res} />
+          </div>
+          <div className="list">{res.people.map((x) => <ApoPersonRow key={x.id} x={x} />)}</div>
+          <ApoPager page={page} pages={pages} total={res.total_entries} onPage={run} cost={null} />
+        </>
+      )}
+    </ApoPanel>
+  )
+}
+function ApoPersonRow({ x }) {
+  const { st } = useProspect()
+  const { p } = personOfId(x.id)
+  const known = isKnown(p, st)
+  const mail = emailOf(p, st)
+  return (
+    <div className="li bdv-p apo-pe">
+      <Avatar user={{ name: p.name, hue: p.name.length * 37 }} size={26} />
+      <span className="grow bdv-co-m">
+        <span className="li-t ell">{known ? p.name : x.first_name + ' ' + x.last_name_obfuscated}</span>
+        <span className="li-s ell">{x.title} · {x.organization.name}{mail && <span className="mono"> · {mail}</span>}</span>
+      </span>
+      <span className="apo-flags m-hide">
+        <Tip label={'has_email: ' + x.has_email}><span className={'apo-f' + (x.has_email ? ' y' : '')}>Email</span></Tip>
+        <Tip label={'has_direct_phone: ' + x.has_direct_phone}><span className={'apo-f' + (x.has_direct_phone === 'Yes' ? ' y' : '')}>Direct dial{x.has_direct_phone === 'Yes' ? '' : '?'}</span></Tip>
+      </span>
+      {known ? <span className="chip g"><UserCheck size={12} />{p.onFile ? 'On file' : mail ? 'Enriched' : 'No email'}</span>
+        : <Tip label="people/bulk_match · 1 credit"><button className="b sm" onClick={() => revealPeople(st, [p])}><Lock size={12} />Enrich · 1</button></Tip>}
     </div>
   )
 }
@@ -933,17 +1079,20 @@ export function PeopleList({ c }) {
     </>
   )
 }
-/** Bulk reveal with the credit estimate up front. */
+/** Bulk reveal = people/bulk_match: up to 10 people per call, 1 credit each; mobiles optional at 8 each, only if found. */
 export function BulkBar({ pick, all, setPick }) {
   const s = useStore(); const st = s.sales
+  const [mob, setMob] = useState(false)
   if (!all.length) return null
   const list = all.filter((p) => pick.includes(p.id))
+  const calls = Math.ceil(list.length / 10)
   return (
     <div className="bdv-bulk">
       <button className="b sm ghost" onClick={() => setPick(list.length === all.length ? [] : all.map((p) => p.id))}>{list.length === all.length ? 'Clear' : 'Select locked'} <span className="num mute">{all.length}</span></button>
       <span className="grow" />
-      {list.length > 0 && <span className="mute xs num">{list.length} × 1 credit · {st.credits} left</span>}
-      <button className={'b sm' + (list.length ? ' ink' : ' dis')} disabled={!list.length} onClick={() => { revealPeople(st, list); setPick([]) }}><KeyRound size={13} />Reveal{list.length > 0 && <span className="num">{list.length}</span>}</button>
+      {list.length > 0 && <span className="mute xs num">{list.length} × 1 credit{mob ? ' + up to ' + list.length * 8 + ' for mobiles' : ''} · {calls} {calls === 1 ? 'call' : 'calls'} of up to 10 · {st.credits} left</span>}
+      <Tip label="reveal_phone_number · 8 credits per mobile found · arrives a few seconds later"><button className={'b sm ghost' + (mob ? ' on' : '')} aria-pressed={mob} onClick={() => setMob((m) => !m)}><Phone size={12} />Mobile</button></Tip>
+      <button className={'b sm' + (list.length ? ' ink' : ' dis')} disabled={!list.length} onClick={() => { revealPeople(st, list, { phone: mob }); setPick([]) }}><KeyRound size={13} />Reveal{list.length > 0 && <span className="num">{list.length}</span>}</button>
     </div>
   )
 }

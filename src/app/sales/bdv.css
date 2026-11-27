@@ -489,3 +489,25 @@ html.bdv-resizing, html.bdv-resizing * { cursor: col-resize !important; user-sel
 .bdv-co-r { container: bdvco / inline-size; }
 @container bdvco (max-width: 480px) { .bdv-co-r .bdv-via { display: none; } }
 @container bdvco (max-width: 340px) { .bdv-co-r .bdv-heat { min-width: 0; gap: 6px; } .bdv-co-r .bdv-bar { width: 32px; } }
+
+/* Apollo panels: request → response, shaped like the real API. One layer per element: the panel is a fill, chips inside are text. */
+.apo { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px; background: var(--sunken); }
+.apo-h { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.apo-per .seg button { padding: 0 8px; }
+.apo-req { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: var(--surface); }
+.apo-ep { display: flex; align-items: center; gap: 8px; font-size: 12.5px; min-width: 0; }
+.apo-m { font-size: 11px; font-weight: 700; letter-spacing: .02em; color: var(--fg-2); }
+.apo-ps { display: flex; flex-wrap: wrap; gap: 6px; }
+.apo-p { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 3px 8px; border-radius: 7px; font-size: 12px; background: color-mix(in oklab, var(--fg) 5%, transparent); }
+.apo-p .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.apo-p.skip { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in oklab, var(--muted) 60%, transparent); }
+.apo-p.skip svg { flex: none; }
+.apo-go { display: flex; align-items: center; gap: 8px; }
+.apo-rh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.apo .list { background: var(--surface); border-radius: 10px; }
+.apo-org, .apo-pe { gap: 10px; }
+.apo-links, .apo-flags { display: inline-flex; gap: 4px; flex: none; }
+.apo-l, .apo-f { font-size: 11px; padding: 2px 6px; border-radius: 6px; color: var(--muted); background: color-mix(in oklab, var(--fg) 5%, transparent); }
+.apo-f.y { color: var(--fg); }
+.apo-json { margin: 0; max-height: 320px; overflow: auto; padding: 10px 12px; border-radius: 10px; background: var(--surface); font: 11.5px/1.5 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace); color: var(--fg-2); white-space: pre; }
+.apo-pg { display: flex; align-items: center; gap: 6px; }

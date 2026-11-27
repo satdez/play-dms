@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { TODAY, fmt, me, clients, SERVICES } from '../data'
 import { brands, extras, apollo, brandById, brandOf, moments, budgetOf, domainOf, FUNDING, SIGNAL_KIND, F_EMPTY } from './data'
 import { relOf } from './state'
+import { INDUSTRY, RANGES, bulkMatch, runCompanySearch, hasEmail } from './apolloApi'
 import { dueOf } from './ui'
 
 /* ───────── Layouts (Settings › Preferences › BD layout) ───────── */
@@ -129,8 +130,20 @@ const daysTo = (d) => (d - TODAY) / 864e5
 const inB = (v, [lo, hi]) => v != null && v >= lo && v < hi
 const has = (q, ...t) => !q || t.join(' ').toLowerCase().includes(q.toLowerCase())
 export const relKind = (c, st) => { const k = relOf(c.name, st).kind; return k === 'client' ? 'client' : k === 'cold' ? 'cold' : 'warm' }
+/** An Apollo company we only have from company search: no industry, size, place or funding yet (see apolloApi). */
+export const unenriched = (c, st) => !!c && isApollo(c) && !(st.db.enr || []).includes(c.id)
 export function coMatch(c, f, st) {
   if (!c) return !(on(f.funding) || on(f.size) || on(f.cat) || on(f.city) || on(f.rel) || on(f.co))
+  if (unenriched(c, st)) {
+    // We know only what the search that found it guaranteed (its industry/size/location params). Funding is unknown, so it can't match.
+    const fd = st.db.found?.[c.id] || { ind: [], rng: [], loc: [] }
+    return !on(f.funding)
+      && (!on(f.size) || f.size.some((k) => fd.rng.includes(RANGES[k])))
+      && (!on(f.cat) || f.cat.some((k) => fd.ind.includes(INDUSTRY[k])))
+      && (!on(f.city) || f.city.some((k) => fd.loc.includes(k + ', India')))
+      && (!on(f.rel) || f.rel.includes(relKind(c, st)))
+      && (!on(f.co) || f.co.includes(c.id))
+  }
   return (!on(f.funding) || f.funding.includes(c.funding))
     && (!on(f.size) || f.size.some((k) => c.size != null && c.size >= SIZE_B[k][0] && c.size <= SIZE_B[k][1]))
     && (!on(f.cat) || f.cat.includes(c.cat))
@@ -195,7 +208,7 @@ export function run(st, f = F_EMPTY) {
     : []
   const momentList = sideOk && typeOk(f, 'moment') && !on(f.kind) && !on(f.fit) && !on(f.relevance) && !on(f.deal)
     ? moments.filter((m) => daysTo(m.at) >= -0.5 && (!on(f.recency) || daysTo(m.at) <= REC[f.recency]) && (!on(f.cat) || m.cats.some((k) => f.cat.includes(k))))
-      .map((m) => ({ ...m, brands: cos.filter((c) => m.cats.includes(c.cat) && okName(c.name) && (inDb(c, st))).sort((a, b) => heatRaw(b, st) - heatRaw(a, st)) }))
+      .map((m) => ({ ...m, brands: cos.filter((c) => m.cats.includes(c.cat) && okName(c.name) && inDb(c, st) && !unenriched(c, st)).sort((a, b) => heatRaw(b, st) - heatRaw(a, st)) }))
       .filter((m) => m.brands.length && has(qAll, m.name, ...m.brands.map((c) => c.name)))
     : []
   const alerts = sideOk && typeOk(f, 'alert') && !on(f.kind) && !on(f.fit) && f.owner !== 'unclaimed'
@@ -232,6 +245,7 @@ export function facetCounts(st, f) {
     const bump = (k) => { m[k] = (m[k] || 0) + 1 }
     if (def.group === 'company') {
       for (const { c } of base.companies) {
+        if (unenriched(c, st)) continue // its facts are unknown until enriched
         if (def.id === 'funding') bump(c.funding)
         else if (def.id === 'cat') bump(c.cat)
         else if (def.id === 'city') bump(c.hq)
@@ -308,45 +322,26 @@ export function stream(res, st) {
   return cards.filter((c) => !hidden.has(c.id)).sort((a, b) => b.score - a.score)
 }
 
-/* ───────── Apollo (simulated) ───────── */
-/** What "Search beyond our DB" would bring back: company facts only (Apollo has no signals). */
-export function apolloFind(f, st, kind) {
-  const q = (f.q || '').trim()
-  const cos = apollo.filter((c) => coMatch(c, f, st) && (!q || has(q, c.name, c.cat, c.about) || c.people.some((p) => has(q, p.name, p.title))))
-  if (kind === 'companies') return cos.filter((c) => !st.db.co.includes(c.id))
-  return cos.flatMap((c) => c.people).filter((p) => !st.db.pe.includes(p.id) && (!on(f.role) || f.role.includes(roleOf(p.title))))
-}
-/** Spend credits and keep what came back, for good. Companies bring their people; people bring their company. */
-export function apolloFetch(st, { companies = [], people = [] }) {
-  const cost = companies.length + people.length
-  if (!cost) return 0
-  if (st.credits < cost) { toast('Not enough credits', { description: cost + ' needed · ' + st.credits + ' left' }); return -1 }
-  const co = [...companies.map((c) => c.id), ...people.map((p) => brandOf(p.brand).id)]
-  const pe = [...companies.flatMap((c) => c.people.map((p) => p.id)), ...people.map((p) => p.id)]
-  co.forEach((id) => FRESH.add(id)); pe.forEach((id) => FRESH.add(id))
-  st.set((x) => ({ credits: x.credits - cost, db: { ...x.db, co: [...new Set([...x.db.co, ...co])], pe: [...new Set([...x.db.pe, ...pe])] } }))
-  toast.success('Saved to our DB', { description: [companies.length && companies.length + (companies.length === 1 ? ' company' : ' companies'), people.length && people.length + (people.length === 1 ? ' person' : ' people')].filter(Boolean).join(' · ') + ' · ' + cost + (cost === 1 ? ' credit' : ' credits') })
-  return cost
-}
-/** Discover an unknown name: Apollo returns what it has, the rest stays Unknown. 1 credit. */
+/* ───────── Apollo (simulated to the real API: see apolloApi.js) ───────── */
+/** Look a name up on Apollo: one page of company search by name, 1 credit. Lands at search depth (not enriched). */
 export function fetchName(st, name) {
-  const c = brandOf(name)
-  if (c && isApollo(c)) return apolloFetch(st, { companies: [c] }) > 0 ? c : null
-  if (st.credits < 1) { toast('Out of credits'); return null }
-  const stub = { id: 'x-' + slug(name), name, cat: null, hq: null, size: null, rev: null, stage: null, funding: null, about: null, competitors: [], people: [], domain: slug(name).replace(/-/g, '') + '.com', stub: true }
-  FRESH.add(stub.id)
-  st.set((x) => ({ credits: x.credits - 1, db: { ...x.db, stubs: [...x.db.stubs.filter((s) => s.id !== stub.id), stub] } }))
-  toast.success('Saved to our DB', { description: name + ' · 1 credit · most fields Unknown on Apollo' })
-  return stub
+  const r = runCompanySearch(st, { q: name, scope: 'companies' }, 1, 10)
+  if (!r) return null
+  const c = apollo.find((x) => x.name.toLowerCase() === String(name).toLowerCase()) || brandOf(name)
+  if (!c) { toast('Apollo has no company named ' + name, { description: 'Company search returned 0 organizations · the credit is spent' }); return null }
+  FRESH.add(c.id)
+  return c
 }
-/** Reveal contacts: 1 credit each. */
-export function revealPeople(st, list) {
-  const ids = list.filter((p) => !isKnown(p, st)).map((p) => p.id)
-  if (!ids.length) return
-  if (st.credits < ids.length) return toast('Not enough credits', { description: ids.length + ' needed · ' + st.credits + ' left' })
-  st.set((x) => ({ revealed: [...new Set([...x.revealed, ...ids])], credits: x.credits - ids.length }))
-  toast.success(ids.length === 1 ? 'Contact revealed' : ids.length + ' contacts revealed', { description: ids.length + (ids.length === 1 ? ' Apollo credit' : ' Apollo credits') })
+/** Reveal = people/bulk_match: 1 credit per person (email when Apollo has one). `phone` asks for a mobile: 8 credits if found, later. */
+export function revealPeople(st, list, opts) {
+  const r = bulkMatch(st, list, opts)
+  if (r) list.forEach((p) => FRESH.add(p.id))
+  return r
 }
+/** Email we actually hold: on file, or revealed and Apollo had one. */
+export const emailOf = (p, st) => (p.onFile || (st.revealed.includes(p.id) && hasEmail(p)) ? p.email : null)
+/** Mobile we hold: on file with a number, or delivered by the bulk_match webhook. 'pending' while it's on the way. */
+export const phoneOf = (p, st) => (p.onFile && p.phone ? p.phone : (st.phones || {})[p.id] || null)
 
 /* ───────── Everything we know about one company ───────── */
 export function kbOf(c) {

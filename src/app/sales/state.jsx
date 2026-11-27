@@ -1,7 +1,7 @@
 // Sales slice: one localStorage-backed state for the whole Sales portal, plus the actions every flow uses.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { seed, revive, now, ahead, brandOf, repOf, budgetOf, DEAL_STAGES, stageIx, proofFor, caseById, SIGNAL_KIND, brands, F_EMPTY } from './data'
+import { seed, revive, now, ahead, brandOf, repOf, budgetOf, DEAL_STAGES, stageIx, proofFor, caseById, SIGNAL_KIND, brands, apollo, F_EMPTY } from './data'
 import { me, fmt, TODAY } from '../data'
 import { go } from '../ui'
 
@@ -127,17 +127,19 @@ export function factsFor(name, st) {
   const acct = st.accounts.find((a) => a.brand.toLowerCase() === String(name).toLowerCase())
   const deal = st.deals.find((d) => d.brand.toLowerCase() === String(name).toLowerCase() && d.stage !== 'lost')
   const sig = st.signals.find((x) => x.brand.toLowerCase() === String(name).toLowerCase())
-  const bud = budgetOf(b)
+  // An Apollo company we only have from company search: firmographics stay Unknown until it is enriched.
+  const firm = !b || !apollo.includes(b) || (st.db.enr || []).includes(b.id)
+  const bud = firm ? budgetOf(b) : null
   const onFile = b?.people.filter((p) => p.onFile || st.revealed.includes(p.id)) || []
   const proof = proofFor(name, 2)
   return [
     { k: 'Relationship', v: RELL[relOf(name, st).kind], src: 'DMS' },
     { k: 'Pipeline', v: deal ? `${stageLabel(deal.stage)} · ${repOf(deal.owner).short} · ${fmt.inr(deal.value)}` : 'Not in pipeline', src: 'DMS', to: deal && '/bd/pipeline/' + deal.id },
     acct && { k: 'Spend, 12 months', v: fmt.inr(acct.spend), src: 'DMS' },
-    { k: 'Category', v: b?.cat ?? null, src: 'Apollo' },
-    { k: 'HQ', v: b?.hq ?? null, src: 'Apollo' },
-    { k: 'Revenue', v: b?.rev ? fmt.inr(b.rev) : null, src: 'Apollo' },
-    { k: 'Employees', v: b?.size ? b.size.toLocaleString('en-IN') : null, src: 'Apollo' },
+    { k: 'Category', v: firm ? b?.cat ?? null : null, src: 'Apollo' },
+    { k: 'HQ', v: firm ? b?.hq ?? null : null, src: 'Apollo' },
+    { k: 'Revenue', v: firm && b?.rev ? fmt.inr(b.rev) : null, src: 'Apollo' },
+    { k: 'Employees', v: firm && b?.size ? b.size.toLocaleString('en-IN') : null, src: 'Apollo' },
     { k: 'Creator budget', v: bud ? fmt.inr(bud.annual) + ' a year' : null, src: 'AI' },
     { k: 'Latest signal', v: sig ? sig.title : null, src: 'Signals engine' },
     { k: 'On file', v: onFile.length ? onFile.map((p) => p.name).join(', ') : null, src: 'Gmail' },

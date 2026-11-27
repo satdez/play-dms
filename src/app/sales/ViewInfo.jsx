@@ -17,7 +17,7 @@ const GLOBAL = [
   'Typing shows instant matches. Enter filters every tab by the text, picking a row opens that company, and a name we don’t have can be fetched from Apollo for 1 credit.',
   'Saved views keep a filter. Turn on Auto and that view applies whenever BD opens.',
 ]
-const CREDITS = 'Anything already in our DB is free. Reaching Apollo shows the cost first; once fetched, companies and people stay in our DB, so the same search is free next time.'
+const CREDITS = 'Anything already in our DB is free. Apollo, as its API charges: company search 1 credit per page of up to 100 (name, domain, phone, founded year only); enriching a company 1 credit (industry, size, revenue, funding); people search free (last name hidden, no email or phone); enriching a person 1 credit, up to 10 per call; a mobile 8 more, only if found. Whatever comes back stays in our DB.'
 
 /** Page by page. `layout` names the layout the page is the home of; `uses` lists the sources behind it. */
 export const VIEW_INFO = {
@@ -32,7 +32,7 @@ export const VIEW_INFO = {
     title: 'Discover',
     what: 'A search engine for one company. Type a brand and get everything we know: profile, every signal it has had, people and contacts, deal history, proof from the Case Library, notes, and the Meta ads it is running now.',
     who: 'A rep preparing for a brand, or checking a name someone mentioned.',
-    how: ['Known brands open straight away, free.', 'Anything we don’t have shows Unknown, never a guess.', 'A brand we have never seen can be fetched from Apollo for 1 credit, and then it is ours for good.', 'People we have on file are free; anyone else needs a reveal.'],
+    how: ['Known brands open straight away, free.', 'Anything we don’t have shows Unknown, never a guess.', 'A brand we have never seen can be found on Apollo with one page of company search (1 credit); enrich it for 1 more to get its industry, size, revenue and funding.', 'People we have on file are free; anyone else needs a reveal.'],
     uses: ['Apollo', 'Signals engine', 'Case Library', 'DMS', 'AI'],
     credits: true,
   },

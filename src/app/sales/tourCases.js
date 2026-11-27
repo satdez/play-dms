@@ -9,7 +9,7 @@ const byText = (sel, text, { exact = false, root } = {}) => $$(sel, root).find((
 export const CASES = [
   { id: 'funded', label: 'Funded', who: 'Ishaan · brands that just raised and are Series B', run: funded },
   { id: 'cmo', label: 'New CMO', who: 'Aarav · new leaders with a senior contact', run: newCmo },
-  { id: 'apollo', label: 'Apollo', who: 'Zoya · beyond our database, credits, no pages', run: apolloCase },
+  { id: 'apollo', label: 'Apollo', who: 'Zoya · Apollo search, pages, enrichment and credits', run: apolloCase },
   { id: 'panel', label: 'Counts', who: 'Karan · side panel with live counts', run: panelCase },
   { id: 'triple', label: 'Three groups', who: 'Riya · Signal, Company and People together, saved as a view', run: triple },
 ]
@@ -57,17 +57,25 @@ async function apolloCase(t) {
   await t.chipPick('Funding', ['Series A', 'Series B'])
   await t.say('Two picks in one chip are an or. Series A or Series B.')
   await t.tab('Companies')
-  await t.say(`Our own database has ${t.n().companies}. That is everything we know. Apollo is a much bigger directory.`)
-  await t.look(() => $$('.bdv-beyond-b')[0], 'This row runs the same filters on Apollo. The yellow chip is the price: one credit for each new company. Nothing is spent yet.')
-  await t.click(() => $$('.bdv-beyond-b')[0])
-  const q = t.text('.bdv-beyond-q b')
-  await t.say(`It asks first. ${q}. It shows the cost, how many credits are left, and that whatever comes back is saved to our database for good.`)
-  await t.click(() => byText('.bdv-beyond-q button', 'Spend'))
-  await t.settle(600)
-  await t.say(`Saved. We now have ${t.n().companies} companies, and credits are down to ${t.credits()}. The new ones have no signals, because Apollo only knows company facts. They sort to the bottom.`)
+  await t.say(`Our own database has ${t.n().companies}. Apollo is a much bigger directory, so let us ask it.`)
+  const start = t.credits()
+  await t.click(() => byText('.bdv-beyond-b', 'Search Apollo'))
+  await t.look(() => $$('.apo-p')[0], 'This is the exact request Apollo receives. Industry goes through, in Apollo’s own words: consumer goods.')
+  await t.look(() => $$('.apo-p.skip')[0], 'Funding does not. Apollo has no filter for funding stage, so it cannot narrow by Series A or B.')
+  await t.look(() => $$('.apo-req .chip')[0], 'Company search costs one credit per page, and a page holds up to a hundred companies. Not one credit per company.')
+  await t.click(() => byText('.apo-go button', 'Search'))
+  await t.say(`Apollo found ${t.text('.apo-rh b')} companies. One page, one credit.`)
+  await t.look(() => $$('.apo-org .bdv-meta')[2], 'Look at what came back. Name, website, phone, founded year and social links. No industry, no size, no funding. Company search only says who a company is.')
+  await t.look(() => $$('.apo-org .chip.g')[0], 'Companies we already have come back too. They sit on the page we paid for.')
+  await t.click(() => $$('.apo-org').find((r) => r.innerText.startsWith('Mylo'))?.querySelector('button'))
+  await t.say(`Enriching Mylo costs one more credit, and fills in industry, size, revenue and funding. It is Series B, so it joins our list. ${t.n().companies} companies now.`)
   await t.tab('People')
-  await t.say(`Their people came along too. ${t.n().people} people now, locked until revealed.`)
-  await t.say('About pages. This prototype has none. Each list is one long scroll, and an Apollo fetch brings back every match at once. A real integration would return pages, so narrow the filters first, then spend.')
+  await t.click(() => byText('.bdv-beyond-b', 'Search Apollo people'))
+  await t.click(() => byText('.apo-go button', 'Search'))
+  await t.look(() => $$('.apo-pe')[0], 'People search is free. But the last name is hidden, and there is no email or phone. Only flags saying whether Apollo has them.')
+  await t.click(() => $$('.apo-pe').find((r) => /Enrich/.test(r.innerText))?.querySelector('button'))
+  await t.say('Enriching a person costs one credit, up to ten people per call. A mobile number costs eight more, and arrives a few seconds later.')
+  await t.say(`${start - t.credits()} credits spent in total. ${t.credits()} left.`)
   await t.say('This was a demo. I am putting your credits and database back as they were.')
 }
 
